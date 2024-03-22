@@ -1,13 +1,11 @@
-import nodemailer from "nodemailer"
-import dotenv from 'dotenv';
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 dotenv.config();
 // Create a Nodemailer transporter using the Mandrill transport
 
-
-
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.email',
+  service: "gmail",
+  host: "smtp.gmail.email",
   port: 587,
   secure: false,
   auth: {
@@ -16,10 +14,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
 const mailSend = async (toEmail, subject, text) => {
-
-
   // Define email content
   const mailOptions = {
     from: process.env.NODEMAILER_EMAIL,
@@ -372,9 +367,9 @@ const mailSend = async (toEmail, subject, text) => {
   // Send the email
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.response);
+    console.log("Email sent:", info.response);
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error("Error sending email:", error);
   }
 };
 
@@ -393,7 +388,7 @@ export const managerInviteMail = async (
   await mailSend(managerEmail, subject, body);
 };
 
-export const emailVerificationEmail = async (email, otp,fullName) => {
+export const emailVerificationEmail = async (email, otp, fullName) => {
   const subject = "Your One Time Password for email verification";
   const body = ` 
   <tr>
@@ -483,7 +478,6 @@ padding: 32px 0 0;
 };
 
 export const emailVerificationSuccess = async (email) => {
-
   const subject = "Account Successfully Verified";
 
   const body = `
@@ -502,90 +496,4 @@ export const emailVerificationSuccess = async (email) => {
   await mailSend(email, subject, body);
 };
 
-
  
- 
- 
-export const orderConfirmationEmail = async (email, orderDetails) => {
-  const subject = "Order Confirmation";
-
-  const laundryItemsTable = `
-  <table style="border-collapse: collapse; width: 100%;">
-      <thead>
-          <tr>
-              <th style="border: 1px solid #ddd; padding: 8px;">Item Name</th>
-              <th style="border: 1px solid #ddd; padding: 8px;">Quantity</th>
-              <th style="border: 1px solid #ddd; padding: 8px;">Price</th>
-              <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
-
-          </tr>
-      </thead>
-      <tbody>
-          ${orderDetails.laundryItems.map(item => `
-              <tr>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${item.price}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${ item.quantity * item.price}</td>
-
-              </tr>
-          `).join('')}
-      </tbody>
-  </table>
-  `;
-
-  const body = `
- 
-   
-        <p>Dear Customer,</p>
-        <p>Thank you for placing your order with Aplus Laundry. Below are the details of your order:</p>
-        <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
-        <p><strong>Order Type:</strong> ${orderDetails.orderType}</p>
-        <p><strong>Order Date:</strong> ${new Date(orderDetails.orderDate).toLocaleDateString()}</p>
-        <p><strong>Service:</strong> ${orderDetails.service}</p>
-        <p><strong>Laundry Items:</strong></p>
-        ${laundryItemsTable}
-        <p><strong>Total Amount:</strong> ${orderDetails.totalAmount}</p>
-        <p><strong>Status:</strong> ${orderDetails.status}</p>
-        
-        <p>Your order is being processed and will be delivered soon. We will keep you updated on the status of your order.</p>
-        <p>If you have any questions or concerns, please feel free to contact us.</p>
-        <p>Thank you for choosing Aplus Laundry.</p>
-        <p>Best regards,</p>
-        <p>Aplus Laundry Team</p>
-        
-        
-        `;
-        
-        await mailSend(email, subject, body);
-    };
-    
-    // <p><strong>Total Amount Paid:</strong> ${orderDetails.totalAmountPaid}</p>
-
-
-export const orderStatusUpdateEmail = async (email, orderDetails) => {
-  const subject = "Order Status Update";
- 
-
-  const body = `
-  
- 
- 
-    <p>Dear Customer,</p>
-    <p>We are writing to inform you about the status update of your order with Aplus Laundry. Below are the updated details:</p>
-    <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
-    <p><strong>Updated Order Status:</strong> ${orderDetails.status}</p>
-    <p>Your order is being processed and will be delivered soon. We will keep you updated on the status of your order.</p>
-    <p>If you have any questions or concerns, please feel free to contact us.</p>
-    <p>Thank you for choosing Aplus Laundry.</p> 
- 
-
-  `;
-
-  await mailSend(email, subject, body);
-};
-
- 
-
-   
-
