@@ -1,34 +1,75 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-// Define the user schema
+const addressSchema = new mongoose.Schema({
+  pincode: {
+    type: String,
+    required: true,
+  },
+  state: {
+    type: String,
+    required: true,
+  },
+  city: {
+    type: String,
+    required: true,
+  },
+  country: {
+    type: String,
+    required: true,
+  },
+  landmark: String,
+});
+
+mongoose.model("Address", addressSchema);
+
 const userSchema = new mongoose.Schema(
   {
     email: {
+      id: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
+      },
+      verified: {
+        type: Boolean,
+        default: false,
+      },
+    },profilePicture:{
       type: String,
-      required: true,
-      unique: true,
-    },
-    emailVerified: {
-      type: Boolean,
-      default: false,
     },
     phone: {
-      type: String,
+      countryCode: {
+        type: String,
+        minlength: 2,
+        maxlength: 3,
+      },
+      number: {
+        type: String,
+        unique: true,
+        trim: true,
+      },
+      verified: {
+        type: Boolean,
+        default: false,
+      },
     },
-    phoneVerified: {
-      type: Boolean,
+    name: {
+      first: String,
+      middle: String,
+      last: String,
     },
-    password: {
-      type: String,
-      required: true,
+    socialLogin: {
+      isSocialLogin: {
+        type: Boolean,
+        default: false,
+      },
+      provider: {
+        type: String,
+        enum: ["google", "facebook", "twitter", "linkedin","apple","github","microsoft"],
+      },
     },
-    firstName: String,
-    middleName: String,
-    lastName: String,
-    picture: {
-      type: String,
-    },
-    deviceToken: String,
   },
   {
     timestamps: true,
@@ -37,7 +78,4 @@ const userSchema = new mongoose.Schema(
 
 const User = mongoose.model("User", userSchema);
 
- 
-
 export default User;
-
