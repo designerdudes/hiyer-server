@@ -1,12 +1,9 @@
-// index.js
-
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import userRoute from "./routes/user.route.js";
 import authRoute from "./routes/auth.route.js";
-
 import errorHandler from "./middleware/error.js";
 
 dotenv.config();
