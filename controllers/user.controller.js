@@ -6,8 +6,7 @@ import UserOTP from "../models/otp.model.js";
 import {
   emailVerificationEmail,
   emailVerificationSuccess,
-} from "../config/sendMail.js";
-// import { sendVerificationCode } from "../config/sendSms.js";
+} from "../config/sendMail.js"; 
 import axios from "axios";
 import User from "../models/user.model.js";
 import { mobileVerificationSuccess } from "../config/sendSms.js";
