@@ -13,7 +13,7 @@ import {
   addCertification,
   updateCertification,
   deleteCertification,
-} from '../../controllers/individualUser.conreoller/individualUser.js';
+} from '../../controllers/individualUser.controller/individualUser.js';
 
 const router = express.Router();
 
