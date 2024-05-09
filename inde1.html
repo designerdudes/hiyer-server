@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Upload</title>
+</head>
+<body>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input title="" type="file" id="fileInput" name="file"/>
+    <button type="submit">Upload</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('fileInput');
+    const resultDiv = document.getElementById('result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault(); // Prevent default form submission
+
+      const formData = new FormData(form); // Get data from the entire form
+      const file = fileInput.files[0];
+
+      if (!file) {
+        resultDiv.textContent = 'Please select a file to upload.';
+        return; // Exit if no file selected
+      }
+      console.log(file.file.tempFilePath);
+
+      console.log('File data before sending:',fileInput,file);
+      console.log('  - Name:', file.name);
+      console.log('  - Size:', file.size, 'bytes');
+      console.log('  - Type:', file.type);
+
+      // Your code to send the data to a server (e.g., using Fetch API or XMLHttpRequest)
+      // ...
+
+      resultDiv.textContent = 'Uploading...'; // Update UI during upload
+
+      // After sending the data, update the result based on success or failure
+
+    });
+  </script>
+</body>
+</html>
