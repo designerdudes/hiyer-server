@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import userRoute from "./routes/user.route.js";
 import individualUserRoute from "./routes/individualUser.route/individualUser.route.js";
+import mediaControllRoute from "./routes/mediaControll.route/mediaControll.js";
+
 
 import authRoute from "./routes/auth.route.js";
 import errorHandler from "./middleware/error.js";
@@ -35,6 +37,8 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoute);
 app.use("/user", userRoute);
 app.use("/individualUser", individualUserRoute);
+app.use("/media", mediaControllRoute);
+
 
 
 app.use(errorHandler);
