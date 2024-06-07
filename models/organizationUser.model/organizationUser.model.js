@@ -72,6 +72,10 @@ const organizationalUserSchema = new mongoose.Schema(
     },
     logo: String,
     bio: String,
+    postedApplications: [{ 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'JobApplication',
+    }],
   },
   {
     timestamps: true,
@@ -79,7 +83,7 @@ const organizationalUserSchema = new mongoose.Schema(
 );
 
 const OrganizationalUser = mongoose.model(
-  "OrganizationalUser",
+  "Organization",
   organizationalUserSchema
 );
 
