@@ -39,20 +39,34 @@ const educationSchema = new mongoose.Schema({
 
 // Schema for Experience
 const experienceSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-  },
   company: {
     type: String,
+  },
+  positions: {
+    type: [
+      {
+        title: {
+          type: String,
+          required: true,
+        }, description: {
+          type: String,
+          required: true,
+        }, employmentType: {
+          type: String,
+          enum: ['full-time', 'part-time', 'contract', 'internship','freelance','volunteer','seasonal','apprenticeship'],
+          required: true,
+        },
+        startDate: {
+          type: Date,
+          required: true,
+        },
+        endDate: Date,
+      },
+    ],
     required: true,
   },
-  startDate: {
-    type: Date,
-    required: true,
-  },
-  endDate: Date,
 });
+
 
 // Schema for Skill
 const skillSchema = new mongoose.Schema({
@@ -79,9 +93,40 @@ const certificationSchema = new mongoose.Schema({
   url: String,
 });
 
+const projectSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+  },
+  startDate: {
+    type: Date,
+    required: true,
+  },
+  endDate: Date,
+  urls: {
+    type: [String],
+    validate: {
+      validator: (urls) => urls.every((url) => validator.isURL(url)),
+      message: (props) => `${props.value} contains invalid URLs`,
+    },
+  },
+  toolsUsed: {
+    type: [String],
+  },
+  role: String, 
+  highlights: [String],  
+});
 // Schema for Individual User
 const individualUserSchema = new mongoose.Schema(
   {
+    industry: {
+      type: String,
+    }, intrestedCompanies: [{
+      type: String,
+    }],
     address: addressSchema,
     education: [educationSchema],
     experiences: [experienceSchema],
@@ -90,7 +135,11 @@ const individualUserSchema = new mongoose.Schema(
     socialLinks: {
       linkedin: String,
       instagram: String,
+      facebook: String,
+      twitter: String,
+      youtube: String,
     },
+    projects: [projectSchema],
     resume: String,
     portfolio: String,
     bio: String,
