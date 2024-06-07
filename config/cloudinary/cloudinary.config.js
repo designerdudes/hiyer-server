@@ -36,7 +36,7 @@ const uploadVideo = (filePath, uploadOptions) => {
     cloudinary.uploader.upload_large(
       filePath,
       {
-        resource_type: 'video',
+        resource_type: 'video', 
         eager: [
           { streaming_profile: "full_hd", format: "m3u8" },
           { streaming_profile: "sd", format: "m3u8" },
@@ -144,10 +144,10 @@ export const deleteImageFromCloudinary = async (imageUrl) => {
   try {
     // Extract the public ID from the image URL
     const publicId = imageUrl.split('/').pop().split('.')[0];
-    
+
     // Delete the image from Cloudinary
     const deletionResult = await cloudinary.v2.uploader.destroy(publicId);
-    
+
     // Check if the deletion was successful
     if (deletionResult.result === 'ok') {
       console.log('Image deleted from Cloudinary');
@@ -164,10 +164,10 @@ export const deleteVideoFromCloudinary = async (videoUrl) => {
   try {
     // Extract the public ID from the video URL
     const publicId = videoUrl.split('/').pop().split('.')[0];
-    
+
     // Delete the video from Cloudinary
     const deletionResult = await cloudinary.v2.uploader.destroy(publicId, { resource_type: 'video' });
-    
+
     // Check if the deletion was successful
     if (deletionResult.result === 'ok') {
       console.log('Video deleted from Cloudinary');
