@@ -157,8 +157,7 @@ export const updateBio = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
-
+//upload
 export const updateResume = async (req, res) => {
   const authorizationHeader = req.headers.authorization;
 
@@ -764,5 +763,87 @@ export const addOrUpdateVideoDetails = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+// Controller to withdraw job applicant
+export const withdrawJobApplicant = async (req, res) => {
+  try {
+      const { jobId, userId } = req.params;
+
+      // Find the job application by ID
+      const jobApplication = await JobApplication.findById(jobId);
+      if (!jobApplication) {
+          return res.status(404).json({ error: 'Job application not found' });
+      }
+
+      // Find the index of the applicant within the job application's applicants array
+      const applicantIndex = jobApplication.applicants.findIndex(app => app.user.toString() === userId);
+      if (applicantIndex === -1) {
+          return res.status(404).json({ error: 'Applicant not found' });
+      }
+
+      // Remove the applicant from the applicants array
+      jobApplication.applicants.splice(applicantIndex, 1);
+      await jobApplication.save();
+
+      // Update IndividualUser model to remove the applied job
+      await IndividualUser.findByIdAndUpdate(userId, {
+          $pull: { "jobposting.applied": jobApplication._id },
+      });
+
+      res.status(200).json({ message: 'Applicant removed successfully' });
+  } catch (error) {
+      console.error('Error removing applicant:', error);
+      res.status(500).json({ error: 'An error occurred while removing the applicant' });
+  }
+};
+
+
+// Controller to apply for a job application
+export const applyJobApplication = async (req, res) => {
+  try {
+      const authorizationHeader = req.headers.authorization;
+      if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+          return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const token = authorizationHeader.split("Bearer ")[1];
+      const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+      const userId = decodedToken.id;
+      const { id } = req.params;
+      const { coverLetter, mediaType, mediaRef } = req.body;
+
+      // Create media object
+      const media = {
+          mediaType,
+          mediaRef,
+      };
+
+      const newApplicant = {
+          user: userId,
+          resumeVideo: media,
+          coverLetter,
+      };
+
+      const jobApplication = await JobApplication.findById(id);
+      if (!jobApplication) {
+          return res.status(404).json({ error: 'Job application not found' });
+      }
+
+      jobApplication.applicants.push(newApplicant);
+      await jobApplication.save();
+
+      // Update IndividualUser model to include the applied job
+      await IndividualUser.findByIdAndUpdate(userId, {
+          $push: { "jobposting.applied": jobApplication._id },
+      });
+
+      res.status(201).json(jobApplication);
+  } catch (error) {
+      console.error('Error adding applicant:', error);
+      res.status(500).json({ error: 'An error occurred while adding the applicant' });
   }
 };
