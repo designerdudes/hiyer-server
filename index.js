@@ -12,14 +12,18 @@ import errorHandler from "./middleware/error.js";
 
 dotenv.config();
 
-mongoose
-  .connect(process.env.DB_URL)
-  .then(() => {
-    console.log("Connected to the database");
-  })
-  .catch((err) => {
-    console.error("Error connecting to the database:", err);
+
+// Retry connection to MongoDB
+const connectWithRetry = () => {
+  console.log('MongoDB connection with retry');
+  return mongoose.connect(process.env.DB_URL).then(() => {
+      console.log('MongoDB is connected');
+  }).catch((err) => {
+      console.error('MongoDB connection unsuccessful, retry after 5 seconds. ', err);
+      setTimeout(connectWithRetry, 5000);
   });
+};
+connectWithRetry();
 
 const app = express();
 app.use(express.json());
@@ -27,10 +31,7 @@ app.use(express.json());
 // Enable CORS for a specific origin
 app.use(cors({ origin: "*" }));
 
-app.listen(process.env.PORT, () => {
-  console.log("Server listening on port " + process.env.PORT);
-});
-//basic home route
+// Basic home route
 app.get("/", (req, res) => {
   res.send("home");
 });
@@ -42,3 +43,6 @@ app.use("/media", mediaControllRoute);
 
 
 app.use(errorHandler);
+app.listen(process.env.PORT, () => {
+  console.log("Server listening on port " + process.env.PORT);
+});
