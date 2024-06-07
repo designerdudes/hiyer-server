@@ -6,10 +6,13 @@ import UserOTP from "../models/otp.model.js";
 import {
   emailVerificationEmail,
   emailVerificationSuccess,
-} from "../config/sendMail.js"; 
+} from "../config/sendMail.js";
 import axios from "axios";
 import User from "../models/user.model.js";
 import { mobileVerificationSuccess } from "../config/sendSms.js";
+import IndividualUser from "../models/individualUser.model/individualUser.model.js";
+import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
+import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
 
 export const sendEmailOTPforverification = async (req, res) => {
   try {
@@ -17,9 +20,7 @@ export const sendEmailOTPforverification = async (req, res) => {
     console.log("req", req.body);
     const email = user.email;
 
-    const validEmailUser = await User.findOne({
-      email,
-    });
+    const validEmailUser = await User.findOne({ email });
     let OTP = Math.floor(Math.random() * 900000) + 100000;
     console.log("OTP is generated", OTP);
 
@@ -27,135 +28,96 @@ export const sendEmailOTPforverification = async (req, res) => {
       email: email,
       otp: OTP,
       createdAt: new Date(),
-      expireAt: new Date() + 86400000,
+      expireAt: new Date(Date.now() + 86400000), // Set expiration time correctly
     });
 
     await otp.save();
-    if (!validEmailUser) {
-      await emailVerificationEmail(email, OTP, "User");
 
-      return res.status(404).send({
-        msg: "User not found",
-        ok: false,
-      });
-    }
-
-    await emailVerificationEmail(email, OTP, validEmailUser.fullName);
+    const userName = validEmailUser ? validEmailUser.fullName : "User";
+    await emailVerificationEmail(email, OTP, userName);
 
     res.status(200).send({
       ok: true,
-      msg: "email sent",
+      msg: validEmailUser ? "Email sent to existing user" : "Email sent to new  user",
     });
   } catch (error) {
-    console.error("Error in sendOTPforverification:", error);
+    console.error("Error in sending OTP for verification:", error);
     res.status(500).send({
       msg: error.message,
     });
   }
 };
 
-export const verifyotp = async (req, res) => {
+
+// verifyOtpCore function with modifications
+const verifyOtpCore = async (email, mobileNo, otp, countryCode) => {
   try {
-    let { email, mobileNo, otp, countryCode } = req.body;
-
-    if (!email && !mobileNo) {
-      return res.status(400).send({
-        msg: "Email or mobile number is required",
-        ok: false,
-      });
-    }
-
-    // Determine which field to use for verification
-    let field, value, verificationSuccessFunction;
+    let field, value, verificationSuccessFunction, provider;
     if (email) {
       field = "email";
       value = email;
       verificationSuccessFunction = emailVerificationSuccess;
+      provider = "email";
     } else {
       field = "mobileNumber";
       value = countryCode + mobileNo;
       verificationSuccessFunction = mobileVerificationSuccess;
+      provider = "phone";
     }
 
-    // Find OTP records for the provided field value
     const databaseotp = await UserOTP.find({ [field]: value });
 
     if (!databaseotp || databaseotp.length === 0) {
-      return res.status(404).send({
-        msg: "No OTP records found",
-        ok: false,
-      });
+      return { ok: false, msg: "No OTP records found", statusCode: 404 };
     }
 
-    // Check if the provided OTP matches any of the OTP records
     const matchingOTP = databaseotp.find((record) => record.otp == otp);
 
     if (!matchingOTP) {
-      return res.status(401).send({
-        msg: "Wrong OTP!",
-        ok: false,
-      });
+      return { ok: false, msg: "Wrong OTP!", statusCode: 401 };
     }
 
-    // Calculate the time difference
     const currentTime = new Date();
     const createdAt = new Date(matchingOTP.createdAt);
     const timeDifference = currentTime - createdAt;
 
-    // Check if the time difference is more than 15 minutes (900,000 milliseconds)
     if (timeDifference > 900000) {
-      // Delete OTP records for the provided field value
       await UserOTP.deleteMany({ [field]: value });
-
-      return res.status(402).send({
-        msg: "Your OTP has expired, can't verify",
-        ok: false,
-      });
+      return { ok: false, msg: "Your OTP has expired, can't verify", statusCode: 402 };
     }
+
     if (email) {
       field = "email.id";
     } else {
       field = "phone.number";
     }
-    // Update user's emailVerified status
+
     const searchCriteria =
       field === "email.id"
         ? { [field]: value }
         : { [field]: value, countryCode: countryCode };
     const validUser = await User.findOne(searchCriteria);
     if (!validUser) {
-      return res.status(202).send({
-        msg: "Verification successful",
-        ok: false,
-      });
+      return { ok: true, msg: "Verification successful", token: null, statusCode: 202, provider };
     }
 
-    // Include user ID and role in the JWT token payload
     const tokenPayload = {
       id: validUser._id,
     };
 
     const Token = jwt.sign(tokenPayload, process.env.JWT_SECRETKEY);
-    res.cookie("accessToken", Token, { httpOnly: true });
 
-    // Delete OTP records for the provided field value
     await UserOTP.deleteMany({ [field]: value });
     await verificationSuccessFunction(value);
 
-    return res.status(200).send({
-      msg: "Verification successful",
-      ok: true,
-      token: Token,
-    });
+    return { ok: true, msg: "Verification successful", token: Token, statusCode: 200, provider };
   } catch (error) {
-    console.error(error);
-    res.status(500).send({
-      msg: "Internal Server Error",
-      ok: false,
-    });
+    console.error("Error in verifyOtpCore:", error);
+    return { ok: false, msg: "Internal Server Error", statusCode: 500 };
   }
 };
 
+// registerUser function with modifications
 export const registerUser = async (req, res) => {
   try {
     const {
@@ -166,10 +128,11 @@ export const registerUser = async (req, res) => {
       lastName,
       countryCode,
       otp,
+      profileType
     } = req.body;
 
     // Verify OTP
-    const otpVerifyResponse = await verifyotp(req);
+    const otpVerifyResponse = await verifyOtpCore(email, mobileNo, otp, countryCode);
 
     // Check if OTP verification was successful
     if (!otpVerifyResponse.ok) {
@@ -206,18 +169,19 @@ export const registerUser = async (req, res) => {
     const userData = {
       email: {
         id: email,
-        verified: true,
       },
       phone: {
         countryCode,
         number: mobileNo,
-        verified: true,
       },
       name: {
         first: firstName || "",
         middle: middleName || "",
         last: lastName || "",
       },
+      profile: {
+        profileType,
+      }
     };
 
     // Create a new user instance
@@ -226,18 +190,104 @@ export const registerUser = async (req, res) => {
     // Save the new user to the database
     const savedUser = await newUser.save();
 
+    // Create a document in the specific profile type collection
+    let profileModel;
+    switch (profileType) {
+      case 'individualUser':
+        profileModel = IndividualUser;
+        break;
+      case 'organization':
+        profileModel = OrganizationalUser;
+        break;
+      case 'organizationMember':
+        profileModel = OrganizationMember;
+        break;
+      default:
+        return res.status(400).json({ msg: "Invalid profileType" });
+    }
+
+    const profileData = {
+      _id: savedUser._id, // Use the _id of the newly created user as profileRef
+      // Add any additional fields if needed
+    };
+
+    const newProfile = new profileModel(profileData);
+    await newProfile.save();
+
+    // Create a token if not provided by OTP verification
+    let token = otpVerifyResponse.token;
+    if (!token) {
+      const tokenPayload = {
+        id: savedUser._id,
+      };
+      token = jwt.sign(tokenPayload, process.env.JWT_SECRETKEY);
+    }
+
+    // Set verified to true for the verified email or phone
+    if (otpVerifyResponse.provider === 'email') {
+      savedUser.email.verified = true;
+    } else {
+      savedUser.phone.verified = true;
+    }
+
     // Respond with success message, status, and user data
     res.status(200).json({
       msg: "User registered successfully",
       ok: true,
-      token: otpVerifyResponse.token, // Include token from OTP verification
+      token,
       user: savedUser,
     });
   } catch (error) {
+    console.error("Error in registerUser:", error);
     // If any error occurs during registration, respond with error message
     res.status(500).json({ msg: "Internal Server Error" });
   }
 };
+
+
+export const verifyotp = async (req, res) => {
+  try {
+    const { email, mobileNo, otp, countryCode } = req.body;
+
+    if (!email && !mobileNo) {
+      return res.status(400).send({
+        msg: "Email or mobile number is required",
+        ok: false,
+      });
+    }
+
+    const result = await verifyOtpCore(email, mobileNo, otp, countryCode);
+
+    if (!result.ok) {
+      return res.status(result.statusCode).send({
+        msg: result.msg,
+        ok: false,
+      });
+    }
+
+    if (result.token) {
+      res.cookie("accessToken", result.token, { httpOnly: true });
+    }
+
+    return res.status(result.statusCode).send({
+      msg: result.msg,
+      ok: true,
+      token: result.token,
+    });
+  } catch (error) {
+    console.error("Error in verifyotp:", error);
+    res.status(500).send({
+      msg: "Internal Server Error",
+      ok: false,
+    });
+  }
+};
+
+
+
+
+
+
 
 export const login = async (req, res) => {
   try {
