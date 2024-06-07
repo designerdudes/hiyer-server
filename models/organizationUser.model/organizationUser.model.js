@@ -31,19 +31,33 @@ const teamMemberSchema = new mongoose.Schema({
   position: String,
 });
 
-// Schema for Project
 const projectSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
   },
-  description: String,
+  description: {
+    type: String,
+  },
   startDate: {
     type: Date,
     required: true,
   },
   endDate: Date,
+  urls: {
+    type: [String],
+    validate: {
+      validator: (urls) => urls.every((url) => validator.isURL(url)),
+      message: (props) => `${props.value} contains invalid URLs`,
+    },
+  },
+  toolsUsed: {
+    type: [String],
+  },
+  role: String, 
+  highlights: [String],  
 });
+
 
 // Schema for Organizational User
 const organizationalUserSchema = new mongoose.Schema(
