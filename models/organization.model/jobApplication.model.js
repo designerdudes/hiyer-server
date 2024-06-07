@@ -80,7 +80,7 @@ const jobApplicationSchema = new mongoose.Schema({
     },
     applicationType: {
         type: String,
-        enum: ['full-time', 'part-time', 'contract', 'internship'],
+        enum: ['full-time', 'part-time', 'contract', 'internship','freelance','volunteer','seasonal','apprenticeship'],
         required: true,
     },
     experienceLevel: {
@@ -105,7 +105,7 @@ const jobApplicationSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    category: {
+    industry: {
         type: String,
     },
     tags: [String],
