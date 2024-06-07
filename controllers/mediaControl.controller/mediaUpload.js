@@ -3,6 +3,8 @@ import { uploadFile, uploadImage } from "../../config/cloudinary/cloudinary.conf
 import Video from "../../models/video.model.js";
 import Image from "../../models/image.model.js";
 import path from "path";
+import jwt from 'jsonwebtoken';
+import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 
 
 
@@ -22,7 +24,7 @@ const getUserIdFromToken = (req) => {
 export const uploadMediaForIndividualUsers = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req); // Get user ID from token
-    const { timestamps, continueWithoutTtimestamps, videoTitle, videoDescription } = req.body;
+    const { timestamps, continueWithoutTimestamps, videoTitle, videoDescription } = req.body;
     const { video, image } = req.files;
 
     if (!video || video.length === 0) {
@@ -43,8 +45,7 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
       newImage = new Image({
         imageUrl: uploadResult1.imageUrl,
         transformations: [{ width: 800, height: 800, quality: 'auto' }],
-      postedBy: userId,  
-
+        postedBy: userId,
       });
 
       await newImage.save();
@@ -54,21 +55,21 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
 
     // Create a new Video document
     const newVideo = new Video({
-      videoUrl: uploadResult.secure_url,
+      videoUrl: uploadResult.uploadResult.secure_url,
       thumbnailUrl: newImage ? newImage._id : null,
       streamingUrls: {
-        hls: uploadResult.hlsUrl,
-        dash: uploadResult.dashUrl,
+        hls: uploadResult.uploadResult.hlsUrl,
+        dash: uploadResult.uploadResult.dashUrl,
       },
-      representations: uploadResult.representations,
-      postedBy: userId,  
+      representations: uploadResult.uploadResult.representations,
+      postedBy: userId, 
     });
 
-    if (!continueWithoutTtimestamps && timestamps) {
+    if (!continueWithoutTimestamps && timestamps) {
       newVideo.chapters = JSON.parse(timestamps).map(timestamp => ({
         from: timestamp.from,
         to: timestamp.to,
-        chapterTitle: timestamp.chapterTitle,
+        chapterTitle: timestamp.chapterTitle || '',
         description: timestamp.description || '',
       }));
     }
@@ -81,7 +82,7 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
       userId,
       {
         $push: {
-          postedVideo: {
+          postedVideos: {
             videoRef: newVideo._id,
             videoTitle: videoTitle || '',
             videoDescription: videoDescription || '',
@@ -101,7 +102,6 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
 };
 
 
- 
 
 
 export const uploadImageController = async (req, res) => {
@@ -154,7 +154,7 @@ export const uploadImageController = async (req, res) => {
 export const uploadMedia = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req); // Get user ID from token
-    const { timestamps, continueWithoutTtimestamps  } = req.body;
+    const { timestamps, continueWithoutTtimestamps } = req.body;
     const { video, image } = req.files;
 
     if (!video || video.length === 0) {
@@ -175,7 +175,7 @@ export const uploadMedia = async (req, res) => {
       newImage = new Image({
         imageUrl: uploadResult1.imageUrl,
         transformations: [{ width: 800, height: 800, quality: 'auto' }],
-      postedBy: userId,  
+        postedBy: userId,
 
       });
 
@@ -193,7 +193,7 @@ export const uploadMedia = async (req, res) => {
         dash: uploadResult.dashUrl,
       },
       representations: uploadResult.representations,
-      postedBy: userId,  
+      postedBy: userId,
     });
 
     if (!continueWithoutTtimestamps && timestamps) {
@@ -209,7 +209,7 @@ export const uploadMedia = async (req, res) => {
     console.log('newVideo', newVideo);
 
     // Update IndividualUser with the new video reference
-     
+
 
     res.status(200).send({ ok: true, video_id: newVideo._id });
   } catch (error) {
