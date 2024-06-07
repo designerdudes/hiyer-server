@@ -1,5 +1,25 @@
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
+import jwt from 'jsonwebtoken';
 import mongoose from "mongoose";
+
+
+// Helper function to extract user ID from token
+const getUserIdFromToken = (req) => {
+  const authorizationHeader = req.headers.authorization;
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    throw new Error("Unauthorized");
+  }
+  const token = authorizationHeader.split("Bearer ")[1];
+  const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+  return decodedToken.id;
+};
+
+// Helper function to handle common error response
+const sendErrorResponse = (res, error) => {
+  res.status(400).json({ message: error.message });
+};
+
+
 
 export const addOrUpdateUserData = async (req, res) => {
   const authorizationHeader = req.headers.authorization;
@@ -9,41 +29,21 @@ export const addOrUpdateUserData = async (req, res) => {
   }
 
   const token = authorizationHeader.split("Bearer ")[1];
-  const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-  const userId = decodedToken.id;
   try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+    const userId = decodedToken.id;
+
     let individualUser = await IndividualUser.findById(userId);
 
     if (!individualUser) {
-      // If user doesn't exist, create a new document
       individualUser = new IndividualUser({ _id: userId });
     }
 
     const userData = req.body;
 
-    // Update address if provided
-    if (userData.address) {
-      individualUser.address = userData.address;
-    }
-
-    // Update social links if provided
-    if (userData.socialLinks) {
-      individualUser.socialLinks = userData.socialLinks;
-    }
-
-    // Update resume if provided
-    if (userData.resume) {
-      individualUser.resume = userData.resume;
-    }
-
-    // Update portfolio if provided
-    if (userData.portfolio) {
-      individualUser.portfolio = userData.portfolio;
-    }
-
-    // Update bio if provided
-    if (userData.bio) {
-      individualUser.bio = userData.bio;
+    // Update user data dynamically
+    for (const key in userData) {
+      individualUser[key] = userData[key];
     }
 
     // Save the updated user data
@@ -54,9 +54,177 @@ export const addOrUpdateUserData = async (req, res) => {
       user: individualUser,
     });
   } catch (error) {
+    console.error('Error updating user data:', error);
     res.status(400).json({ message: error.message });
   }
 };
+
+export const addOrUpdateAddress = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
+  try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+    const userId = decodedToken.id;
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update address
+    individualUser.address = req.body;
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Address updated successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const addOrUpdateSocialLinks = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
+  try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+    const userId = decodedToken.id;
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update social links
+    individualUser.socialLinks = req.body;
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Social links updated successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const updateBio = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
+  try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+    const userId = decodedToken.id;
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update bio
+    individualUser.bio = req.body.bio;
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Bio updated successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+
+export const updateResume = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
+  try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+    const userId = decodedToken.id;
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update resume
+    individualUser.resume = req.body.resume;
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Resume updated successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const updatePortfolio = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
+  try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+    const userId = decodedToken.id;
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update portfolio
+    individualUser.portfolio = req.body.portfolio;
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Portfolio updated successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 
 export const addEducation = async (req, res) => {
   const authorizationHeader = req.headers.authorization;
@@ -66,10 +234,10 @@ export const addEducation = async (req, res) => {
   }
 
   const token = authorizationHeader.split("Bearer ")[1];
-  const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-  const userId = decodedToken.id;
-
   try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+    const userId = decodedToken.id;
+
     let individualUser = await IndividualUser.findById(userId);
 
     if (!individualUser) {
@@ -90,6 +258,7 @@ export const addEducation = async (req, res) => {
   }
 };
 
+
 export const updateEducation = async (req, res) => {
   const authorizationHeader = req.headers.authorization;
 
@@ -98,11 +267,11 @@ export const updateEducation = async (req, res) => {
   }
 
   const token = authorizationHeader.split("Bearer ")[1];
-  const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-  const userId = decodedToken.id;
-  const educationId = req.params.educationId;
-
   try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+    const userId = decodedToken.id;
+    const educationId = req.params.educationId;
+
     let individualUser = await IndividualUser.findById(userId);
 
     if (!individualUser) {
@@ -135,10 +304,16 @@ export const updateEducation = async (req, res) => {
   }
 };
 
+
 export const deleteEducation = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
     const { educationId } = req.params;
@@ -173,10 +348,17 @@ export const deleteEducation = async (req, res) => {
   }
 };
 
+
+
 export const addExperience = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
 
@@ -200,10 +382,16 @@ export const addExperience = async (req, res) => {
   }
 };
 
+
 export const updateExperience = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
     const { experienceId } = req.params;
@@ -241,10 +429,16 @@ export const updateExperience = async (req, res) => {
   }
 };
 
+
 export const deleteExperience = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
     const { experienceId } = req.params;
@@ -279,10 +473,16 @@ export const deleteExperience = async (req, res) => {
   }
 };
 
+
 export const addSkill = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
 
@@ -308,10 +508,16 @@ export const addSkill = async (req, res) => {
   }
 };
 
+
 export const updateSkill = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
     const skillId = req.params.skillId;
@@ -333,24 +539,34 @@ export const updateSkill = async (req, res) => {
     }
 
     // Update the skill data
-    individualUser.skills[skillIndex].name = name;
-    individualUser.skills[skillIndex].proficiency = proficiency;
+    individualUser.skills[skillIndex] = {
+      ...individualUser.skills[skillIndex],
+      name,
+      proficiency,
+    };
 
     // Save the updated user data
     await individualUser.save();
 
-    res
-      .status(200)
-      .json({ message: "Skill updated successfully", user: individualUser });
+    res.status(200).json({
+      message: "Skill updated successfully",
+      user: individualUser,
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
+
 export const deleteSkill = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
     const { skillId } = req.params;
@@ -385,10 +601,16 @@ export const deleteSkill = async (req, res) => {
   }
 };
 
+
 export const addCertification = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
 
@@ -413,13 +635,18 @@ export const addCertification = async (req, res) => {
   }
 };
 
+
 export const updateCertification = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
-
     const certificationId = req.params.certificationId;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -455,10 +682,16 @@ export const updateCertification = async (req, res) => {
   }
 };
 
+
 export const deleteCertification = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const authorizationHeader = req.headers.authorization;
-    const token = authorizationHeader.split("Bearer ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
     const userId = decodedToken.id;
     const { certificationId } = req.params;
@@ -490,5 +723,46 @@ export const deleteCertification = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+
+
+// Add or Update Video Title and Description
+export const addOrUpdateVideoDetails = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { videoTitle, videoDescription } = req.body;
+    const { videoRef } = req.params;
+
+    // Find the individual user by their ID
+    const individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the video by its reference ID
+    const video = individualUser.postedVideo.find(
+      (video) => video.videoRef.toString() === videoRef
+    );
+
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+
+    // Update the video title and description
+    video.videoTitle = videoTitle || video.videoTitle;
+    video.videoDescription = videoDescription || video.videoDescription;
+
+    // Save the updated individual user document
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Video details updated successfully",
+      video,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
