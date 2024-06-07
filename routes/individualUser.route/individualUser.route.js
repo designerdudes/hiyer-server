@@ -13,6 +13,12 @@ import {
   addCertification,
   updateCertification,
   deleteCertification,
+  addOrUpdateAddress,
+  addOrUpdateSocialLinks,
+  updateBio,
+  updateResume,
+  updatePortfolio,
+  addOrUpdateVideoDetails,
 } from '../../controllers/individualUser.controller/individualUser.js';
 
 const router = express.Router();
@@ -40,4 +46,21 @@ router.post('/certification', addCertification);
 router.put('/certification/:certificationId', updateCertification);
 router.delete('/certification/:certificationId', deleteCertification);
 
+// Route for adding or updating address
+router.post('/address', addOrUpdateAddress);
+
+// Route for adding or updating social links
+router.post('/socialLinks', addOrUpdateSocialLinks);
+
+// Route for updating bio
+router.put('/bio', updateBio);
+
+// Route for updating resume
+router.put('/resume', updateResume);
+
+// Route for updating portfolio
+router.put('/portfolio', updatePortfolio);
+
+// Route to add or update video title and description
+router.put('/video/:videoRef', addOrUpdateVideoDetails);
 export default router;
