@@ -496,4 +496,4 @@ export const emailVerificationSuccess = async (email) => {
   await mailSend(email, subject, body);
 };
 
- 
+
