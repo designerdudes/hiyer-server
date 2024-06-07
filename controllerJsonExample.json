@@ -1,0 +1,136 @@
+{
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "userData": {
+      "address": {
+        "pincode": "123456",
+        "state": "California",
+        "city": "Los Angeles",
+        "country": "USA",
+        "landmark": "Nearby landmark"
+      },
+      "education": [
+        {
+          "degree": "Bachelor of Science",
+          "institute": "University of California",
+          "year": 2020
+        },
+        {
+          "degree": "Master of Science",
+          "institute": "Stanford University",
+          "year": 2022
+        }
+      ],
+      "experiences": [
+        {
+          "title": "Software Engineer",
+          "company": "Google",
+          "startDate": "2020-01-01",
+          "endDate": "2022-01-01"
+        }
+      ],
+      "skills": [
+        {
+          "name": "JavaScript",
+          "proficiency": "Advanced"
+        },
+        {
+          "name": "Python",
+          "proficiency": "Intermediate"
+        }
+      ],
+      "certifications": [
+        {
+          "name": "AWS Certified Solutions Architect",
+          "issuer": "Amazon Web Services",
+          "issueDate": "2021-06-15",
+          "expirationDate": "2024-06-15",
+          "url": "https://example.com/aws-cert"
+        }
+      ],
+      "socialLinks": {
+        "linkedin": "https://linkedin.com/yourprofile",
+        "instagram": "https://instagram.com/yourprofile"
+      },
+      "resume": "https://example.com/resume.pdf",
+      "portfolio": "https://example.com/portfolio",
+      "bio": "Experienced software engineer with a passion for technology."
+    }
+  }
+
+  
+  {
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "educationData": {
+      "degree": "Bachelor of Arts",
+      "institute": "Harvard University",
+      "year": 2021
+    }
+  }
+
+  
+
+  {
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "educationData": {
+      "degree": "Bachelor of Arts",
+      "institute": "Harvard University",
+      "year": 2021
+    }
+  }
+
+  
+  {
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "educationId": "<Education_ID>"
+  }
+
+  
+  {
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "experienceData": {
+      "title": "Senior Software Engineer",
+      "company": "Microsoft",
+      "startDate": "2023-01-01",
+      "endDate": "2024-06-01"
+    }
+  }
+
+  
+  {
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "experienceId": "<Experience_ID>",
+    "experienceData": {
+      "title": "Lead Software Engineer",
+      "company": "Microsoft",
+      "startDate": "2023-01-01",
+      "endDate": "2024-12-01"
+    }
+  }
+
+  {
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "experienceId": "<Experience_ID>"
+  }
+
+  
+  {
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "skillData": {
+      "name": "React",
+      "proficiency": "Advanced"
+    }
+  }
+
+  
+  {
+    "authorizationHeader": "Bearer <JWT_Token>",
+    "skillId": "<Skill_ID>",
+    "skillData": {
+      "name": "React",
+      "proficiency": "Intermediate"
+    }
+  }
+
+  
+
+  
