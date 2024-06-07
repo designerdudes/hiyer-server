@@ -4,19 +4,19 @@ import mongoose from 'mongoose';
 const timestampSchema = new mongoose.Schema({
     from: {
         type: String,
-        required: true
+        // required: true
     },
     to: {
         type: String,
-        required: true
+        // required: true
     },
     chapterTitle: {
         type: String,
-        required: true
+        // required: true
     },
     description: {
         type: String,
-        required: true
+        // required: true
     }
 }, { _id: false });
 
@@ -35,7 +35,7 @@ const representationSchema = new mongoose.Schema({
 const videoSchema = new mongoose.Schema({
     videoUrl: {
         type: String,
-        // required: true
+        required: true
     },
     thumbnailUrl: {
         type: mongoose.Schema.Types.ObjectId,
