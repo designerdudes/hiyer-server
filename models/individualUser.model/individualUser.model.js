@@ -76,7 +76,7 @@ const certificationSchema = new mongoose.Schema({
   issuer: String,
   issueDate: Date,
   expirationDate: Date,
-  url:String,
+  url: String,
 });
 
 // Schema for Individual User
@@ -94,6 +94,32 @@ const individualUserSchema = new mongoose.Schema(
     resume: String,
     portfolio: String,
     bio: String,
+    jobposting: {
+      applied: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "JobApplication",
+        default: [],
+      },
+      saved: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "JobApplication",
+        default: [],
+      },
+    },
+    postedVideo: [
+      {
+        videoRef: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Video",
+        },
+        videoTitle: {
+          type: String,
+        },
+        videoDescription: {
+          type: String,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
