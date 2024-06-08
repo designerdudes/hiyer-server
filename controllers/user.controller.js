@@ -210,6 +210,11 @@ export const registerUser = async (req, res) => {
       _id: savedUser._id, // Use the _id of the newly created user as profileRef
       // Add any additional fields if needed
     };
+    const updatedUser = await User.findByIdAndUpdate(savedUser._id, {
+      $set: {
+        "profile.profileRef": savedUser._id, // Update the nested field
+      },
+    });
 
     const newProfile = new profileModel(profileData);
     await newProfile.save();
@@ -282,12 +287,6 @@ export const verifyotp = async (req, res) => {
     });
   }
 };
-
-
-
-
-
-
 
 export const login = async (req, res) => {
   try {
