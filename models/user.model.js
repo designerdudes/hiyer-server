@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
-    },profilePicture:{
+    }, profilePicture: {
       type: String,
     },
     phone: {
@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
       middle: String,
       last: String,
     },
-    
+
     socialLogin: {
       isSocialLogin: {
         type: Boolean,
@@ -46,17 +46,17 @@ const userSchema = new mongoose.Schema(
       },
       provider: {
         type: String,
-        enum: ["google", "facebook", "twitter", "linkedin","apple","github","microsoft"],
+        enum: ["google", "facebook", "twitter", "linkedin", "apple", "github", "microsoft"],
       },
-    },profile: {
+    },
+    profile: {
       profileType: {
         type: String,
-        enum: ["individualUser", "organization", "organizationMember"],
         required: true,
       },
       profileRef: {
         type: mongoose.Schema.Types.ObjectId,
-        refPath: 'profile.profileType', 
+        refPath: 'profile.profileType',
       },
     },
   },
