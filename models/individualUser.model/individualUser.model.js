@@ -122,9 +122,9 @@ const projectSchema = new mongoose.Schema({
 // Schema for Individual User
 const individualUserSchema = new mongoose.Schema(
   {
-    industry: {
+    industry: [{
       type: String,
-    }, intrestedCompanies: [{
+    }], intrestedCompanies: [{
       type: String,
     }],
     address: addressSchema,
