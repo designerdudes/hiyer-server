@@ -44,7 +44,7 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
 
       newImage = new Image({
         imageUrl: uploadResult1.imageUrl,
-        transformations: [{ width: 800, height: 800, quality: 'auto' }],
+        transformations: [{ quality: 'auto' }],
         postedBy: userId,
       });
 
@@ -56,13 +56,13 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
     // Create a new Video document
     const newVideo = new Video({
       videoUrl: uploadResult.uploadResult.secure_url,
-      thumbnailUrl: newImage ? newImage._id : null,
+      thumbnailUrl: newImage ? newImage._id : null, // Set thumbnail if image uploaded
       streamingUrls: {
         hls: uploadResult.uploadResult.hlsUrl,
         dash: uploadResult.uploadResult.dashUrl,
       },
       representations: uploadResult.uploadResult.representations,
-      postedBy: userId, 
+      postedBy: userId,
     });
 
     if (!continueWithoutTimestamps && timestamps) {
@@ -78,21 +78,22 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
     console.log('newVideo', newVideo);
 
     // Update IndividualUser with the new video reference
-    await IndividualUser.findByIdAndUpdate(
+    const updatedUser = await IndividualUser.findByIdAndUpdate(
       userId,
       {
         $push: {
-          postedVideos: {
+          postedVideo: {
             videoRef: newVideo._id,
             videoTitle: videoTitle || '',
             videoDescription: videoDescription || '',
           },
         },
       },
-      { new: true, upsert: true }
+      { new: true } // Return the updated document
     );
+    console.log('updatedUser', updatedUser);
 
-    res.status(200).send({ ok: true, video_id: newVideo._id });
+    res.status(200).send({ ok: true, video_id: newVideo._id, user: updatedUser });
   } catch (error) {
     console.error('Error uploading file uploadMedia:', error);
     if (!res.headersSent) {
