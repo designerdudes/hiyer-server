@@ -22,16 +22,9 @@ const sendErrorResponse = (res, error) => {
 
 
 export const addOrUpdateUserData = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -60,16 +53,9 @@ export const addOrUpdateUserData = async (req, res) => {
 };
 
 export const addOrUpdateAddress = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -93,16 +79,8 @@ export const addOrUpdateAddress = async (req, res) => {
 };
 
 export const addOrUpdateSocialLinks = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
-
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -110,11 +88,18 @@ export const addOrUpdateSocialLinks = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update social links
-    individualUser.socialLinks = req.body;
+    // Update social links selectively
+    const updateData = {};
+    for (const key in req.body) {
+      if (individualUser.socialLinks.hasOwnProperty(key)) {
+        updateData[`socialLinks.${key}`] = req.body[key];
+      }
+    }
 
-    // Save the updated user data
-    await individualUser.save();
+    // Update the user document with selective changes
+    await IndividualUser.findByIdAndUpdate(userId, updateData, { new: true }); // Return updated document
+
+    individualUser = await IndividualUser.findById(userId); // Fetch updated user (optional)
 
     res.status(200).json({
       message: "Social links updated successfully",
@@ -125,17 +110,11 @@ export const addOrUpdateSocialLinks = async (req, res) => {
   }
 };
 
+
 export const updateBio = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -159,16 +138,9 @@ export const updateBio = async (req, res) => {
 };
 //upload
 export const updateResume = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -192,16 +164,9 @@ export const updateResume = async (req, res) => {
 };
 
 export const updatePortfolio = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -226,16 +191,9 @@ export const updatePortfolio = async (req, res) => {
 
 
 export const addEducation = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -259,16 +217,9 @@ export const addEducation = async (req, res) => {
 
 
 export const updateEducation = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
     const educationId = req.params.educationId;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -305,16 +256,9 @@ export const updateEducation = async (req, res) => {
 
 
 export const deleteEducation = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
     const { educationId } = req.params;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -350,16 +294,9 @@ export const deleteEducation = async (req, res) => {
 
 
 export const addExperience = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -373,26 +310,16 @@ export const addExperience = async (req, res) => {
     // Save the updated user data
     await individualUser.save();
 
-    res
-      .status(200)
-      .json({ message: "Experience added successfully", user: individualUser });
+    res.status(200).json({ message: "Experience added successfully", user: individualUser });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-
 export const updateExperience = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
     const { experienceId } = req.params;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -430,16 +357,9 @@ export const updateExperience = async (req, res) => {
 
 
 export const deleteExperience = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
     const { experienceId } = req.params;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -473,17 +393,11 @@ export const deleteExperience = async (req, res) => {
 };
 
 
+
 export const addSkill = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     const { name, proficiency } = req.body;
 
@@ -509,16 +423,9 @@ export const addSkill = async (req, res) => {
 
 
 export const updateSkill = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
     const skillId = req.params.skillId;
     const { name, proficiency } = req.body;
 
@@ -558,16 +465,9 @@ export const updateSkill = async (req, res) => {
 
 
 export const deleteSkill = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
     const { skillId } = req.params;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -602,16 +502,9 @@ export const deleteSkill = async (req, res) => {
 
 
 export const addCertification = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -636,16 +529,9 @@ export const addCertification = async (req, res) => {
 
 
 export const updateCertification = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
     const certificationId = req.params.certificationId;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -683,16 +569,9 @@ export const updateCertification = async (req, res) => {
 
 
 export const deleteCertification = async (req, res) => {
-  const authorizationHeader = req.headers.authorization;
 
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authorizationHeader.split("Bearer ")[1];
   try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-    const userId = decodedToken.id;
+    const userId = getUserIdFromToken(req);
     const { certificationId } = req.params;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -725,6 +604,222 @@ export const deleteCertification = async (req, res) => {
   }
 };
 
+
+export const addProject = async (req, res) => {
+
+  try {
+    const userId = getUserIdFromToken(req);
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Add new project
+    individualUser.projects.push(req.body);
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({ message: "Project added successfully", user: individualUser });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const updateProject = async (req, res) => {
+
+  try {
+    const userId = getUserIdFromToken(req);
+    const { projectId } = req.params;
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the index of the project to update
+    let projectIndex = individualUser.projects.findIndex(
+      (proj) => proj._id.toString() === projectId
+    );
+
+    if (projectIndex === -1) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Merge the new project data into the existing one
+    individualUser.projects[projectIndex] = {
+      ...individualUser.projects[projectIndex],
+      ...req.body,
+    };
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Project updated successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const deleteProject = async (req, res) => {
+
+  try {
+    const userId = getUserIdFromToken(req);
+    const { projectId } = req.params;
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the index of the project to delete
+    const projectIndex = individualUser.projects.findIndex(
+      (proj) => proj._id.toString() === projectId
+    );
+
+    if (projectIndex === -1) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Remove the project entry from the array
+    individualUser.projects.splice(projectIndex, 1);
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Project deleted successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const addUrlToProject = async (req, res) => {
+
+  try {
+    const userId = getUserIdFromToken(req);
+    const { projectId } = req.params;
+    const { url } = req.body;
+
+    if (!url || !validator.isURL(url)) {
+      return res.status(400).json({ message: "Invalid URL" });
+    }
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the project to update
+    let project = individualUser.projects.id(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Add the new URL
+    project.urls.push(url);
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "URL added successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const updateUrlInProject = async (req, res) => {
+
+  try {
+    const userId = getUserIdFromToken(req);
+    const { projectId, urlIndex } = req.params;
+    const { url } = req.body;
+
+    if (!url || !validator.isURL(url)) {
+      return res.status(400).json({ message: "Invalid URL" });
+    }
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the project to update
+    let project = individualUser.projects.id(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    if (urlIndex < 0 || urlIndex >= project.urls.length) {
+      return res.status(400).json({ message: "Invalid URL index" });
+    }
+
+    // Update the URL
+    project.urls[urlIndex] = url;
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "URL updated successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+
+export const removeProjectURL = async (req, res) => {
+
+  try {
+    const userId = getUserIdFromToken(req);
+    const { projectId, urlIndex } = req.params;
+
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const project = individualUser.projects.id(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    if (urlIndex >= project.urls.length) {
+      return res.status(404).json({ message: "URL index out of range" });
+    }
+
+    project.urls.splice(urlIndex, 1);
+
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "URL removed from project successfully",
+      user: individualUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 
 // Add or Update Video Title and Description
@@ -771,79 +866,151 @@ export const addOrUpdateVideoDetails = async (req, res) => {
 // Controller to withdraw job applicant
 export const withdrawJobApplicant = async (req, res) => {
   try {
-      const { jobId, userId } = req.params;
+    const { jobId, userId } = req.params;
 
-      // Find the job application by ID
-      const jobApplication = await JobApplication.findById(jobId);
-      if (!jobApplication) {
-          return res.status(404).json({ error: 'Job application not found' });
-      }
+    // Find the job application by ID
+    const jobApplication = await JobApplication.findById(jobId);
+    if (!jobApplication) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
 
-      // Find the index of the applicant within the job application's applicants array
-      const applicantIndex = jobApplication.applicants.findIndex(app => app.user.toString() === userId);
-      if (applicantIndex === -1) {
-          return res.status(404).json({ error: 'Applicant not found' });
-      }
+    // Find the index of the applicant within the job application's applicants array
+    const applicantIndex = jobApplication.applicants.findIndex(app => app.user.toString() === userId);
+    if (applicantIndex === -1) {
+      return res.status(404).json({ error: 'Applicant not found' });
+    }
 
-      // Remove the applicant from the applicants array
-      jobApplication.applicants.splice(applicantIndex, 1);
-      await jobApplication.save();
+    // Remove the applicant from the applicants array
+    jobApplication.applicants.splice(applicantIndex, 1);
+    await jobApplication.save();
 
-      // Update IndividualUser model to remove the applied job
-      await IndividualUser.findByIdAndUpdate(userId, {
-          $pull: { "jobposting.applied": jobApplication._id },
-      });
+    // Update IndividualUser model to remove the applied job
+    await IndividualUser.findByIdAndUpdate(userId, {
+      $pull: { "jobposting.applied": jobApplication._id },
+    });
 
-      res.status(200).json({ message: 'Applicant removed successfully' });
+    res.status(200).json({ message: 'Applicant removed successfully' });
   } catch (error) {
-      console.error('Error removing applicant:', error);
-      res.status(500).json({ error: 'An error occurred while removing the applicant' });
+    console.error('Error removing applicant:', error);
+    res.status(500).json({ error: 'An error occurred while removing the applicant' });
   }
 };
 
 
-// Controller to apply for a job application
 export const applyJobApplication = async (req, res) => {
   try {
-      const authorizationHeader = req.headers.authorization;
-      if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-          return res.status(401).json({ message: "Unauthorized" });
-      }
+    const userId = getUserIdFromToken(req);
+    const { id } = req.params;
+    const { coverLetter, mediaType, mediaRef } = req.body;
 
-      const token = authorizationHeader.split("Bearer ")[1];
-      const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-      const userId = decodedToken.id;
-      const { id } = req.params;
-      const { coverLetter, mediaType, mediaRef } = req.body;
+    const media = {
+      mediaType,
+      mediaRef,
+    };
 
-      // Create media object
-      const media = {
-          mediaType,
-          mediaRef,
-      };
+    const newApplicant = {
+      user: userId,
+      resumeVideo: media,
+      coverLetter,
+    };
 
-      const newApplicant = {
-          user: userId,
-          resumeVideo: media,
-          coverLetter,
-      };
+    const jobApplication = await JobApplication.findById(id);
+    if (!jobApplication) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
 
-      const jobApplication = await JobApplication.findById(id);
-      if (!jobApplication) {
-          return res.status(404).json({ error: 'Job application not found' });
-      }
+    jobApplication.applicants.push(newApplicant);
+    await jobApplication.save();
 
-      jobApplication.applicants.push(newApplicant);
-      await jobApplication.save();
+    await IndividualUser.findByIdAndUpdate(userId, {
+      $push: { "jobposting.applied": jobApplication._id },
+    });
 
-      // Update IndividualUser model to include the applied job
-      await IndividualUser.findByIdAndUpdate(userId, {
-          $push: { "jobposting.applied": jobApplication._id },
-      });
-
-      res.status(201).json(jobApplication);
+    res.status(201).json(jobApplication);
   } catch (error) {
-      console.error('Error adding applicant:', error);
-      res.status(500).json({ error: 'An error occurred while adding the applicant' });
+    console.error('Error adding applicant:', error);
+    res.status(500).json({ error: 'An error occurred while adding the applicant' });
+  }
+};
+
+
+
+export const toggleSaveJobApplication = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { id } = req.params;
+
+    const individualUser = await IndividualUser.findById(userId);
+    if (!individualUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const jobIndex = individualUser.jobposting.saved.indexOf(id);
+    if (jobIndex === -1) {
+      // Add job to saved list
+      individualUser.jobposting.saved.push(id);
+    } else {
+      // Remove job from saved list
+      individualUser.jobposting.saved.splice(jobIndex, 1);
+    }
+
+    await individualUser.save();
+
+    res.status(200).json({
+      message: jobIndex === -1 ? 'Job application saved successfully' : 'Job application removed from saved list',
+      user: individualUser,
+    });
+  } catch (error) {
+    console.error('Error toggling saved job application:', error);
+    res.status(500).json({ error: 'An error occurred while toggling the saved job application' });
+  }
+};
+
+
+// Add or Update Industry
+export const addOrUpdateIndustry = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { industry } = req.body;
+
+    const individualUser = await IndividualUser.findById(userId);
+    if (!individualUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    individualUser.industry = industry.length > 0 ? industry : null;
+    await individualUser.save();
+
+    res.status(200).json({
+      message: 'Industry updated successfully',
+      user: individualUser,
+    });
+  } catch (error) {
+    console.error('Error updating industry:', error);
+    res.status(500).json({ error: 'An error occurred while updating the industry' });
+  }
+};
+
+// Add or Update Interested Companies
+export const addOrUpdateInterestedCompanies = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { interestedCompanies } = req.body;
+
+    const individualUser = await IndividualUser.findById(userId);
+    if (!individualUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    individualUser.interestedCompanies = interestedCompanies.length > 0 ? interestedCompanies : null;
+    await individualUser.save();
+
+    res.status(200).json({
+      message: 'Interested companies updated successfully',
+      user: individualUser,
+    });
+  } catch (error) {
+    console.error('Error updating interested companies:', error);
+    res.status(500).json({ error: 'An error occurred while updating the interested companies' });
   }
 };
