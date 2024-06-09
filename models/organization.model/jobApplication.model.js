@@ -66,7 +66,7 @@ const mediaSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true,
-});
+}); 
 
 
 const jobApplicationSchema = new mongoose.Schema({
