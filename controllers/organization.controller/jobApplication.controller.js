@@ -432,3 +432,120 @@ export const removeJobApplicant = async (req, res) => {
 };
 
 
+
+// Get 5 job applications based on similarity of certain fields
+export const getSimilarJobApplications = async (req, res) => {
+    const { industry, skills, tags, applicationType, experienceLevel, location } = req.query;
+
+    try {
+        let query = {};
+
+        if (industry) {
+            query.industry = industry;
+        }
+
+        if (skills) {
+            query.skills = { $in: skills.split(',') };
+        }
+
+        if (tags) {
+            query.tags = { $in: tags.split(',') };
+        }
+
+        if (applicationType) {
+            query.applicationType = applicationType;
+        }
+
+        if (experienceLevel) {
+            query.experienceLevel = experienceLevel;
+        }
+
+        if (location) {
+            query.location = location;
+        }
+
+        const similarJobApplications = await JobApplication.find(query).limit(5).populate('Media.mediaRef');
+
+        res.status(200).json(similarJobApplications);
+    } catch (error) {
+        console.error('Error fetching similar job applications:', error);
+        res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
+    }
+};
+
+
+// Controller to get additional job application documents based on similar fields
+export const getSimilarJobApplicationsFromId = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const jobApplication = await JobApplication.findById(id);
+        if (!jobApplication) {
+            return res.status(404).json({ error: 'Job application not found' });
+        }
+
+        const { industry, skills, tags, applicationType, experienceLevel, location } = jobApplication;
+
+        // Query to find similar job applications based on fields
+        const similarJobApplications = await JobApplication.find({
+            $or: [
+                { industry },
+                { skills: { $in: skills } },
+                { tags: { $in: tags } },
+                { applicationType },
+                { experienceLevel },
+                { location },
+            ],
+            _id: { $ne: id }, // Exclude the current job application
+        }).limit(5);
+
+        res.status(200).json({ similarJobApplications });
+    } catch (error) {
+        console.error('Error getting similar job applications:', error);
+        res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
+    }
+};
+
+
+
+// Controller to get job application details by ID with populated media data and applicants count
+export const getJobApplicationDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const jobApplication = await JobApplication.findById(id)
+
+
+        if (!jobApplication) {
+            return res.status(404).json({ error: 'Job application not found' });
+        }
+
+        const mediaType = jobApplication.Media.mediaType;
+        if (mediaType === 'Video') {
+            await jobApplication.populate({
+                path: 'Media.mediaRef',
+                model: 'Video',
+                populate: {
+                    path: 'thumbnailUrl',
+                    model: 'Image'
+                }
+            }).execPopulate();
+        } else if (mediaType === 'Image') {
+            await jobApplication.populate({
+                path: 'Media.mediaRef',
+                model: 'Image',
+
+            }).execPopulate();
+        }
+
+
+        const applicantsCount = jobApplication.applicants.length;
+
+        res.status(200).json({
+            jobApplication,
+            applicantsCount
+        });
+    } catch (error) {
+        console.error('Error getting job application details:', error);
+        res.status(500).json({ error: 'An error occurred while fetching job application details' });
+    }
+};
