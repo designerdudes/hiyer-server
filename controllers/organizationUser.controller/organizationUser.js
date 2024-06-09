@@ -381,7 +381,6 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-
 // Add or Update Contact Information
 export const addOrUpdateContactInfo = async (req, res) => {
   try {
