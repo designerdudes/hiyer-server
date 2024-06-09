@@ -1014,3 +1014,5 @@ export const addOrUpdateInterestedCompanies = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while updating the interested companies' });
   }
 };
+
+
