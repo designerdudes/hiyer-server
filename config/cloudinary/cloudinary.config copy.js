@@ -1,78 +1,175 @@
-import { v2 as cloudinary } from 'cloudinary';
-import https from 'https';
 import fs from 'fs';
+// import { v2 as cloudinary } from 'cloudinary';
+import ffmpeg from 'fluent-ffmpeg';
+import Video from '../../models/video.model.js'; // Import your Video model
+import Ffmpeg from 'fluent-ffmpeg';
+import getVideoDurationInSeconds from 'get-video-duration';
+import cloudinary from './config.js';
 
-cloudinary.config({
-  cloud_name: 'dgcbwb05z',
-  api_key: '435731717564535',
-  api_secret: 'tFkIMXJi1SRVJW02U-npU6dXLRU'
-});
 
-const filePath = '/home/mujahed/Downloads/unwrapped-Mohd-Mujahed.mp4';
-const outputPath = '/media/mujahed/Mujahed USB/hiyer-server/media/compressed2.mp4'; // Define the output file path
 
-const uploadOptions = {
-  resource_type: 'auto',
-  transformation: { 
-    quality: 'auto:eco',
-  },
+
+
+const calculateBitrate = (fileSizeBytes, durationSeconds) => {
+  return (fileSizeBytes * 8) / (durationSeconds * 1024);
 };
 
-const isImage = filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.png');
-const isVideo = filePath.endsWith('.mp4') || filePath.endsWith('.mov') || filePath.endsWith('.avi');  
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
 
-if (isImage) {
-    // For images
-    cloudinary.uploader.upload(filePath, uploadOptions)
-      .then(uploadResult => {
-        let downloadUrl = uploadResult.url;
-        if (downloadUrl.startsWith('http://')) {
-          downloadUrl = downloadUrl.replace('http://', 'https://');
+const uploadVideo = (filePath, uploadOptions) => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_large(
+      filePath,
+      {
+        ...uploadOptions,
+        transformation: [ { quality: 'auto' }],
+        resource_type: 'video',
+        eager_async: true,
+        async: true,
+      },
+      (error, result) => {
+        if (error) {
+          return reject(error);
         }
-        console.log('Compressed image download URL:', downloadUrl);
-  
-        // Download the compressed image
-        const fileStream = fs.createWriteStream(outputPath);
-        https.get(downloadUrl, response => {
-          response.pipe(fileStream);
-          fileStream.on('finish', () => {
-            console.log('Compressed image downloaded successfully!');
-          });
-        }).on('error', error => {
-          console.error('Error downloading image:', error);
-        });
-      })
-      .catch(error => {
-        console.error('Error uploading image:', error);
-      });
-  } else if (isVideo) {
-    // For videos
-    cloudinary.uploader.upload(filePath, {
-      resource_type: 'video',
-      eager: { format: 'mp4', eager_async: true }, // Specify the desired format and eager_async=true
-    })
-    .then(uploadResult => {
-      let downloadUrl = uploadResult.eager[0].url;
-      if (downloadUrl.startsWith('http://')) {
-        downloadUrl = downloadUrl.replace('http://', 'https://');
+        resolve(result);
       }
-      console.log('Compressed video download URL:', downloadUrl);
-  
-      // Download the compressed video
-      const fileStream = fs.createWriteStream(outputPath);
-      https.get(downloadUrl, response => {
-        response.pipe(fileStream);
-        fileStream.on('finish', () => {
-          console.log('Compressed video downloaded successfully!');
-        });
-      }).on('error', error => {
-        console.error('Error downloading video:', error);
-      });
-    })
-    .catch(error => {
-      console.error('Error uploading video:', error);
-    });
-  } else {
-    console.error('Unsupported file format');
+    );
+  });
+};
+
+const retryUpload = async (uploadFunc, filePath, options, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await uploadFunc(filePath, options);
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      console.warn(`Retry ${i + 1}/${retries} failed: ${error.message}`);
+    }
   }
-  
+};
+
+export const uploadFile = async (filePath) => {
+  try {
+    const uploadOptions = {
+      resource_type: 'video',
+      eager: [
+        { streaming_profile: "full_hd", format: "m3u8" },
+        { streaming_profile: "sd", format: "m3u8" },
+        { streaming_profile: "hd", format: "mpd" }
+      ],
+      eager_async: true,
+    };
+
+    const uploadResult = await retryUpload(uploadVideo, filePath, uploadOptions);
+
+    console.log('Cloudinary upload result:', uploadResult);
+
+    const { public_id } = uploadResult;
+
+    const stats = fs.statSync(filePath);
+    const fileSizeBytes = stats.size;
+
+    // Placeholder duration. Replace with actual duration retrieval logic if needed.
+    const durationSeconds = 60;
+
+    const bitrate = calculateBitrate(fileSizeBytes, durationSeconds);
+
+    const representations = [
+      { resolution: '240p', bitrate: Math.min(bitrate, 400) },
+      { resolution: '360p', bitrate: Math.min(bitrate, 800) },
+      { resolution: '480p', bitrate: Math.min(bitrate, 1200) },
+      { resolution: '720p', bitrate: Math.min(bitrate, 2500) },
+      { resolution: '1080p', bitrate: Math.min(bitrate, 5000) },
+    ];
+
+    const hlsUrl = cloudinary.url(public_id, { resource_type: 'video', format: 'm3u8' });
+    const dashUrl = cloudinary.url(public_id, { resource_type: 'video', format: 'mpd' });
+
+    return {
+      public_id,
+      hlsUrl,
+      dashUrl,
+      uploadResult,
+      representations
+    };
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw new Error(`Error uploading file: ${error.message}`);
+  }
+};
+
+
+export const uploadImage = async (filePath) => {
+  try {
+    const uploadOptions = {
+      resource_type: 'image',
+      transformation: [{ crop: 'limit' }, { quality: 'auto' }],
+      eager_async: true,
+      timeout: 600000 // 10 minutes timeout for large files
+    };
+
+    // Perform the upload with retry logic
+    const uploadResult = await retryUpload(cloudinary.uploader.upload, filePath, uploadOptions);
+
+    // Log the result for debugging
+    console.log('Cloudinary upload result:', uploadResult);
+
+    const { public_id, secure_url: imageUrl } = uploadResult;
+
+    const stats = fs.statSync(filePath);
+    const fileSizeBytes = stats.size;
+
+    return {
+      public_id,
+      imageUrl,
+      uploadResult,
+      fileSizeBytes
+    };
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    throw new Error(`Error uploading image: ${error.message}`);
+  }
+};
+
+
+
+// Function to delete an image from Cloudinary
+export const deleteImageFromCloudinary = async (imageUrl) => {
+  try {
+    // Extract the public ID from the image URL
+    const publicId = imageUrl.split('/').pop().split('.')[0];
+
+    // Delete the image from Cloudinary
+    const deletionResult = await cloudinary.v2.uploader.destroy(publicId);
+
+    // Check if the deletion was successful
+    if (deletionResult.result === 'ok') {
+      console.log('Image deleted from Cloudinary');
+    } else {
+      throw new Error('Failed to delete image from Cloudinary');
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Function to delete a video from Cloudinary
+export const deleteVideoFromCloudinary = async (videoUrl) => {
+  try {
+    // Extract the public ID from the video URL
+    const publicId = videoUrl.split('/').pop().split('.')[0];
+
+    // Delete the video from Cloudinary
+    const deletionResult = await cloudinary.v2.uploader.destroy(publicId, { resource_type: 'video' });
+
+    // Check if the deletion was successful
+    if (deletionResult.result === 'ok') {
+      console.log('Video deleted from Cloudinary');
+    } else {
+      throw new Error('Failed to delete video from Cloudinary');
+    }
+  } catch (error) {
+    throw error;
+  }
+};
