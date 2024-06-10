@@ -34,13 +34,13 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
     // Resolve the absolute path for the video file
     const videoPath = path.resolve(video[0].path);
     console.log('Uploading video file:', videoPath);
-    const uploadResult = await uploadFile(videoPath);
+    const uploadResult = await uploadFile(videoPath, userId);
 
     let newImage;
     if (image && image.length > 0) {
       const imagePath = path.resolve(image[0].path);
       console.log('Uploading image file:', imagePath);
-      const uploadResult1 = await uploadImage(imagePath);
+      const uploadResult1 = await uploadImage(imagePath, userId);
 
       newImage = new Image({
         imageUrl: uploadResult1.imageUrl,
