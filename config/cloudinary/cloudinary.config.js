@@ -30,17 +30,18 @@ const retryUpload = async (uploadFunc, filePath, uploadOptions, retries = 0, del
   }
 };
 
-
-const uploadVideo = (filePath, uploadOptions) => {
+const uploadVideo = (filePath, id) => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload_large(
       filePath,
       {
-        resource_type: 'video', 
+        resource_type: 'video',
+        folder: `${id}/videos`, // Specify the folder name here
         eager: [
           { streaming_profile: "full_hd", format: "m3u8" },
           { streaming_profile: "sd", format: "m3u8" },
-          { streaming_profile: "hd", format: "mpd" }],
+          { streaming_profile: "hd", format: "mpd" }
+        ],
         eager_async: true,
       },
       (error, result) => {
@@ -53,18 +54,11 @@ const uploadVideo = (filePath, uploadOptions) => {
   });
 };
 
-export const uploadFile = async (filePath) => {
+export const uploadFile = async (filePath,id) => {
   try {
-    const uploadOptions = {
-      resource_type: 'video',
-      eager: [
-        { streaming_profile: "full_hd", format: "m3u8" },
-        { streaming_profile: "sd", format: "m3u8" },
-        { streaming_profile: "hd", format: "mpd" }],
-      eager_async: true,
-    };
+     
 
-    const uploadResult = await uploadVideo(filePath, uploadOptions);
+    const uploadResult = await uploadVideo(filePath,id);
     // Perform the upload with retry logic
     // const uploadResult = await retryUpload(cloudinary.uploader.upload_large  , filePath, uploadOptions);
 
@@ -105,10 +99,11 @@ export const uploadFile = async (filePath) => {
   }
 };
 
-export const uploadImage = async (filePath) => {
+export const uploadImage = async (filePath,id) => {
   try {
     const uploadOptions = {
       resource_type: 'image',
+      folder: `${id}/images`, // Specify the folder name here
       transformation: [{ crop: 'limit' }, { quality: 'auto' }],
       eager_async: true,
       timeout: 600000 // 10 minutes timeout for large files
@@ -137,16 +132,16 @@ export const uploadImage = async (filePath) => {
   }
 };
 
-
-
-// Function to delete an image from Cloudinary
 export const deleteImageFromCloudinary = async (imageUrl) => {
   try {
-    // Extract the public ID from the image URL
-    const publicId = imageUrl.split('/').pop().split('.')[0];
+    // Extract the public ID from the image URL by removing the file extension
+    const publicId = imageUrl.substring(
+      imageUrl.lastIndexOf('/') + 1,
+      imageUrl.lastIndexOf('.')
+    );
 
     // Delete the image from Cloudinary
-    const deletionResult = await cloudinary.v2.uploader.destroy(publicId);
+    const deletionResult = await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
 
     // Check if the deletion was successful
     if (deletionResult.result === 'ok') {
@@ -155,18 +150,23 @@ export const deleteImageFromCloudinary = async (imageUrl) => {
       throw new Error('Failed to delete image from Cloudinary');
     }
   } catch (error) {
-    throw error;
+    console.error('Error deleting image from Cloudinary:', error);
+    throw new Error(`Error deleting image from Cloudinary: ${error.message}`);
   }
 };
 
-// Function to delete a video from Cloudinary
+
+
 export const deleteVideoFromCloudinary = async (videoUrl) => {
   try {
-    // Extract the public ID from the video URL
-    const publicId = videoUrl.split('/').pop().split('.')[0];
+    // Extract the public ID from the video URL by removing the file extension
+    const publicId = videoUrl.substring(
+      videoUrl.lastIndexOf('/') + 1,
+      videoUrl.lastIndexOf('.')
+    );
 
     // Delete the video from Cloudinary
-    const deletionResult = await cloudinary.v2.uploader.destroy(publicId, { resource_type: 'video' });
+    const deletionResult = await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
 
     // Check if the deletion was successful
     if (deletionResult.result === 'ok') {
@@ -175,6 +175,7 @@ export const deleteVideoFromCloudinary = async (videoUrl) => {
       throw new Error('Failed to delete video from Cloudinary');
     }
   } catch (error) {
-    throw error;
+    console.error('Error deleting video from Cloudinary:', error);
+    throw new Error(`Error deleting video from Cloudinary: ${error.message}`);
   }
 };
