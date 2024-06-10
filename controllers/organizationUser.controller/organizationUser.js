@@ -66,7 +66,6 @@ export const addOrUpdateUserData = async (req, res) => {
   }
 };
 
-
 // Add or Update Address
 export const addOrUpdateAddress = async (req, res) => {
   try {
@@ -99,9 +98,6 @@ export const addOrUpdateAddress = async (req, res) => {
     sendErrorResponse(res, error);
   }
 };
-
-
-
 
 // Add or Update Team Members
 export const addOrUpdateTeamMembers = async (req, res) => {
@@ -241,8 +237,6 @@ export const deleteTeamMember = async (req, res) => {
   }
 };
 
-
-
 // Add or Update Projects
 export const addOrUpdateProjects = async (req, res) => {
   try {
@@ -337,6 +331,90 @@ export const updateProject = async (req, res) => {
 
     res.status(200).json({
       message: "Project updated successfully",
+      user: organizationalUser,
+    });
+  } catch (error) {
+    sendErrorResponse(res, error);
+  }
+};
+
+// Add URL to Project
+export const addUrlToProject = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { projectId } = req.params;
+    const { url } = req.body;
+
+    if (!url || !validator.isURL(url)) {
+      return res.status(400).json({ message: "Invalid URL" });
+    }
+
+    // Find the organizational user by user ID
+    let organizationalUser = await OrganizationalUser.findById(userId);
+
+    if (!organizationalUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the project to update
+    let project = organizationalUser.projects.id(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Add the new URL
+    project.urls.push(url);
+
+    // Save the updated user data
+    await organizationalUser.save();
+
+    res.status(200).json({
+      message: "URL added successfully",
+      user: organizationalUser,
+    });
+  } catch (error) {
+    sendErrorResponse(res, error);
+  }
+};
+
+// Update URL in Project
+export const updateUrlInProject = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { projectId, urlIndex } = req.params;
+    const { url } = req.body;
+
+    if (!url || !validator.isURL(url)) {
+      return res.status(400).json({ message: "Invalid URL" });
+    }
+
+    // Find the organizational user by user ID
+    let organizationalUser = await OrganizationalUser.findById(userId);
+
+    if (!organizationalUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the project to update
+    let project = organizationalUser.projects.id(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    if (urlIndex < 0 || urlIndex >= project.urls.length) {
+      return res.status(400).json({ message: "Invalid URL index" });
+    }
+
+    // Update the URL
+    project.urls[urlIndex] = url;
+
+    // Save the updated user data
+    await organizationalUser.save();
+
+    res.status(200).json({
+      message: "URL updated successfully",
       user: organizationalUser,
     });
   } catch (error) {
@@ -561,8 +639,6 @@ export const addSocialLink = async (req, res) => {
     sendErrorResponse(res, error);
   }
 };
-
-
 
 // Update Social Link
 export const updateSocialLink = async (req, res) => {
