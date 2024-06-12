@@ -53,7 +53,7 @@ const experienceSchema = new mongoose.Schema({
           required: true,
         }, employmentType: {
           type: String,
-          enum: ['full-time', 'part-time', 'contract', 'internship','freelance','volunteer','seasonal','apprenticeship'],
+          enum: ['full-time', 'part-time', 'contract', 'internship', 'freelance', 'volunteer', 'seasonal', 'apprenticeship'],
           required: true,
         },
         startDate: {
@@ -116,9 +116,34 @@ const projectSchema = new mongoose.Schema({
   toolsUsed: {
     type: [String],
   },
-  role: String, 
-  highlights: [String],  
+  role: String,
+  highlights: [String],
 });
+
+// Schema for Subscription
+const subscriptionSchema = new mongoose.Schema({
+  plan: {
+    type: String,
+    enum: ['basic', 'premium', 'enterprise'],
+    required: true,
+  },
+  startDate: {
+    type: Date,
+    required: true,
+  },
+  endDate: {
+    type: Date,
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'cancelled'],
+    required: true,
+  },
+});
+
+
+
 // Schema for Individual User
 const individualUserSchema = new mongoose.Schema(
   {
@@ -143,6 +168,11 @@ const individualUserSchema = new mongoose.Schema(
     resume: String,
     portfolio: String,
     bio: String,
+    joiningFeePaid: {
+      type: Boolean,
+      default: false,
+    },
+    subscription: subscriptionSchema,
     jobposting: {
       applied: {
         type: [mongoose.Schema.Types.ObjectId],
