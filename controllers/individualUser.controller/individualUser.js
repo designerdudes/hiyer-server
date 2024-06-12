@@ -1,6 +1,7 @@
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 import jwt from 'jsonwebtoken';
 import mongoose from "mongoose";
+import User from "../../models/user.model.js";
 
 
 // Helper function to extract user ID from token
@@ -17,6 +18,92 @@ const getUserIdFromToken = (req) => {
 // Helper function to handle common error response
 const sendErrorResponse = (res, error) => {
   res.status(400).json({ message: error.message });
+};
+
+
+// Controller to handle joining fee payment
+export const handleJoiningFeePayment = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Assuming a function to get user ID from token
+    const { amount, paymentMethod, transactionId } = req.body;
+
+    if (amount <= 0) {
+      return res.status(400).json({ message: 'Invalid payment amount' });
+    }
+
+    const user = await IndividualUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.joiningFeePaid.status) {
+      return res.status(400).json({ message: 'Joining fee already paid' });
+    }
+
+    user.joiningFeePaid = {
+      status: true,
+      transactionId,
+    };
+
+    // user.paymentHistory.push({
+    //   amount,
+    //   paymentDate: new Date(),
+    //   paymentMethod,
+    //   transactionId,
+    //   description: 'Joining fee payment',
+    // });
+
+    await user.save();
+
+    res.status(200).json({ message: 'Joining fee paid successfully' });
+  } catch (error) {
+    console.error('Error handling joining fee payment:', error);
+    res.status(500).json({ message: 'An error occurred while processing payment' });
+  }
+};
+
+// Controller to handle subscription
+export const handleSubscription = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Assuming a function to get user ID from token
+    const { plan, amount, paymentMethod, transactionId } = req.body;
+
+    if (amount <= 0 || !['basic', 'premium', 'enterprise'].includes(plan)) {
+      return res.status(400).json({ message: 'Invalid subscription details' });
+    }
+
+    const user = await IndividualUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setFullYear(startDate.getFullYear() + 1); // Assuming a 1-year subscription
+
+    user.subscription = {
+      plan,
+      startDate,
+      endDate,
+      status: 'active',
+      transactionId,
+    };
+
+    // user.paymentHistory.push({
+    //   amount,
+    //   paymentDate: startDate,
+    //   paymentMethod,
+    //   transactionId,
+    //   description: `Subscription payment for ${plan} plan`,
+    // });
+
+    await user.save();
+
+    res.status(200).json({ message: 'Subscription activated successfully' });
+  } catch (error) {
+    console.error('Error handling subscription:', error);
+    res.status(500).json({ message: 'An error occurred while processing subscription' });
+  }
 };
 
 
@@ -1016,3 +1103,158 @@ export const addOrUpdateInterestedCompanies = async (req, res) => {
 };
 
 
+// Controller to get user details from token
+export const getUserDetailsFromToken = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+
+    const user = await User.findById(userId).select('email phone name profilePicture');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const individualUser = await IndividualUser.findById(user.profile.profileRef);
+    if (!individualUser) {
+      return res.status(404).json({ message: 'Individual user profile not found' });
+    }
+
+    res.status(200).json({
+      user,
+      individualUser,
+    });
+  } catch (error) {
+    console.error('Error getting user details:', error);
+    res.status(500).json({ message: 'An error occurred while fetching user details' });
+  }
+};
+
+
+//Controller to get user details by ID from URL parameter
+export const getUserDetailsById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select('email phone name profilePicture');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const individualUser = await IndividualUser.findById(user.profile.profileRef);
+    if (!individualUser) {
+      return res.status(404).json({ message: 'Individual user profile not found' });
+    }
+
+    res.status(200).json({
+      user,
+      individualUser,
+    });
+  } catch (error) {
+    console.error('Error getting user details:', error);
+    res.status(500).json({ message: 'An error occurred while fetching user details' });
+  }
+};
+
+
+
+
+// Controller to get user details by ID from URL parameter and find similar users
+export const getUserDetailsByIdandSimilarUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find user by ID
+    const user = await User.findById(userId).select('email phone name profilePicture');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find individual user profile by profileRef
+    const individualUser = await IndividualUser.findById(user.profile.profileRef).select('-jobposting');
+    if (!individualUser) {
+      return res.status(404).json({ message: 'Individual user profile not found' });
+    }
+
+    const { industry, interestedCompanies, address, skills } = individualUser;
+
+    // Query to find similar users
+    const query = {
+      $or: [
+        { industry: { $in: industry } },
+        { interestedCompanies: { $in: interestedCompanies } },
+        { 'address.city': address.city, 'address.state': address.state, 'address.country': address.country },
+        { skills: { $elemMatch: { name: { $in: skills.map(skill => skill.name) } } } },
+      ],
+    };
+
+    // Find similar users from IndividualUser collection
+    const similarIndividualUsers = await IndividualUser.find(query).limit(5);
+
+    // Fetch additional details (name, phone, email) from User collection for similar users
+    const similarUsers = await Promise.all(
+      similarIndividualUsers.map(async (indUser) => {
+        const similarUser = await User.findOne({ 'profile.profileRef': indUser._id }).select('name phone email');
+        return { individualUser: indUser, user: similarUser };
+      })
+    );
+
+    res.status(200).json({
+      user,
+      individualUser,
+      similarUsers,
+    });
+  } catch (error) {
+    console.error('Error getting user details:', error);
+    res.status(500).json({ message: 'An error occurred while fetching user details' });
+  }
+};
+
+
+
+// Controller to get similar users
+export const getSimilarUsers = async (req, res) => {
+  try {
+    const { industry, interestedCompanies, address, skills } = req.body;
+
+    const query = {
+      $or: [
+        { industry: { $in: industry } },
+        { interestedCompanies: { $in: interestedCompanies } },
+        { 'address.city': address.city, 'address.state': address.state, 'address.country': address.country },
+        { skills: { $elemMatch: { name: { $in: skills.map(skill => skill.name) } } } },
+      ],
+    };
+
+    const similarUsers = await IndividualUser.find(query);
+
+    if (!similarUsers || similarUsers.length === 0) {
+      return res.status(404).json({ message: "No similar users found" });
+    }
+
+    // Populate user details from the User collection
+    const userIds = similarUsers.map(user => user._id);
+    const users = await User.find({ 'profile.profileRef': { $in: userIds } }).select('email phone name');
+
+    const response = similarUsers.map(user => {
+      const userDetails = users.find(u => u.profile.profileRef.toString() === user._id.toString());
+      return {
+        _id: user._id,
+        industry: user.industry,
+        interestedCompanies: user.interestedCompanies,
+        address: user.address,
+        skills: user.skills,
+        userDetails: userDetails ? {
+          email: userDetails.email,
+          phone: userDetails.phone,
+          name: userDetails.name,
+        } : null,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      };
+    });
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error getting similar users:', error);
+    res.status(500).json({ message: 'An error occurred while fetching similar users' });
+  }
+};
