@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import validator from 'validator';
 // Schema for Address
 const addressSchema = new mongoose.Schema({
   pincode: {
@@ -163,6 +163,7 @@ const individualUserSchema = new mongoose.Schema(
       facebook: String,
       twitter: String,
       youtube: String,
+      github:String,
     },
     projects: [projectSchema],
     resume: String,
