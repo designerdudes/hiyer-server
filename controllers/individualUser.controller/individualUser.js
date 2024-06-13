@@ -2,7 +2,8 @@ import IndividualUser from "../../models/individualUser.model/individualUser.mod
 import jwt from 'jsonwebtoken';
 import mongoose from "mongoose";
 import User from "../../models/user.model.js";
-
+import validator from 'validator';
+import JobApplication from "../../models/organization.model/jobApplication.model.js";
 
 // Helper function to extract user ID from token
 const getUserIdFromToken = (req) => {
@@ -25,9 +26,9 @@ const sendErrorResponse = (res, error) => {
 export const handleJoiningFeePayment = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req); // Assuming a function to get user ID from token
-    const { amount, paymentMethod, transactionId } = req.body;
+    const { amount, transactionId } = req.body;
 
-    if (amount <= 0) {
+    if (amount > 0) {
       return res.status(400).json({ message: 'Invalid payment amount' });
     }
 
@@ -304,20 +305,20 @@ export const addEducation = async (req, res) => {
 
 
 export const updateEducation = async (req, res) => {
-
   try {
     const userId = getUserIdFromToken(req);
-    const educationId = req.params.educationId;
+    const educationId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
     if (!individualUser) {
       return res.status(404).json({ message: "User not found" });
     }
+    console.log(educationId,req.params)
+    // Log each education ID
+    individualUser.education.forEach((edu) => console.log(edu._id));
 
-    let educationIndex = individualUser.education.findIndex(
-      (edu) => edu._id == educationId
-    );
+    let educationIndex = individualUser.education.findIndex((edu) => edu._id == educationId);
 
     if (educationIndex === -1) {
       return res.status(404).json({ message: "Education entry not found" });
@@ -342,11 +343,12 @@ export const updateEducation = async (req, res) => {
 };
 
 
+
 export const deleteEducation = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const { educationId } = req.params;
+    const educationId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -407,8 +409,7 @@ export const updateExperience = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const { experienceId } = req.params;
-
+    const  experienceId  = req.params.id;
     let individualUser = await IndividualUser.findById(userId);
 
     if (!individualUser) {
@@ -447,7 +448,7 @@ export const deleteExperience = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const { experienceId } = req.params;
+    const  experienceId  = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -513,7 +514,7 @@ export const updateSkill = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const skillId = req.params.skillId;
+    const skillId = req.params.id;
     const { name, proficiency } = req.body;
 
     let individualUser = await IndividualUser.findById(userId);
@@ -555,7 +556,7 @@ export const deleteSkill = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const { skillId } = req.params;
+    const  skillId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -619,7 +620,7 @@ export const updateCertification = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const certificationId = req.params.certificationId;
+    const certificationId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -659,7 +660,7 @@ export const deleteCertification = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const { certificationId } = req.params;
+    const  certificationId  = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -719,7 +720,7 @@ export const updateProject = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const { projectId } = req.params;
+    const  projectId  = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -758,7 +759,7 @@ export const deleteProject = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const { projectId } = req.params;
+    const   projectId  = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -790,11 +791,11 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-export const addUrlToProject = async (req, res) => {
 
+export const addUrlToProject = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const { projectId } = req.params;
+    const projectId = req.params.id;
     const { url } = req.body;
 
     if (!url || !validator.isURL(url)) {
@@ -830,10 +831,11 @@ export const addUrlToProject = async (req, res) => {
 };
 
 export const updateUrlInProject = async (req, res) => {
-
+ 
+  
   try {
     const userId = getUserIdFromToken(req);
-    const { projectId, urlIndex } = req.params;
+    const { id, urlId } = req.params;
     const { url } = req.body;
 
     if (!url || !validator.isURL(url)) {
@@ -847,18 +849,18 @@ export const updateUrlInProject = async (req, res) => {
     }
 
     // Find the project to update
-    let project = individualUser.projects.id(projectId);
+    let project = individualUser.projects.id(id);
 
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (urlIndex < 0 || urlIndex >= project.urls.length) {
+    if (urlId < 0 || urlId >= project.urls.length) {
       return res.status(400).json({ message: "Invalid URL index" });
     }
 
     // Update the URL
-    project.urls[urlIndex] = url;
+    project.urls[urlId] = url;
 
     // Save the updated user data
     await individualUser.save();
@@ -877,7 +879,7 @@ export const removeProjectURL = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const { projectId, urlIndex } = req.params;
+    const { id, urlId } = req.params;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -885,17 +887,17 @@ export const removeProjectURL = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const project = individualUser.projects.id(projectId);
+    const project = individualUser.projects.id(id);
 
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (urlIndex >= project.urls.length) {
+    if (urlId >= project.urls.length) {
       return res.status(404).json({ message: "URL index out of range" });
     }
 
-    project.urls.splice(urlIndex, 1);
+    project.urls.splice(urlId, 1);
 
     await individualUser.save();
 
@@ -914,7 +916,7 @@ export const addOrUpdateVideoDetails = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { videoTitle, videoDescription } = req.body;
-    const { videoRef } = req.params;
+    const videoRef  = req.params.id;
 
     // Find the individual user by their ID
     const individualUser = await IndividualUser.findById(userId);
@@ -949,39 +951,7 @@ export const addOrUpdateVideoDetails = async (req, res) => {
 };
 
 
-
-// Controller to withdraw job applicant
-export const withdrawJobApplicant = async (req, res) => {
-  try {
-    const { jobId, userId } = req.params;
-
-    // Find the job application by ID
-    const jobApplication = await JobApplication.findById(jobId);
-    if (!jobApplication) {
-      return res.status(404).json({ error: 'Job application not found' });
-    }
-
-    // Find the index of the applicant within the job application's applicants array
-    const applicantIndex = jobApplication.applicants.findIndex(app => app.user.toString() === userId);
-    if (applicantIndex === -1) {
-      return res.status(404).json({ error: 'Applicant not found' });
-    }
-
-    // Remove the applicant from the applicants array
-    jobApplication.applicants.splice(applicantIndex, 1);
-    await jobApplication.save();
-
-    // Update IndividualUser model to remove the applied job
-    await IndividualUser.findByIdAndUpdate(userId, {
-      $pull: { "jobposting.applied": jobApplication._id },
-    });
-
-    res.status(200).json({ message: 'Applicant removed successfully' });
-  } catch (error) {
-    console.error('Error removing applicant:', error);
-    res.status(500).json({ error: 'An error occurred while removing the applicant' });
-  }
-};
+ 
 
 
 export const applyJobApplication = async (req, res) => {
@@ -989,6 +959,9 @@ export const applyJobApplication = async (req, res) => {
     const userId = getUserIdFromToken(req);
     const { id } = req.params;
     const { coverLetter, mediaType, mediaRef } = req.body;
+
+    // Convert id to ObjectId using 'new'
+    const jobId = new mongoose.Types.ObjectId(id);
 
     const media = {
       mediaType,
@@ -1001,7 +974,7 @@ export const applyJobApplication = async (req, res) => {
       coverLetter,
     };
 
-    const jobApplication = await JobApplication.findById(id);
+    const jobApplication = await JobApplication.findById(jobId);
     if (!jobApplication) {
       return res.status(404).json({ error: 'Job application not found' });
     }
@@ -1020,22 +993,60 @@ export const applyJobApplication = async (req, res) => {
   }
 };
 
+export const withdrawJobApplicant = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { jobId } = req.params;
 
+    // Convert jobId and userId to ObjectId
+    const jobObjectId = mongoose.Types.ObjectId(jobId);
+    const userObjectId = mongoose.Types.ObjectId(userId);
+
+    // Find the job application by ID
+    const jobApplication = await JobApplication.findById(jobObjectId);
+    if (!jobApplication) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
+
+    // Find the index of the applicant within the job application's applicants array
+    const applicantIndex = jobApplication.applicants.findIndex(app => app.user.toString() === userObjectId.toString());
+    if (applicantIndex === -1) {
+      return res.status(404).json({ error: 'Applicant not found' });
+    }
+
+    // Remove the applicant from the applicants array
+    jobApplication.applicants.splice(applicantIndex, 1);
+    await jobApplication.save();
+
+    // Update IndividualUser model to remove the applied job
+    await IndividualUser.findByIdAndUpdate(userObjectId, {
+      $pull: { "jobposting.applied": jobApplication._id },
+    });
+
+    res.status(200).json({ message: 'Applicant removed successfully' });
+  } catch (error) {
+    console.error('Error removing applicant:', error);
+    res.status(500).json({ error: 'An error occurred while removing the applicant' });
+  }
+};
 
 export const toggleSaveJobApplication = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { id } = req.params;
 
+    // Convert id to ObjectId
+    const jobId = mongoose.Types.ObjectId(id);
+
     const individualUser = await IndividualUser.findById(userId);
     if (!individualUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const jobIndex = individualUser.jobposting.saved.indexOf(id);
+    const jobIndex = individualUser.jobposting.saved.indexOf(jobId);
     if (jobIndex === -1) {
       // Add job to saved list
-      individualUser.jobposting.saved.push(id);
+      individualUser.jobposting.saved.push(jobId);
     } else {
       // Remove job from saved list
       individualUser.jobposting.saved.splice(jobIndex, 1);
