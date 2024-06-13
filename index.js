@@ -2,12 +2,10 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
-import userRoute from "./routes/user.route.js";
-import individualUserRoute from "./routes/individualUser.route/individualUser.route.js";
-import mediaControllRoute from "./routes/mediaControll.route/mediaControll.js";
-
-
-import authRoute from "./routes/auth.route.js";
+import userRoute from "./routes/v1/user.route.js";
+import individualUserRoute from "./routes/v1/individualUser.route/individualUser.route.js";
+import mediaControllRoute from "./routes/v1/mediaControll.route/mediaControll.js";
+import authRoute from "./routes/v1/auth.route.js";
 import errorHandler from "./middleware/error.js";
 
 dotenv.config();
@@ -35,10 +33,10 @@ app.use(cors({ origin: "*" }));
 app.get("/", (req, res) => {
   res.send("home");
 });
-app.use("/auth", authRoute);
-app.use("/user", userRoute);
-app.use("/individualUser", individualUserRoute);
-app.use("/media", mediaControllRoute);
+app.use("/auth/v1", authRoute);
+app.use("/user/v1", userRoute);
+app.use("/individualUser/v1", individualUserRoute);
+app.use("/media/v1", mediaControllRoute);
 
 
 
