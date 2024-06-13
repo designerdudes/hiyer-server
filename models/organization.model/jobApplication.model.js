@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const roundSchema = new mongoose.Schema({
     roundNumber: {
         type: String,
@@ -11,6 +13,21 @@ const roundSchema = new mongoose.Schema({
     notes: String,
     interviewDate: Date,
 });
+
+const mediaSchema = new mongoose.Schema({
+    mediaType: {
+        type: String,
+        enum: ['Video', 'Image'],
+        required: true
+    },
+    mediaRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: 'mediaType', // Dynamic reference path based on mediaType
+        required: true
+    }
+}, {
+    timestamps: true,
+}); 
 
 const applicantSchema = new mongoose.Schema({
     user: {
@@ -53,20 +70,7 @@ const applicantSchema = new mongoose.Schema({
     }],
     evaluationRounds: [roundSchema],
 });
-const mediaSchema = new mongoose.Schema({
-    mediaType: {
-        type: String,
-        enum: ['Video', 'Image'],
-        required: true
-    },
-    mediaRef: {
-        type: mongoose.Schema.Types.ObjectId,
-        refPath: 'mediaType', // Dynamic reference path based on mediaType
-        required: true
-    }
-}, {
-    timestamps: true,
-}); 
+
 
 
 const jobApplicationSchema = new mongoose.Schema({
