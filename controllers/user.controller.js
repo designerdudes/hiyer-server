@@ -14,13 +14,11 @@ import IndividualUser from "../models/individualUser.model/individualUser.model.
 import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
 import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
 
+
 export const sendEmailOTPforverification = async (req, res) => {
   try {
-    let user = req.body;
-    console.log("req", req.body);
-    const email = user.email;
-
-    const validEmailUser = await User.findOne({ email });
+    const { email } = req.body;
+    const validEmailUser = await User.findOne({ "email.id": email });
     let OTP = Math.floor(Math.random() * 900000) + 100000;
     console.log("OTP is generated", OTP);
 
@@ -33,18 +31,19 @@ export const sendEmailOTPforverification = async (req, res) => {
 
     await otp.save();
 
-    const userName = validEmailUser ? validEmailUser.fullName : "User";
+    const userName = validEmailUser ? validEmailUser.name.first : "User";
     await emailVerificationEmail(email, OTP, userName);
 
-    res.status(200).send({
+    return {
       ok: true,
-      msg: validEmailUser ? "Email sent to existing user" : "Email sent to new  user",
-    });
+      msg: validEmailUser ? "Email sent to existing user" : "Email sent to new user",
+    };
   } catch (error) {
     console.error("Error in sending OTP for verification:", error);
-    res.status(500).send({
+    return {
+      ok: false,
       msg: error.message,
-    });
+    };
   }
 };
 
@@ -288,6 +287,7 @@ export const verifyotp = async (req, res) => {
   }
 };
 
+
 export const login = async (req, res) => {
   try {
     const { email, mobileNo, countryCode } = req.body;
@@ -320,7 +320,7 @@ export const login = async (req, res) => {
 
     if (user.socialLogin.isSocialLogin) {
       return res.status(200).send({
-        msg: "Login with social link ",
+        msg: "Login with social link",
         ok: true,
       });
     }
@@ -328,30 +328,31 @@ export const login = async (req, res) => {
     // Generate OTP and send for verification
     let otpResult;
     if (email) {
-      otpResult = await sendEmailOTPforverification(req);
+      otpResult = await sendEmailOTPforverification(req, res);
     } else {
-      // otpResult = await sendMobileOTPforVerification(req);
+      // otpResult = await sendMobileOTPforVerification(req, res);
     }
 
     if (!otpResult.ok) {
-      res.status(500).send({
+      return res.status(500).send({
         msg: "Failed to send OTP",
         ok: false,
       });
     } else {
-      res.status(200).send({
+      return res.status(200).send({
         msg: "OTP sent successfully",
         ok: true,
       });
     }
   } catch (error) {
-    console.error(error);
+    console.error('Error in login:', error);
     res.status(500).send({
       msg: "Internal Server Error",
       ok: false,
     });
   }
 };
+
 
 export const updateUserName = async (req, res) => {
   try {
