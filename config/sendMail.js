@@ -67,10 +67,10 @@ const mailSend = async (toEmail, subject, text) => {
                                             <tbody>
                                                 <tr>
                                                     <td class="m_-5049272237331082851newLine">
-                                                        <a href="https://www.apluslaundry.in/
+                                                        <a href="https://www.hiyer.in/
                                                             target="_blank" style="display: flex;flex-wrap: wrap; text-align: center;align-items: center;gap: 16px;width: fit-content;margin: 0 auto;
                                                             text-decoration: none;"
-                                                            data-saferedirecturl="https://www.apluslaundry.in/">
+                                                            data-saferedirecturl="https://www.hiyer.in/">
                                                             <img alt="Aplus Logo"
                                                                 src="https://firebasestorage.googleapis.com/v0/b/aplus-laundry-storage.appspot.com/o/apluslaundry%2FSymbolWhite.svg?alt=media&token=0cd389ea-c6af-481d-b4f8-274a5ea8f1ba"
                                                                  width="70" style="
@@ -85,7 +85,7 @@ const mailSend = async (toEmail, subject, text) => {
                                     font-size: 20px; 
                                     font-weight: 900;
                                     
-                                  " >A Plus Laundry</p> 
+                                  " >Hiyer</p> 
                                                         </a>
                                                     </td>
                                                 </tr>
@@ -133,9 +133,9 @@ const mailSend = async (toEmail, subject, text) => {
                                                             <tbody>
                                                                 <tr>
                                                                     <td align="left" style="padding-bottom: 24px">
-                                                                        <a href="https://www.apluslaundry.in/"
+                                                                        <a href="https://www.hiyer.in/"
                                                                             target="_blank"
-                                                                            data-saferedirecturl="https://www.apluslaundry.in/" style="text-decoration: none;"> <p>A Plus</p> </a>
+                                                                            data-saferedirecturl="https://www.hiyer.in/" style="text-decoration: none;"> <p>Hiyer</p> </a>
                                                                     </td>
                                                                     <td align="right" style="padding-bottom: 24px">
                                                                         <table style="
@@ -150,17 +150,17 @@ const mailSend = async (toEmail, subject, text) => {
                                                                                         <a href="https://www.facebook.com/6300207721@Aplus6300"
                                                                                             target="_blank"
                                                                                             data-saferedirecturl="https://www.facebook.com/6300207721@Aplus6300"><img
-                                                                                                alt="A Plus on Facebook"
+                                                                                                alt="Hiyer on Facebook"
                                                                                                 src="https://ci3.googleusercontent.com/meips/ADKq_NYoQfU8D-y84Pfi-wn5hQchI2BFlacfLRNmvd3Wk2YjV2CqlKOxps5cm5j1_j-sHImKKggl1jK0C3OonhJ8IbTgUqRLvnE_deI4OTAUJQKlVTQvfywjY5HNS8g=s0-d-e1-ft#https://cdn.getsimpl.com/images/email/transactions/simpl-facebook.png"
                                                                                                 width="17"
                                                                                                 class="CToWUd"
                                                                                                 data-bit="iit" /></a>
                                                                                     </td>
                                                                                     <td style="padding-right: 16px">
-                                                                                        <a href="https://www.instagram.com/apluslaundry.in/"
+                                                                                        <a href="https://www.instagram.com/hiyer.in/"
                                                                                             target="_blank"
-                                                                                            data-saferedirecturl="https://www.instagram.com/apluslaundry.in/"><img
-                                                                                                alt="A Plus on Instagram"
+                                                                                            data-saferedirecturl="https://www.instagram.com/hiyer.in/"><img
+                                                                                                alt="Hiyer on Instagram"
                                                                                                 src="https://ci3.googleusercontent.com/meips/ADKq_NZX0lknWQLRiBxtRLXhagocpcWiQcO5I2DUJD1qZ44GM9G20BdF8adSRxlVyzEfF6M6W6ZIlS5TFRlYd2tBYSTSjfZrcSCzZ_ys0m6rjesIGdxLANFgjSXaPZQJ=s0-d-e1-ft#https://cdn.getsimpl.com/images/email/transactions/simpl-instagram.png"
                                                                                                 width="17"
                                                                                                 class="CToWUd"
@@ -201,13 +201,13 @@ const mailSend = async (toEmail, subject, text) => {
                                                 line-height: 18px;
                                                 padding-right: 16px;
                                               ">
-                                                                                        <a href="https://www.apluslaundry.in/"
+                                                                                        <a href="https://www.hiyer.in/"
                                                                                             style="
                                                   color: #888 !important;
                                                   display: block;
                                                   text-decoration: none;
                                                   text-transform: uppercase;
-                                                " target="_blank" data-saferedirecturl="https://www.apluslaundry.in/">View
+                                                " target="_blank" data-saferedirecturl="https://www.hiyer.in/">View
                                                                                             Dashboard</a>
                                                                                     </td>
                                                                                     <td class="m_-5049272237331082851siteLink"
@@ -217,13 +217,13 @@ const mailSend = async (toEmail, subject, text) => {
                                                 line-height: 18px;
                                                 padding-right: 16px;
                                               ">
-                                                                                        <a href="https://www.apluslaundry.in/refund-&-returns"
+                                                                                        <a href="https://www.hiyer.in/refund-&-returns"
                                                                                             style="
                                                   color: #888 !important;
                                                   display: block;
                                                   text-decoration: none;
                                                   text-transform: uppercase;
-                                                " target="_blank" data-saferedirecturl="https://www.apluslaundry.in/refund-&-returns">
+                                                " target="_blank" data-saferedirecturl="https://www.hiyer.in/refund-&-returns">
                                                 Refunds & Returns</a>
                                                                                     </td>
                                                                                     <td class="m_-5049272237331082851siteLink"
@@ -233,13 +233,13 @@ const mailSend = async (toEmail, subject, text) => {
                                                 line-height: 18px;
                                                 padding-right: 16px;
                                               ">
-                                                                                        <a href="https://www.apluslaundry.in/terms-and-conditions"
+                                                                                        <a href="https://www.hiyer.in/terms-and-conditions"
                                                                                             style="
                                                   color: #888 !important;
                                                   display: block;
                                                   text-decoration: none;
                                                   text-transform: uppercase;
-                                                " target="_blank" data-saferedirecturl="https://www.apluslaundry.in/terms-and-conditions">Terms
+                                                " target="_blank" data-saferedirecturl="https://www.hiyer.in/terms-and-conditions">Terms
                                                                                             & Conditions</a>
                                                                                     </td>
                                                                                     <td class="m_-5049272237331082851siteLink"
@@ -248,13 +248,13 @@ const mailSend = async (toEmail, subject, text) => {
                                                 font-weight: normal;
                                                 line-height: 18px;
                                               ">
-                                                                                        <a href="https://www.apluslaundry.in/privacy-policy"
+                                                                                        <a href="https://www.hiyer.in/privacy-policy"
                                                                                             style="
                                                   color: #888 !important;
                                                   display: block;
                                                   text-decoration: none;
                                                   text-transform: uppercase;
-                                                " target="_blank" data-saferedirecturl="https://www.apluslaundry.in/privacy-policy">Privacy
+                                                " target="_blank" data-saferedirecturl="https://www.hiyer.in/privacy-policy">Privacy
                                                                                             Policy</a>
                                                                                     </td>
                                                                                 </tr>
@@ -308,7 +308,7 @@ const mailSend = async (toEmail, subject, text) => {
       color: #888;
       width: 80%;
       ">
-      © A Plus 2024. 1-1211/12, Main Road, Revenue Ward No. 1, Near Universal Shop, Kurnool Road, Chimakurthy, Andhra Pradesh-523226
+      © Hiyer 2024. 1-1211/12, Main Road, Revenue Ward No. 1, Near Universal Shop, Kurnool Road, Chimakurthy, Andhra Pradesh-523226
       </p>
       
       <p style="
@@ -334,8 +334,8 @@ const mailSend = async (toEmail, subject, text) => {
       color: #888;
       ">
       For any queries, reach out to us at
-      <a href="https://www.apluslaundry.in/contactUs" style="color: #444;" title="Link: apluslaundry.in/contactUs" target="_blank">
-      apluslaundry.in/contactUs
+      <a href="https://www.hiyer.in/contactUs" style="color: #444;" title="Link: hiyer.in/contactUs" target="_blank">
+      hiyer.in/contactUs
       </a>
       </p>
       
@@ -467,7 +467,7 @@ line-height: 24px;
 margin: 0;
 padding: 32px 0 0;
 ">
-                          Thanks, <br />Team A Plus 
+                          Thanks, <br />Team Hiyer 
                       </p>
                   </td>
               </tr>
