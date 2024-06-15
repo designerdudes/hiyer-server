@@ -90,6 +90,11 @@ const organizationMemberSchema = new mongoose.Schema(
         // skills: [skillSchema],
         // certifications: [String],
         languages: [String],
+        organization: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "OrganizationalUser",
+            required: true,
+          },
         // hobbies: [String],
     },
     {
