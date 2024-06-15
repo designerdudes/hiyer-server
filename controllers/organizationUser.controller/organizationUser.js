@@ -1,3 +1,4 @@
+import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
 
 
@@ -99,60 +100,82 @@ export const addOrUpdateAddress = async (req, res) => {
   }
 };
 
+
+
+
 // Add or Update Team Members
-export const addOrUpdateTeamMembers = async (req, res) => {
-  try {
-    const userId = getUserIdFromToken(req);
-    const teamMembers = req.body.teamMembers;
-
-    // Find the organizational user by user ID
-    let organizationalUser = await OrganizationalUser.findById(userId);
-
-    if (!organizationalUser) {
-      // If user doesn't exist, create a new document
-      organizationalUser = new OrganizationalUser({ _id: userId });
-    }
-
-    // Update team members if provided
-    if (teamMembers) {
-      organizationalUser.teamMembers = teamMembers;
-    }
-
-    // Save the updated user data
-    await organizationalUser.save();
-
-    res.status(200).json({
-      message: "Team members added or updated successfully",
-      user: organizationalUser,
-    });
-  } catch (error) {
-    sendErrorResponse(res, error);
-  }
-};
-
-// Add Team Member
 export const addTeamMember = async (req, res) => {
   try {
-    const userId = getUserIdFromToken(req);
-    const newTeamMember = req.body.newTeamMember;
+    const organizationId = getUserIdFromToken(req); // Assuming the token contains the organization ID
+
+    const { email, countryCode, mobileNo, firstName,
+      middleName,
+      lastName, profileType, role, department, dateOfJoining } = req.body;
+
+    // Prepare user data
+    const userData = {
+      email: {
+        id: email,
+      },
+      phone: {
+        countryCode,
+        number: mobileNo,
+      },
+      name: {
+        first: firstName || "",
+        middle: middleName || "",
+        last: lastName || "",
+      },
+      profile: {
+        profileType,
+      },
+    };
+
+    // Create a new User document
+    const newUser = new User(userData);
+    const savedUser = await newUser.save();
+
+    // Prepare organization member data
+    const organizationMemberData = {
+
+      role,
+      department,
+      dateOfJoining,
+      organization: organizationId,
+      _id: savedUser._id, // Use the _id of the newly created user as profileRef
+    };
+
+    // Create a new OrganizationMember document
+    const newOrganizationMember = new OrganizationMember(organizationMemberData);
+    await newOrganizationMember.save();
+
+    // Update the User document with the profile reference
+    await User.findByIdAndUpdate(savedUser._id, {
+      $set: {
+        "profile.profileRef": savedUser._id, // Update the nested field
+      },
+    });
 
     // Find the organizational user by user ID
-    let organizationalUser = await OrganizationalUser.findById(userId);
+    let organizationalUser = await OrganizationalUser.findById(organizationId);
 
     if (!organizationalUser) {
-      // If user doesn't exist, create a new document
-      organizationalUser = new OrganizationalUser({ _id: userId });
+      return res.status(404).json({ message: "Organization not found" });
     }
 
     // Add the new team member to the list
-    organizationalUser.teamMembers.push(newTeamMember);
+    organizationalUser.teamMembers.push({
+      userId: savedUser._id,
+      position: role,
+    });
 
-    // Save the updated user data
+    // Save the updated organizational user data
     await organizationalUser.save();
 
     res.status(200).json({
       message: "Team member added successfully",
-      user: organizationalUser,
+      teamMemberId: savedUser._id,
+      organizationalUser,
     });
   } catch (error) {
     sendErrorResponse(res, error);
@@ -162,38 +185,72 @@ export const addTeamMember = async (req, res) => {
 // Update Team Member
 export const updateTeamMember = async (req, res) => {
   try {
-    const userId = getUserIdFromToken(req);
-    const teamMemberId = req.params.teamMemberId;
-    const updatedTeamMember = req.body.updatedTeamMember;
+    const organizationId = getUserIdFromToken(req); // Assuming the token contains the organization ID
+    const { teamMemberId } = req.params;
+    const {
+      email,
+      countryCode,
+      mobileNo,
+      firstName,
+      middleName,
+      lastName,
+      profileType,
+      role,
+      department,
+      dateOfJoining
+    } = req.body;
 
-    // Find the organizational user by user ID
-    let organizationalUser = await OrganizationalUser.findById(userId);
-
-    if (!organizationalUser) {
+    // Find the existing user by teamMemberId
+    const existingUser = await User.findById(teamMemberId);
+    if (!existingUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Find the index of the team member to update
-    const teamMemberIndex = organizationalUser.teamMembers.findIndex(
-      (member) => member._id.toString() === teamMemberId
-    );
+    // Update user data
+    existingUser.email.id = email || existingUser.email.id;
+    existingUser.phone.countryCode = countryCode || existingUser.phone.countryCode;
+    existingUser.phone.number = mobileNo || existingUser.phone.number;
+    existingUser.name.first = firstName || existingUser.name.first;
+    existingUser.name.middle = middleName || existingUser.name.middle;
+    existingUser.name.last = lastName || existingUser.name.last;
+    existingUser.profile.profileType = profileType || existingUser.profile.profileType;
 
-    if (teamMemberIndex === -1) {
-      return res.status(404).json({ message: "Team member not found" });
+    await existingUser.save();
+
+    // Find the existing organization member by teamMemberId
+    const existingOrganizationMember = await OrganizationMember.findById(teamMemberId);
+    if (!existingOrganizationMember) {
+      return res.status(404).json({ message: "Organization member not found" });
     }
 
-    // Merge the existing team member data with the new data
-    organizationalUser.teamMembers[teamMemberIndex] = {
-      ...organizationalUser.teamMembers[teamMemberIndex],
-      ...updatedTeamMember,
-    };
+    // Update organization member data
+    existingOrganizationMember.role = role || existingOrganizationMember.role;
+    existingOrganizationMember.department = department || existingOrganizationMember.department;
+    existingOrganizationMember.dateOfJoining = dateOfJoining || existingOrganizationMember.dateOfJoining;
 
-    // Save the updated user data
-    await organizationalUser.save();
+    await existingOrganizationMember.save();
+
+    // Find the organizational user by user ID
+    let organizationalUser = await OrganizationalUser.findById(organizationId);
+    if (!organizationalUser) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+    // Update the role in the teamMembers array if necessary
+    const teamMemberIndex = organizationalUser.teamMembers.findIndex(
+      member => member.userId.toString() === teamMemberId
+    );
+    if (teamMemberIndex !== -1) {
+      organizationalUser.teamMembers[teamMemberIndex].position = role || organizationalUser.teamMembers[teamMemberIndex].position;
+      await organizationalUser.save();
+    } else {
+      return res.status(404).json({ message: "Team member not found in organization" });
+    }
 
     res.status(200).json({
       message: "Team member updated successfully",
-      user: organizationalUser,
+      teamMemberId: existingUser._id,
+      organizationalUser,
     });
   } catch (error) {
     sendErrorResponse(res, error);
@@ -203,34 +260,40 @@ export const updateTeamMember = async (req, res) => {
 // Delete Team Member
 export const deleteTeamMember = async (req, res) => {
   try {
-    const userId = getUserIdFromToken(req);
-    const teamMemberId = req.params.teamMemberId;
+    const organizationId = getUserIdFromToken(req); // Assuming the token contains the organization ID
+    const { teamMemberId } = req.params;
 
-    // Find the organizational user by user ID
-    let organizationalUser = await OrganizationalUser.findById(userId);
-
-    if (!organizationalUser) {
+    // Find and delete the User document
+    const user = await User.findById(teamMemberId);
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    await user.remove();
 
-    // Find the index of the team member to delete
-    const teamMemberIndex = organizationalUser.teamMembers.findIndex(
-      (member) => member._id.toString() === teamMemberId
-    );
+    // Find and delete the OrganizationMember document
+    const organizationMember = await OrganizationMember.findById(teamMemberId);
+    if (!organizationMember) {
+      return res.status(404).json({ message: "Organization member not found" });
+    }
+    await organizationMember.remove();
 
-    if (teamMemberIndex === -1) {
-      return res.status(404).json({ message: "Team member not found" });
+    // Find the organizational user by organization ID
+    let organizationalUser = await OrganizationalUser.findById(organizationId);
+    if (!organizationalUser) {
+      return res.status(404).json({ message: "Organization not found" });
     }
 
-    // Remove the team member entry from the array
-    organizationalUser.teamMembers.splice(teamMemberIndex, 1);
+    // Remove the team member from the list
+    organizationalUser.teamMembers = organizationalUser.teamMembers.filter(
+      (member) => member.userId.toString() !== teamMemberId
+    );
 
-    // Save the updated user data
+    // Save the updated organizational user data
     await organizationalUser.save();
 
     res.status(200).json({
       message: "Team member deleted successfully",
-      user: organizationalUser,
+      organizationalUser,
     });
   } catch (error) {
     sendErrorResponse(res, error);
