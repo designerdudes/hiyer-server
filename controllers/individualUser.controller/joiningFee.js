@@ -146,12 +146,7 @@ export const handleJoiningFeePayment = async (req, res) => {
   
       const savedTransaction = await transaction.save();
   
-      // Update the corresponding order document with the transaction ID
-      await Order.findOneAndUpdate(
-        { _id: orderid },
-        { $set: { transaction_id: savedTransaction._id } },
-        { new: true }
-      );
+     
   
       // Update the user's joining fee status
       user.joiningFeePaid = {
