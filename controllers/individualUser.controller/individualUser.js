@@ -1118,13 +1118,15 @@ export const addOrUpdateInterestedCompanies = async (req, res) => {
 export const getUserDetailsFromToken = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-
-    const user = await User.findById(userId).select('email phone name profilePicture');
+    const user = await User.findById(userId).select('email phone name profilePicture profile');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    const individualUser = await IndividualUser.findById(user.profile.profileRef);
+    
+    const individualUser = await IndividualUser.findById(user.profile.profileRef)
+    .populate('jobposting.applied')
+    .populate('jobposting.saved')
+    .populate('postedVideo.videoRef');
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
@@ -1145,12 +1147,13 @@ export const getUserDetailsById = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = await User.findById(userId).select('email phone name profilePicture');
+    const user = await User.findById(userId).select('email phone name profile profilePicture');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const individualUser = await IndividualUser.findById(user.profile.profileRef);
+    const individualUser = await IndividualUser.findById(user.profile.profileRef)
+    .populate('postedVideo.videoRef');
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
@@ -1168,13 +1171,14 @@ export const getUserDetailsById = async (req, res) => {
 
 
 
+
 // Controller to get user details by ID from URL parameter and find similar users
 export const getUserDetailsByIdandSimilarUser = async (req, res) => {
   try {
     const { userId } = req.params;
 
     // Find user by ID
-    const user = await User.findById(userId).select('email phone name profilePicture');
+    const user = await User.findById(userId).select('email phone name profilePicture profile');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -1185,19 +1189,25 @@ export const getUserDetailsByIdandSimilarUser = async (req, res) => {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
 
-    const { industry, interestedCompanies, address, skills } = individualUser;
+    const { industry = [], interestedCompanies = [], address = {}, skills = [] } = individualUser;
 
-    // Query to find similar users
+    // Ensure industry and interestedCompanies are arrays
+    const industryArray = Array.isArray(industry) ? industry : [];
+    const interestedCompaniesArray = Array.isArray(interestedCompanies) ? interestedCompanies : [];
+    const skillsArray = Array.isArray(skills) ? skills.map(skill => skill.name) : [];
+
+    // Query to find similar users and exclude the current user
     const query = {
+      _id: { $ne: user.profile.profileRef }, // Exclude current user
       $or: [
-        { industry: { $in: industry } },
-        { interestedCompanies: { $in: interestedCompanies } },
+        { industry: { $in: industryArray } },
+        { interestedCompanies: { $in: interestedCompaniesArray } },
         { 'address.city': address.city, 'address.state': address.state, 'address.country': address.country },
-        { skills: { $elemMatch: { name: { $in: skills.map(skill => skill.name) } } } },
+        { skills: { $elemMatch: { name: { $in: skillsArray } } } },
       ],
     };
 
-    // Find similar users from IndividualUser collection
+    // Find similar users from IndividualUser collection, excluding the current user and limiting to 5
     const similarIndividualUsers = await IndividualUser.find(query).limit(5);
 
     // Fetch additional details (name, phone, email) from User collection for similar users
@@ -1224,44 +1234,57 @@ export const getUserDetailsByIdandSimilarUser = async (req, res) => {
 // Controller to get similar users
 export const getSimilarUsers = async (req, res) => {
   try {
-    const { industry, interestedCompanies, address, skills } = req.body;
+    const { industry = [], interestedCompanies = [], address = {}, skills = [] } = req.body;
 
+    // Ensure industry and interestedCompanies are arrays
+    const industryArray = Array.isArray(industry) ? industry : [];
+    const interestedCompaniesArray = Array.isArray(interestedCompanies) ? interestedCompanies : [];
+    const skillsArray = Array.isArray(skills) ? skills.map(skill => skill.name) : [];
+
+    // Build the query based on provided criteria
     const query = {
       $or: [
-        { industry: { $in: industry } },
-        { interestedCompanies: { $in: interestedCompanies } },
-        { 'address.city': address.city, 'address.state': address.state, 'address.country': address.country },
-        { skills: { $elemMatch: { name: { $in: skills.map(skill => skill.name) } } } },
+        ...(industryArray.length > 0 ? [{ industry: { $in: industryArray } }] : []),
+        ...(interestedCompaniesArray.length > 0 ? [{ interestedCompanies: { $in: interestedCompaniesArray } }] : []),
+        ...(address.city && address.state && address.country ? [{ 'address.city': address.city, 'address.state': address.state, 'address.country': address.country }] : []),
+        ...(skillsArray.length > 0 ? [{ skills: { $elemMatch: { name: { $in: skillsArray } } } }] : []),
       ],
     };
 
-    const similarUsers = await IndividualUser.find(query);
+    // If no criteria provided, return an empty array
+    if (query.$or.length === 0) {
+      return res.status(200).json([]);
+    }
 
-    if (!similarUsers || similarUsers.length === 0) {
+    // Find similar users from IndividualUser collection
+    let similarIndividualUsers = await IndividualUser.find(query);
+console.log(similarIndividualUsers)
+    if (!similarIndividualUsers || similarIndividualUsers.length === 0) {
       return res.status(404).json({ message: "No similar users found" });
     }
 
     // Populate user details from the User collection
-    const userIds = similarUsers.map(user => user._id);
-    const users = await User.find({ 'profile.profileRef': { $in: userIds } }).select('email phone name');
+    const userIds = similarIndividualUsers.map(user => user._id);
+    const users = await User.find({ 'profile.profileRef': { $in: userIds } }).select('email phone name profile.profileRef');
 
-    const response = similarUsers.map(user => {
-      const userDetails = users.find(u => u.profile.profileRef.toString() === user._id.toString());
-      return {
+    // Filter and map similar users with their details
+    const response = similarIndividualUsers.map(user => {
+      const userDetails = users.find(u => u.profile.profileRef && u.profile.profileRef.toString() === user._id.toString());
+      return userDetails ? {
         _id: user._id,
         industry: user.industry,
         interestedCompanies: user.interestedCompanies,
         address: user.address,
         skills: user.skills,
-        userDetails: userDetails ? {
+        userDetails: {
           email: userDetails.email,
           phone: userDetails.phone,
           name: userDetails.name,
-        } : null,
+        },
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-      };
-    });
+      } : null;
+    }).filter(user => user !== null); // Remove any null entries
 
     res.status(200).json(response);
   } catch (error) {
@@ -1269,3 +1292,6 @@ export const getSimilarUsers = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while fetching similar users' });
   }
 };
+
+
+
