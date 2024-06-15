@@ -96,11 +96,10 @@ router.post('/industry', addOrUpdateIndustry);
 router.post('/interested-companies', addOrUpdateInterestedCompanies);
 
 // User Details Routes
-router.get('/details/token', getUserDetailsFromToken);
-router.get('/details/:userId', getUserDetailsById);
-router.get('/details/:userId/similar', getUserDetailsByIdandSimilarUser);
-router.get('/similar', getSimilarUsers);
-
+router.get('/details/token', getUserDetailsFromToken); 
+router.get('/users/:userId', getUserDetailsById);
+router.get('/users/:userId/similar', getUserDetailsByIdandSimilarUser);
+router.post('/users/similar', getSimilarUsers);
 
  
 
