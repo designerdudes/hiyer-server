@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import validator from 'validator';
 
 // Schema for Address
 const addressSchema = new mongoose.Schema({
@@ -81,8 +82,11 @@ const organizationalUserSchema = new mongoose.Schema(
     website: String,
     socialLinks: {
       linkedin: String,
-      twitter: String,
+      instagram: String,
       facebook: String,
+      twitter: String,
+      youtube: String,
+      github:String,
     },
     logo: String,
     bio: String,
