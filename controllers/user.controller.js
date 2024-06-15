@@ -133,18 +133,13 @@ export const registerUser = async (req, res) => {
     // Verify OTP
     const otpVerifyResponse = await verifyOtpCore(email, mobileNo, otp, countryCode);
 
-    // Check if OTP verification was successful
     if (!otpVerifyResponse.ok) {
-      return res
-        .status(otpVerifyResponse.statusCode)
-        .json({ msg: otpVerifyResponse.msg });
+      return res.status(otpVerifyResponse.statusCode).json({ msg: otpVerifyResponse.msg });
     }
 
     // Check if either email or mobile number is provided
     if (!email && !mobileNo) {
-      return res
-        .status(400)
-        .json({ msg: "Email or mobile number is required" });
+      return res.status(400).json({ msg: "Email or mobile number is required" });
     }
 
     // Check if email or mobile number already exists
@@ -152,16 +147,13 @@ export const registerUser = async (req, res) => {
     let socialLogin;
     if (email) {
       existingUser = await User.findOne({ "email.id": email });
-      socialLogin = existingUser ? existingUser.socialLogin : null; // Check if user exists
+      socialLogin = existingUser ? existingUser.socialLogin : null;
     } else {
       existingUser = await User.findOne({ "phone.number": mobileNo });
     }
 
-    // If user already exists, return conflict status
     if (existingUser) {
-      return res
-        .status(409)
-        .json({ msg: "Email or mobile number already exists", socialLogin });
+      return res.status(409).json({ msg: "Email or mobile number already exists", socialLogin });
     }
 
     // Prepare user data
@@ -185,18 +177,28 @@ export const registerUser = async (req, res) => {
 
     // Create a new user instance
     const newUser = new User(userData);
-
-    // Save the new user to the database
     const savedUser = await newUser.save();
 
     // Create a document in the specific profile type collection
     let profileModel;
+    let profileData = {
+      _id: savedUser._id, // Use the _id of the newly created user as profileRef
+    };
+
     switch (profileType) {
       case 'individualUser':
         profileModel = IndividualUser;
         break;
       case 'organization':
         profileModel = OrganizationalUser;
+        profileData = {
+          ...profileData,
+          name: userData.name.first, // Ensure the required name field is set
+          contact: {
+            email: email, // Assuming email is just a string
+            phone: `${countryCode}${mobileNo}`, // Format the phone as string
+          }
+        };
         break;
       case 'organizationMember':
         profileModel = OrganizationMember;
@@ -205,16 +207,14 @@ export const registerUser = async (req, res) => {
         return res.status(400).json({ msg: "Invalid profileType" });
     }
 
-    const profileData = {
-      _id: savedUser._id, // Use the _id of the newly created user as profileRef
-      // Add any additional fields if needed
-    };
-    const updatedUser = await User.findByIdAndUpdate(savedUser._id, {
+    // Update the user's profileRef
+    await User.findByIdAndUpdate(savedUser._id, {
       $set: {
-        "profile.profileRef": savedUser._id, // Update the nested field
+        "profile.profileRef": savedUser._id,
       },
     });
 
+    // Save the profile data
     const newProfile = new profileModel(profileData);
     await newProfile.save();
 
@@ -243,7 +243,6 @@ export const registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in registerUser:", error);
-    // If any error occurs during registration, respond with error message
     res.status(500).json({ msg: "Internal Server Error" });
   }
 };

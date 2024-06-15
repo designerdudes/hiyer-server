@@ -1,23 +1,16 @@
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
+import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
 
 
 
-// Helper function to extract user ID from token
-const getUserIdFromToken = (req) => {
-  const authorizationHeader = req.headers.authorization;
-  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    throw new Error("Unauthorized");
-  }
-  const token = authorizationHeader.split("Bearer ")[1];
-  const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-  return decodedToken.id;
-};
+ 
 
 // Helper function to handle common error response
 const sendErrorResponse = (res, error) => {
   res.status(400).json({ message: error.message });
 };
+
 
 
 
@@ -47,22 +40,21 @@ export const addOrUpdateUserData = async (req, res) => {
       "logo",
       "bio",
     ];
+
     updateFields.forEach(field => {
-      if (userData[field]) {
+      if (userData.hasOwnProperty(field)) {  // Check if field exists in req.body
         organizationalUser[field] = userData[field];
       }
     });
 
     // Save the updated user data
-    await OrganizationalUser.save();
+    await organizationalUser.save();
 
-    // Send response
     res.status(200).json({
       message: "Organizational user data updated successfully",
       user: organizationalUser,
     });
   } catch (error) {
-    // Handle errors
     res.status(400).json({ message: error.message });
   }
 };
@@ -73,15 +65,11 @@ export const addOrUpdateAddress = async (req, res) => {
     const userId = getUserIdFromToken(req);
     const { pincode, state, city, country, landmark } = req.body;
 
-    // Find the organizational user by user ID
-    let organizationalUser = await OrganizationalUser.findById(userId);
-
-    if (!organizationalUser) {
-      // If user doesn't exist, create a new document
-      organizationalUser = new OrganizationalUser({ _id: userId });
-    }
+    // Find the organizational user by user ID or create a new one if not found
+    let organizationalUser = await OrganizationalUser.findById(userId) || new OrganizationalUser({ _id: userId });
 
     // Update address fields if provided
+    organizationalUser.address = organizationalUser.address || {};
     if (pincode) organizationalUser.address.pincode = pincode;
     if (state) organizationalUser.address.state = state;
     if (city) organizationalUser.address.city = city;
@@ -96,7 +84,7 @@ export const addOrUpdateAddress = async (req, res) => {
       user: organizationalUser,
     });
   } catch (error) {
-    sendErrorResponse(res, error);
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -300,74 +288,36 @@ export const deleteTeamMember = async (req, res) => {
   }
 };
 
-// Add or Update Projects
-export const addOrUpdateProjects = async (req, res) => {
-  try {
-    const userId = getUserIdFromToken(req);
-    const projects = req.body.projects;
 
-    // Find the organizational user by user ID
-    let organizationalUser = await OrganizationalUser.findById(userId);
-
-    if (!organizationalUser) {
-      // If user doesn't exist, create a new document
-      organizationalUser = new OrganizationalUser({ _id: userId });
-    }
-
-    // Update projects if provided
-    if (projects) {
-      organizationalUser.projects = projects;
-    }
-
-    // Save the updated user data
-    await organizationalUser.save();
-
-    res.status(200).json({
-      message: "Projects added or updated successfully",
-      user: organizationalUser,
-    });
-  } catch (error) {
-    sendErrorResponse(res, error);
-  }
-};
-
-// Add Project
 export const addProject = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const newProject = req.body.newProject;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
 
     if (!organizationalUser) {
-      // If user doesn't exist, create a new document
-      organizationalUser = new OrganizationalUser({ _id: userId });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Add the new project to the list
-    organizationalUser.projects.push(newProject);
+    // Add new project
+    organizationalUser.projects.push(req.body);
 
     // Save the updated user data
     await organizationalUser.save();
 
-    res.status(200).json({
-      message: "Project added successfully",
-      user: organizationalUser,
-    });
+    res.status(200).json({ message: "Project added successfully", user: organizationalUser });
   } catch (error) {
-    sendErrorResponse(res, error);
+    res.status(400).json({ message: error.message });
   }
 };
 
-// Update Project
+
+
 export const updateProject = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const projectId = req.params.projectId;
-    const updatedProject = req.body.updatedProject;
+    const projectId = req.params.id;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
 
     if (!organizationalUser) {
@@ -375,18 +325,18 @@ export const updateProject = async (req, res) => {
     }
 
     // Find the index of the project to update
-    const projectIndex = organizationalUser.projects.findIndex(
-      (project) => project._id.toString() === projectId
+    let projectIndex = organizationalUser.projects.findIndex(
+      (proj) => proj._id.toString() === projectId
     );
 
     if (projectIndex === -1) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    // Merge the existing project data with the new data
+    // Merge the new project data into the existing one
     organizationalUser.projects[projectIndex] = {
       ...organizationalUser.projects[projectIndex],
-      ...updatedProject,
+      ...req.body,
     };
 
     // Save the updated user data
@@ -397,22 +347,56 @@ export const updateProject = async (req, res) => {
       user: organizationalUser,
     });
   } catch (error) {
-    sendErrorResponse(res, error);
+    res.status(400).json({ message: error.message });
   }
 };
 
-// Add URL to Project
+
+export const deleteProject = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const projectId = req.params.id;
+
+    let organizationalUser = await OrganizationalUser.findById(userId);
+
+    if (!organizationalUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the index of the project to delete
+    const projectIndex = organizationalUser.projects.findIndex(
+      (proj) => proj._id.toString() === projectId
+    );
+
+    if (projectIndex === -1) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Remove the project entry from the array
+    organizationalUser.projects.splice(projectIndex, 1);
+
+    // Save the updated user data
+    await organizationalUser.save();
+
+    res.status(200).json({
+      message: "Project deleted successfully",
+      user: organizationalUser,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 export const addUrlToProject = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const { projectId } = req.params;
+    const projectId = req.params.id;
     const { url } = req.body;
 
     if (!url || !validator.isURL(url)) {
       return res.status(400).json({ message: "Invalid URL" });
     }
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
 
     if (!organizationalUser) {
@@ -437,22 +421,20 @@ export const addUrlToProject = async (req, res) => {
       user: organizationalUser,
     });
   } catch (error) {
-    sendErrorResponse(res, error);
+    res.status(400).json({ message: error.message });
   }
 };
 
-// Update URL in Project
 export const updateUrlInProject = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const { projectId, urlIndex } = req.params;
+    const { id, urlId } = req.params;
     const { url } = req.body;
 
     if (!url || !validator.isURL(url)) {
       return res.status(400).json({ message: "Invalid URL" });
     }
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
 
     if (!organizationalUser) {
@@ -460,18 +442,18 @@ export const updateUrlInProject = async (req, res) => {
     }
 
     // Find the project to update
-    let project = organizationalUser.projects.id(projectId);
+    let project = organizationalUser.projects.id(id);
 
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (urlIndex < 0 || urlIndex >= project.urls.length) {
+    if (urlId < 0 || urlId >= project.urls.length) {
       return res.status(400).json({ message: "Invalid URL index" });
     }
 
     // Update the URL
-    project.urls[urlIndex] = url;
+    project.urls[urlId] = url;
 
     // Save the updated user data
     await organizationalUser.save();
@@ -481,44 +463,41 @@ export const updateUrlInProject = async (req, res) => {
       user: organizationalUser,
     });
   } catch (error) {
-    sendErrorResponse(res, error);
+    res.status(400).json({ message: error.message });
   }
 };
 
-// Delete Project
-export const deleteProject = async (req, res) => {
+export const removeProjectURL = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const projectId = req.params.projectId;
+    const { id, urlId } = req.params;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
 
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Find the index of the project to delete
-    const projectIndex = organizationalUser.projects.findIndex(
-      (project) => project._id.toString() === projectId
-    );
+    const project = organizationalUser.projects.id(id);
 
-    if (projectIndex === -1) {
+    if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    // Remove the project entry from the array
-    organizationalUser.projects.splice(projectIndex, 1);
+    if (urlId >= project.urls.length) {
+      return res.status(404).json({ message: "URL index out of range" });
+    }
 
-    // Save the updated user data
+    project.urls.splice(urlId, 1);
+
     await organizationalUser.save();
 
     res.status(200).json({
-      message: "Project deleted successfully",
+      message: "URL removed from project successfully",
       user: organizationalUser,
     });
   } catch (error) {
-    sendErrorResponse(res, error);
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -528,20 +507,15 @@ export const addOrUpdateContactInfo = async (req, res) => {
     const userId = getUserIdFromToken(req);
     const contactInfo = req.body.contactInfo;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
-
     if (!organizationalUser) {
-      // If user doesn't exist, create a new document
       organizationalUser = new OrganizationalUser({ _id: userId });
     }
 
-    // Update contact information if provided
     if (contactInfo) {
       organizationalUser.contact = contactInfo;
     }
 
-    // Save the updated user data
     await organizationalUser.save();
 
     res.status(200).json({
@@ -553,26 +527,22 @@ export const addOrUpdateContactInfo = async (req, res) => {
   }
 };
 
+
 // Add or Update Website
 export const addOrUpdateWebsite = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const website = req.body.website;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
-
     if (!organizationalUser) {
-      // If user doesn't exist, create a new document
       organizationalUser = new OrganizationalUser({ _id: userId });
     }
 
-    // Update website if provided
     if (website) {
       organizationalUser.website = website;
     }
 
-    // Save the updated user data
     await organizationalUser.save();
 
     res.status(200).json({
@@ -584,26 +554,22 @@ export const addOrUpdateWebsite = async (req, res) => {
   }
 };
 
+
 // Add or Update Social Links
 export const addOrUpdateSocialLinks = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const socialLinks = req.body.socialLinks;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
-
     if (!organizationalUser) {
-      // If user doesn't exist, create a new document
       organizationalUser = new OrganizationalUser({ _id: userId });
     }
 
-    // Update social links if provided
     if (socialLinks) {
       organizationalUser.socialLinks = socialLinks;
     }
 
-    // Save the updated user data
     await organizationalUser.save();
 
     res.status(200).json({
@@ -615,25 +581,22 @@ export const addOrUpdateSocialLinks = async (req, res) => {
   }
 };
 
+
 // Update Logo
 export const updateLogo = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const logo = req.body.logo;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
-
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update logo if provided
     if (logo) {
       organizationalUser.logo = logo;
     }
 
-    // Save the updated user data
     await organizationalUser.save();
 
     res.status(200).json({
@@ -645,25 +608,22 @@ export const updateLogo = async (req, res) => {
   }
 };
 
+
 // Update Bio
 export const updateBio = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const bio = req.body.bio;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
-
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update bio if provided
     if (bio) {
       organizationalUser.bio = bio;
     }
 
-    // Save the updated user data
     await organizationalUser.save();
 
     res.status(200).json({
@@ -675,23 +635,19 @@ export const updateBio = async (req, res) => {
   }
 };
 
+
 // Add Social Link
 export const addSocialLink = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const socialLink = req.body.socialLink;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
-
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Add the social link to the list
     organizationalUser.socialLinks.push(socialLink);
-
-    // Save the updated user data
     await organizationalUser.save();
 
     res.status(200).json({
@@ -703,6 +659,7 @@ export const addSocialLink = async (req, res) => {
   }
 };
 
+
 // Update Social Link
 export const updateSocialLink = async (req, res) => {
   try {
@@ -710,14 +667,11 @@ export const updateSocialLink = async (req, res) => {
     const socialLinkId = req.params.socialLinkId;
     const updatedSocialLink = req.body.updatedSocialLink;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
-
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Find the index of the social link to update
     const socialLinkIndex = organizationalUser.socialLinks.findIndex(
       (link) => link._id.toString() === socialLinkId
     );
@@ -726,13 +680,11 @@ export const updateSocialLink = async (req, res) => {
       return res.status(404).json({ message: "Social link not found" });
     }
 
-    // Merge the existing social link data with the new data
     organizationalUser.socialLinks[socialLinkIndex] = {
       ...organizationalUser.socialLinks[socialLinkIndex],
       ...updatedSocialLink,
     };
 
-    // Save the updated user data
     await organizationalUser.save();
 
     res.status(200).json({
@@ -744,20 +696,18 @@ export const updateSocialLink = async (req, res) => {
   }
 };
 
+
 // Delete Social Link
 export const deleteSocialLink = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const socialLinkId = req.params.socialLinkId;
 
-    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
-
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Find the index of the social link to delete
     const socialLinkIndex = organizationalUser.socialLinks.findIndex(
       (link) => link._id.toString() === socialLinkId
     );
@@ -766,10 +716,7 @@ export const deleteSocialLink = async (req, res) => {
       return res.status(404).json({ message: "Social link not found" });
     }
 
-    // Remove the social link from the array
     organizationalUser.socialLinks.splice(socialLinkIndex, 1);
-
-    // Save the updated user data
     await organizationalUser.save();
 
     res.status(200).json({
@@ -780,5 +727,7 @@ export const deleteSocialLink = async (req, res) => {
     sendErrorResponse(res, error);
   }
 };
+
+
 
 

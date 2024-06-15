@@ -1,9 +1,7 @@
 import express from 'express';
 import {
   addOrUpdateUserData,
-  addOrUpdateAddress,
-  addOrUpdateTeamMembers,
-  addOrUpdateProjects,
+  addOrUpdateAddress, 
   addOrUpdateContactInfo,
   addOrUpdateWebsite,
   addOrUpdateSocialLinks,
@@ -18,6 +16,9 @@ import {
   addSocialLink,
   updateSocialLink,
   deleteSocialLink,
+  updateUrlInProject,
+  addUrlToProject,
+  removeProjectURL,
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
 
 const router = express.Router();
@@ -28,11 +29,6 @@ router.post('/user/data', addOrUpdateUserData);
 // Route for adding or updating address
 router.post('/user/address', addOrUpdateAddress);
 
-// Route for adding or updating team members
-router.post('/user/team-members', addOrUpdateTeamMembers);
-
-// Route for adding or updating projects
-router.post('/user/projects', addOrUpdateProjects);
 
 // Route for adding or updating contact information
 router.post('/user/contact-info', addOrUpdateContactInfo);
@@ -49,14 +45,23 @@ router.put('/user/logo', updateLogo);
 // Route for updating bio
 router.put('/user/bio', updateBio);
 
-// Route for adding a project
+// POST /api/user/project
 router.post('/user/project', addProject);
 
-// Route for updating a project
-router.put('/user/project/:projectId', updateProject);
+// PUT /api/user/project/:id
+router.put('/user/project/:id', updateProject);
 
-// Route for deleting a project
-router.delete('/user/project/:projectId', deleteProject);
+// DELETE /api/user/project/:id
+router.delete('/user/project/:id', deleteProject);
+
+// POST /api/user/project/:id/url
+router.post('/user/project/:id/url', addUrlToProject);
+
+// PUT /api/user/project/:id/url/:urlId
+router.put('/user/project/:id/url/:urlId', updateUrlInProject);
+
+// DELETE /api/user/project/:id/url/:urlId
+router.delete('/user/project/:id/url/:urlId', removeProjectURL);
 
 // Route for adding a team member
 router.post('/user/team-member', addTeamMember);
