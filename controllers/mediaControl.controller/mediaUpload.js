@@ -166,6 +166,7 @@ export const uploadMedia = async (req, res) => {
     const videoPath = path.resolve(video[0].path);
     console.log('Uploading video file:', videoPath);
     const uploadResult = await uploadFile(videoPath);
+    console.log('Uploading .secure_url  :',uploadResult.uploadResult.secure_url, uploadResult);
 
     let newImage;
     if (image && image.length > 0) {
@@ -187,7 +188,7 @@ export const uploadMedia = async (req, res) => {
 
     // Create a new Video document
     const newVideo = new Video({
-      videoUrl: uploadResult.secure_url,
+      videoUrl: uploadResult.secure_url || uploadResult.uploadResult.secure_url,
       thumbnailUrl: newImage ? newImage._id : null,
       streamingUrls: {
         hls: uploadResult.hlsUrl,
@@ -212,7 +213,8 @@ export const uploadMedia = async (req, res) => {
     // Update IndividualUser with the new video reference
 
 
-    res.status(200).send({ ok: true, video_id: newVideo._id });
+     // Return the media result
+     return { video_id: newVideo._id, image_id: newImage ? newImage._id : null };
   } catch (error) {
     console.error('Error uploading file uploadMedia:', error);
     if (!res.headersSent) {
