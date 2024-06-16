@@ -26,16 +26,19 @@ export const addJobApplication = async (req, res) => {
 
         let mediaResult = {};
         if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
-            mediaResult = await uploadMedia(req, res);
+            mediaResult = await uploadMedia(req);
         } else if (req.files && req.files.image) {
             mediaResult = await uploadImageController(req, res);
         }
 
-        const media = {
-            mediaType: req.files ? (req.files.video ? 'Video' : req.files.image ? 'Image' : '') : '',
-            mediaRef: mediaResult.video_id || mediaResult.image_id || null
-        };
+        console.log('mediaResult:', mediaResult);
 
+        const Media = {
+            mediaType: req.files ? (req.files.video ? 'Video' : req.files.image ? 'Image' : '') : '',
+            mediaRef: mediaResult?.video_id || mediaResult?.image_id || null
+        };
+        console.log('Media:', Media);
+ 
         const filteredFields = {
             title,
             description,
@@ -48,7 +51,7 @@ export const addJobApplication = async (req, res) => {
             skills: JSON.parse(skills),
             category,
             tags: JSON.parse(tags),
-            media,
+            media: Media, // Assign the Media object here
             postedBy: userId // Associate the application with the user who posted it
         };
 
@@ -74,6 +77,7 @@ export const addJobApplication = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while adding the job application' });
     }
 };
+
 
 
 // Edit Job Application Details
