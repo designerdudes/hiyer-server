@@ -8,7 +8,7 @@ import {
 import { socialAuth } from "../../controllers/user.controller.js";
 
 const router = express.Router();
- 
+
 router.post("/send-email-otp", sendEmailOTPforverification);
 router.post("/verify-otp", verifyotp);
 router.post("/register", registerUser);
