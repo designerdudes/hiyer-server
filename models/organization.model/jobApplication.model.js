@@ -100,7 +100,7 @@ const jobApplicationSchema = new mongoose.Schema({
     },
     salary: String,
     applicationDeadline: Date,
-    Media: { mediaSchema },
+    media: mediaSchema,
     location: String,
     benefits: [String],
     applicationLink: String,
