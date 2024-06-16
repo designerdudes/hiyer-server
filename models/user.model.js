@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema(
     profile: {
       profileType: {
         type: String,
+        enum: ['IndividualUser', 'OrganizationalUser', 'OrganizationMember'],
         required: true,
       },
       profileRef: {
