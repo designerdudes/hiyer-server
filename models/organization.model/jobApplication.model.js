@@ -73,6 +73,8 @@ const applicantSchema = new mongoose.Schema({
 
 
 
+
+
 const jobApplicationSchema = new mongoose.Schema({
     title: {
         type: String,
