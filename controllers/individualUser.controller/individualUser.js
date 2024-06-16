@@ -279,7 +279,6 @@ export const updatePortfolio = async (req, res) => {
 
 
 export const addEducation = async (req, res) => {
-
   try {
     const userId = getUserIdFromToken(req);
 
@@ -287,6 +286,11 @@ export const addEducation = async (req, res) => {
 
     if (!individualUser) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure startDate is provided
+    if (!req.body.startDate) {
+      return res.status(400).json({ message: "Start date is required" });
     }
 
     individualUser.education.push(req.body);
@@ -314,21 +318,25 @@ export const updateEducation = async (req, res) => {
     if (!individualUser) {
       return res.status(404).json({ message: "User not found" });
     }
-    console.log(educationId,req.params)
-    // Log each education ID
-    individualUser.education.forEach((edu) => console.log(edu._id));
 
-    let educationIndex = individualUser.education.findIndex((edu) => edu._id == educationId);
+    const educationIndex = individualUser.education.findIndex((edu) => edu._id.toString() === educationId);
 
     if (educationIndex === -1) {
       return res.status(404).json({ message: "Education entry not found" });
     }
 
     // Merge the new education data into the existing one
-    individualUser.education[educationIndex] = {
-      ...individualUser.education[educationIndex],
+    const updatedEducation = {
+      ...individualUser.education[educationIndex]._doc,  // Use _doc to avoid Mongoose metadata
       ...req.body,
     };
+
+    // Validate required fields
+    if (!updatedEducation.degree || !updatedEducation.institute || !updatedEducation.startDate) {
+      return res.status(400).json({ message: "Degree, institute, and start date are required" });
+    }
+
+    individualUser.education[educationIndex] = updatedEducation;
 
     // Save the updated user data
     await individualUser.save();
@@ -344,8 +352,9 @@ export const updateEducation = async (req, res) => {
 
 
 
-export const deleteEducation = async (req, res) => {
 
+
+export const deleteEducation = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const educationId = req.params.id;
@@ -357,9 +366,7 @@ export const deleteEducation = async (req, res) => {
     }
 
     // Find the index of the education to delete
-    const educationIndex = individualUser.education.findIndex(
-      (edu) => edu._id.toString() === educationId
-    );
+    const educationIndex = individualUser.education.findIndex((edu) => edu._id.toString() === educationId);
 
     if (educationIndex === -1) {
       return res.status(404).json({ message: "Education not found" });
@@ -379,6 +386,7 @@ export const deleteEducation = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 
 
