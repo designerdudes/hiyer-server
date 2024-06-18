@@ -86,6 +86,12 @@ router.delete('/project/:id/url/:urlId', removeProjectURL);
 // Video Details Route
 router.post('/video-details/:id', addOrUpdateVideoDetails);
 
+//Intro Video 
+router.post('/intro-video/add', addIntroVideo);
+router.put('/intro-video/update', updateIntroVideo);
+router.delete('/intro-video/delete', deleteIntroVideo);
+
+
 // Job Application Routes
 router.post('/jobs/:id/apply', applyJobApplication);
 router.post('/jobs/:jobId/applicants/', withdrawJobApplicant);
