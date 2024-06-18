@@ -51,10 +51,12 @@ const experienceSchema = new mongoose.Schema({
         title: {
           type: String,
           required: true,
-        }, description: {
+        }, 
+        description: {
           type: String,
           required: true,
-        }, employmentType: {
+        }, 
+        employmentType: {
           type: String,
           enum: ['full-time', 'part-time', 'contract', 'internship', 'freelance', 'volunteer', 'seasonal', 'apprenticeship'],
           required: true,
@@ -68,7 +70,10 @@ const experienceSchema = new mongoose.Schema({
     ],
     required: true,
   },
+}, {
+  timestamps: true
 });
+
 
 
 // Schema for Skill

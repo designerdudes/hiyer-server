@@ -35,7 +35,13 @@ import {
   getUserDetailsFromToken,
   getUserDetailsById,
   getUserDetailsByIdandSimilarUser,
-  getSimilarUsers
+  getSimilarUsers,
+  addPositionToExperience,
+  updatePositionInExperience,
+  deletePositionInExperience,
+  addIntroVideo,
+  updateIntroVideo,
+  deleteIntroVideo
 } from '../../../controllers/individualUser.controller/individualUser.js';
 
 const router = express.Router();
@@ -60,10 +66,16 @@ router.post('/education', addEducation);
 router.put('/education/:id', updateEducation);
 router.delete('/education/:id', deleteEducation);
 
-// Experience Routes
+
+// Experience routes
 router.post('/experience', addExperience);
 router.put('/experience/:id', updateExperience);
 router.delete('/experience/:id', deleteExperience);
+
+// Position routes within experience
+router.post('/experience/:id/position', addPositionToExperience);
+router.put('/experience/:experienceId/position/:positionId', updatePositionInExperience);
+router.delete('/experience/:experienceId/position/:positionId', deletePositionInExperience);
 
 // Skill Routes
 router.post('/skill', addSkill);
