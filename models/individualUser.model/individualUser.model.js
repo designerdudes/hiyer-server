@@ -188,6 +188,14 @@ const individualUserSchema = new mongoose.Schema(
         ref: "JobApplication",
         default: [],
       },
+    }, 
+    introVideo: {
+      videoRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Video",
+      },
+      videoTitle: String,
+      videoDescription: String,
     },
     postedVideo: [
       {
