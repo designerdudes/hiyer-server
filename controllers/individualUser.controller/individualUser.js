@@ -391,10 +391,8 @@ export const deleteEducation = async (req, res) => {
 
 
 export const addExperience = async (req, res) => {
-
   try {
     const userId = getUserIdFromToken(req);
-
     let individualUser = await IndividualUser.findById(userId);
 
     if (!individualUser) {
@@ -407,17 +405,19 @@ export const addExperience = async (req, res) => {
     // Save the updated user data
     await individualUser.save();
 
-    res.status(200).json({ message: "Experience added successfully", user: individualUser });
+    res.status(200).json({ message: "Experience added successfully", experiences: individualUser.experiences });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export const updateExperience = async (req, res) => {
 
+
+export const updateExperience = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const  experienceId  = req.params.id;
+    const experienceId = req.params.id;
+    const { company } = req.body; // Destructure company from the request body
     let individualUser = await IndividualUser.findById(userId);
 
     if (!individualUser) {
@@ -433,18 +433,15 @@ export const updateExperience = async (req, res) => {
       return res.status(404).json({ message: "Experience not found" });
     }
 
-    // Merge the new experience data into the existing one
-    individualUser.experiences[experienceIndex] = {
-      ...individualUser.experiences[experienceIndex],
-      ...req.body,
-    };
+    // Update only the company field of the specific experience
+    individualUser.experiences[experienceIndex].company = company;
 
     // Save the updated user data
     await individualUser.save();
 
     res.status(200).json({
       message: "Experience updated successfully",
-      user: individualUser,
+      experiences: individualUser.experiences,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -452,11 +449,11 @@ export const updateExperience = async (req, res) => {
 };
 
 
-export const deleteExperience = async (req, res) => {
 
+export const deleteExperience = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const  experienceId  = req.params.id;
+    const experienceId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -481,7 +478,7 @@ export const deleteExperience = async (req, res) => {
 
     res.status(200).json({
       message: "Experience deleted successfully",
-      user: individualUser,
+      experiences: individualUser.experiences,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -489,6 +486,137 @@ export const deleteExperience = async (req, res) => {
 };
 
 
+
+export const addPositionToExperience = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const experienceId = req.params.id;
+
+
+    // Find the individual user by ID
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      console.log("User not found");
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log("User found:", individualUser);
+
+    // Find the experience to add a position to
+    let experience = individualUser.experiences.id(experienceId);
+
+    if (!experience) {
+      console.log("Experience not found for ID:", experienceId);
+      return res.status(404).json({ message: "Experience not found" });
+    }
+
+    console.log("Experience found:", experience);
+
+    // Add new position
+    experience.positions.push(req.body);
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Position added successfully",
+      experiences: individualUser.experiences,
+    });
+  } catch (error) {
+    console.error('Error adding position:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+
+
+export const updatePositionInExperience = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const experienceId = req.params.experienceId;
+    const positionId = req.params.positionId;
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the experience to update a position in
+    let experience = individualUser.experiences.id(experienceId);
+
+    if (!experience) {
+      return res.status(404).json({ message: "Experience not found" });
+    }
+
+    // Find the index of the position to update
+    let positionIndex = experience.positions.findIndex(
+      (pos) => pos._id.toString() === positionId
+    );
+
+    if (positionIndex === -1) {
+      return res.status(404).json({ message: "Position not found" });
+    }
+
+    // Merge the new position data into the existing one
+    experience.positions[positionIndex] = {
+      ...experience.positions[positionIndex],
+      ...req.body,
+    };
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Position updated successfully",
+      experiences: individualUser.experiences,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const deletePositionInExperience = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const experienceId = req.params.experienceId;
+    const positionId = req.params.positionId;
+    let individualUser = await IndividualUser.findById(userId);
+
+    if (!individualUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the experience to delete a position in
+    let experience = individualUser.experiences.id(experienceId);
+
+    if (!experience) {
+      return res.status(404).json({ message: "Experience not found" });
+    }
+
+    // Find the index of the position to delete
+    const positionIndex = experience.positions.findIndex(
+      (pos) => pos._id.toString() === positionId
+    );
+
+    if (positionIndex === -1) {
+      return res.status(404).json({ message: "Position not found" });
+    }
+
+    // Remove the position entry from the array
+    experience.positions.splice(positionIndex, 1);
+
+    // Save the updated user data
+    await individualUser.save();
+
+    res.status(200).json({
+      message: "Position deleted successfully",
+      experiences: individualUser.experiences,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 export const addSkill = async (req, res) => {
 
@@ -558,6 +686,8 @@ export const updateSkill = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+
 
 
 export const deleteSkill = async (req, res) => {
