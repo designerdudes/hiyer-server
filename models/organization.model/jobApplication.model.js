@@ -73,6 +73,8 @@ const applicantSchema = new mongoose.Schema({
 
 
 
+
+
 const jobApplicationSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -98,7 +100,7 @@ const jobApplicationSchema = new mongoose.Schema({
     },
     salary: String,
     applicationDeadline: Date,
-    Media: { mediaSchema },
+    media: mediaSchema,
     location: String,
     benefits: [String],
     applicationLink: String,

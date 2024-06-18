@@ -5,7 +5,8 @@ import cors from "cors";
 import userRoute from "./routes/v1/user.route.js";
 import individualUserRoute from "./routes/v1/individualUser.route/individualUser.route.js";
 import organizationRoute from "./routes/v1/organization.route/organizationUser.route.js";
-
+import organizationMemberRoute from "./routes/v1/organization.route/organizationMember.route.js"
+import jobApplicationRoute from "./routes/v1/jobApplication.route/jobApplication.js"
 import mediaControllRoute from "./routes/v1/mediaControll.route/mediaControll.js";
 import authRoute from "./routes/v1/auth.route.js";
 import errorHandler from "./middleware/error.js";
@@ -39,6 +40,8 @@ app.use("/auth/v1", authRoute);
 app.use("/user/v1", userRoute);
 app.use("/individualUser/v1", individualUserRoute);
 app.use("/organization/v1", organizationRoute);
+app.use("/organizationMember/v1", organizationMemberRoute);
+app.use("/jobApplication/v1", jobApplicationRoute);
 
 app.use("/media/v1", mediaControllRoute);
 

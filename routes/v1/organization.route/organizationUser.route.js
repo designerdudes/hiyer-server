@@ -13,12 +13,12 @@ import {
   addTeamMember,
   updateTeamMember,
   deleteTeamMember,
-  addSocialLink,
-  updateSocialLink,
+  addSocialLink, 
   deleteSocialLink,
   updateUrlInProject,
   addUrlToProject,
   removeProjectURL,
+  updateSocialLinks, 
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
 
 const router = express.Router();
@@ -76,9 +76,10 @@ router.delete('/user/team-member/:teamMemberId', deleteTeamMember);
 router.post('/user/social-link', addSocialLink);
 
 // Route for updating a social link
-router.put('/user/social-link/:socialLinkId', updateSocialLink);
+router.put('/user/social-links', updateSocialLinks);
 
 // Route for deleting a social link
-router.delete('/user/social-link/:socialLinkId', deleteSocialLink);
+router.delete('/user/social-links/:socialLinkKey', deleteSocialLink);
+
 
 export default router;

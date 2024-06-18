@@ -30,7 +30,13 @@ const teamMemberSchema = new mongoose.Schema({
     required: true,
   },
   position: String,
+  status: {
+    type: String,
+    enum: ['pending', 'active'],
+    default: 'pending',
+  },
 });
+
 
 const projectSchema = new mongoose.Schema({
   name: {

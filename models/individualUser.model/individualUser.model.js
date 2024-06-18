@@ -30,11 +30,14 @@ const educationSchema = new mongoose.Schema({
   institute: {
     type: String,
     required: true,
+  }, fieldofStudy: {
+    type: String,
   },
-  year: {
-    type: Number,
+  startDate: {
+    type: Date,
     required: true,
   },
+  endDate: Date,
 });
 
 // Schema for Experience
@@ -163,7 +166,7 @@ const individualUserSchema = new mongoose.Schema(
       facebook: String,
       twitter: String,
       youtube: String,
-      github:String,
+      github: String,
     },
     projects: [projectSchema],
     resume: String,

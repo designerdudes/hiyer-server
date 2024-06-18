@@ -1,9 +1,11 @@
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
+import User from "../../models/user.model.js";
 import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
+import validator from 'validator';
 
 
-
+ 
  
 
 // Helper function to handle common error response
@@ -94,71 +96,51 @@ export const addOrUpdateAddress = async (req, res) => {
 // Add or Update Team Members
 export const addTeamMember = async (req, res) => {
   try {
-    const organizationId = getUserIdFromToken(req); // Assuming the token contains the organization ID
+    const organizationId = getUserIdFromToken(req);
 
-    const { email, countryCode, mobileNo, firstName,
-      middleName,
-      lastName, profileType, role, department, dateOfJoining } = req.body;
+    const { email, countryCode, mobileNo, firstName, middleName, lastName, role, department, dateOfJoining } = req.body;
 
-    // Prepare user data
-    const userData = {
-      email: {
-        id: email,
-      },
-      phone: {
-        countryCode,
-        number: mobileNo,
-      },
+    // Create a new User document
+    const newUser = new User({
+      email: { id: email },
+      phone: { countryCode, number: mobileNo },
       name: {
         first: firstName || "",
         middle: middleName || "",
         last: lastName || "",
       },
-      profile: {
-        profileType,
-      },
-    };
+      profile: { profileType: "OrganizationMember" },
+    });
 
-    // Create a new User document
-    const newUser = new User(userData);
     const savedUser = await newUser.save();
 
-    // Prepare organization member data
-    const organizationMemberData = {
-
+    // Create a new OrganizationMember document
+    const newOrganizationMember = new OrganizationMember({
       role,
       department,
       dateOfJoining,
       organization: organizationId,
-      _id: savedUser._id, // Use the _id of the newly created user as profileRef
-    };
+      _id: savedUser._id,
+    });
 
-    // Create a new OrganizationMember document
-    const newOrganizationMember = new OrganizationMember(organizationMemberData);
     await newOrganizationMember.save();
 
     // Update the User document with the profile reference
-    await User.findByIdAndUpdate(savedUser._id, {
-      $set: {
-        "profile.profileRef": savedUser._id, // Update the nested field
-      },
-    });
+    savedUser.profile.profileRef = savedUser._id;
+    await savedUser.save();
 
-    // Find the organizational user by user ID
-    let organizationalUser = await OrganizationalUser.findById(organizationId);
+    // Find and update the organizational user
+    const organizationalUser = await OrganizationalUser.findByIdAndUpdate(
+      organizationId,
+      {
+        $push: { teamMembers: { userId: savedUser._id, position: role } },
+      },
+      { new: true }
+    );
 
     if (!organizationalUser) {
       return res.status(404).json({ message: "Organization not found" });
     }
-
-    // Add the new team member to the list
-    organizationalUser.teamMembers.push({
-      userId: savedUser._id,
-      position: role,
-    });
-
-    // Save the updated organizational user data
-    await organizationalUser.save();
 
     res.status(200).json({
       message: "Team member added successfully",
@@ -170,23 +152,15 @@ export const addTeamMember = async (req, res) => {
   }
 };
 
+
+
+ 
 // Update Team Member
 export const updateTeamMember = async (req, res) => {
   try {
     const organizationId = getUserIdFromToken(req); // Assuming the token contains the organization ID
     const { teamMemberId } = req.params;
-    const {
-      email,
-      countryCode,
-      mobileNo,
-      firstName,
-      middleName,
-      lastName,
-      profileType,
-      role,
-      department,
-      dateOfJoining
-    } = req.body;
+    const { email, countryCode, mobileNo, firstName, middleName, lastName, profileType, role, department, dateOfJoining } = req.body;
 
     // Find the existing user by teamMemberId
     const existingUser = await User.findById(teamMemberId);
@@ -195,13 +169,13 @@ export const updateTeamMember = async (req, res) => {
     }
 
     // Update user data
-    existingUser.email.id = email || existingUser.email.id;
-    existingUser.phone.countryCode = countryCode || existingUser.phone.countryCode;
-    existingUser.phone.number = mobileNo || existingUser.phone.number;
-    existingUser.name.first = firstName || existingUser.name.first;
-    existingUser.name.middle = middleName || existingUser.name.middle;
-    existingUser.name.last = lastName || existingUser.name.last;
-    existingUser.profile.profileType = profileType || existingUser.profile.profileType;
+    if (email) existingUser.email.id = email;
+    if (countryCode) existingUser.phone.countryCode = countryCode;
+    if (mobileNo) existingUser.phone.number = mobileNo;
+    if (firstName) existingUser.name.first = firstName;
+    if (middleName) existingUser.name.middle = middleName;
+    if (lastName) existingUser.name.last = lastName;
+    if (profileType) existingUser.profile.profileType = profileType;
 
     await existingUser.save();
 
@@ -212,9 +186,9 @@ export const updateTeamMember = async (req, res) => {
     }
 
     // Update organization member data
-    existingOrganizationMember.role = role || existingOrganizationMember.role;
-    existingOrganizationMember.department = department || existingOrganizationMember.department;
-    existingOrganizationMember.dateOfJoining = dateOfJoining || existingOrganizationMember.dateOfJoining;
+    if (role) existingOrganizationMember.role = role;
+    if (department) existingOrganizationMember.department = department;
+    if (dateOfJoining) existingOrganizationMember.dateOfJoining = dateOfJoining;
 
     await existingOrganizationMember.save();
 
@@ -225,11 +199,9 @@ export const updateTeamMember = async (req, res) => {
     }
 
     // Update the role in the teamMembers array if necessary
-    const teamMemberIndex = organizationalUser.teamMembers.findIndex(
-      member => member.userId.toString() === teamMemberId
-    );
+    const teamMemberIndex = organizationalUser.teamMembers.findIndex(member => member.userId.toString() === teamMemberId);
     if (teamMemberIndex !== -1) {
-      organizationalUser.teamMembers[teamMemberIndex].position = role || organizationalUser.teamMembers[teamMemberIndex].position;
+      if (role) organizationalUser.teamMembers[teamMemberIndex].position = role;
       await organizationalUser.save();
     } else {
       return res.status(404).json({ message: "Team member not found in organization" });
@@ -252,18 +224,16 @@ export const deleteTeamMember = async (req, res) => {
     const { teamMemberId } = req.params;
 
     // Find and delete the User document
-    const user = await User.findById(teamMemberId);
+    const user = await User.findByIdAndDelete(teamMemberId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    await user.remove();
 
     // Find and delete the OrganizationMember document
-    const organizationMember = await OrganizationMember.findById(teamMemberId);
+    const organizationMember = await OrganizationMember.findByIdAndDelete(teamMemberId);
     if (!organizationMember) {
       return res.status(404).json({ message: "Organization member not found" });
     }
-    await organizationMember.remove();
 
     // Find the organizational user by organization ID
     let organizationalUser = await OrganizationalUser.findById(organizationId);
@@ -312,32 +282,32 @@ export const addProject = async (req, res) => {
 };
 
 
-
 export const updateProject = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const projectId = req.params.id;
+    const updateData = req.body;
 
+    // Find the organizational user by user ID
     let organizationalUser = await OrganizationalUser.findById(userId);
 
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Find the index of the project to update
-    let projectIndex = organizationalUser.projects.findIndex(
-      (proj) => proj._id.toString() === projectId
-    );
+    // Find the project to update
+    let project = organizationalUser.projects.id(projectId);
 
-    if (projectIndex === -1) {
+    if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    // Merge the new project data into the existing one
-    organizationalUser.projects[projectIndex] = {
-      ...organizationalUser.projects[projectIndex],
-      ...req.body,
-    };
+    // Update only the provided fields
+    for (const key in updateData) {
+      if (updateData.hasOwnProperty(key)) {
+        project.set(key, updateData[key]);
+      }
+    }
 
     // Save the updated user data
     await organizationalUser.save();
@@ -350,6 +320,7 @@ export const updateProject = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 
 export const deleteProject = async (req, res) => {
@@ -640,18 +611,24 @@ export const updateBio = async (req, res) => {
 export const addSocialLink = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const socialLink = req.body.socialLink;
+    const socialLinks = req.body.socialLinks;
 
     let organizationalUser = await OrganizationalUser.findById(userId);
     if (!organizationalUser) {
-      return res.status(404).json({ message: "User not found" });
+      organizationalUser = new OrganizationalUser({ _id: userId });
     }
 
-    organizationalUser.socialLinks.push(socialLink);
+    if (socialLinks) {
+      organizationalUser.socialLinks = {
+        ...organizationalUser.socialLinks,
+        ...socialLinks,
+      };
+    }
+
     await organizationalUser.save();
 
     res.status(200).json({
-      message: "Social link added successfully",
+      message: "Social links added or updated successfully",
       user: organizationalUser,
     });
   } catch (error) {
@@ -659,64 +636,54 @@ export const addSocialLink = async (req, res) => {
   }
 };
 
-
-// Update Social Link
-export const updateSocialLink = async (req, res) => {
+// Update Social Links
+export const updateSocialLinks = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const socialLinkId = req.params.socialLinkId;
-    const updatedSocialLink = req.body.updatedSocialLink;
+    const updatedSocialLinks = req.body; // This should be an object with keys corresponding to social links
 
     let organizationalUser = await OrganizationalUser.findById(userId);
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const socialLinkIndex = organizationalUser.socialLinks.findIndex(
-      (link) => link._id.toString() === socialLinkId
-    );
-
-    if (socialLinkIndex === -1) {
-      return res.status(404).json({ message: "Social link not found" });
+    for (const [key, value] of Object.entries(updatedSocialLinks)) {
+      if (organizationalUser.socialLinks.hasOwnProperty(key)) {
+        organizationalUser.socialLinks[key] = value;
+      } else {
+        return res.status(400).json({ message: `Invalid social link key: ${key}` });
+      }
     }
-
-    organizationalUser.socialLinks[socialLinkIndex] = {
-      ...organizationalUser.socialLinks[socialLinkIndex],
-      ...updatedSocialLink,
-    };
 
     await organizationalUser.save();
 
     res.status(200).json({
-      message: "Social link updated successfully",
+      message: "Social links updated successfully",
       user: organizationalUser,
     });
   } catch (error) {
     sendErrorResponse(res, error);
   }
 };
-
 
 // Delete Social Link
 export const deleteSocialLink = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
-    const socialLinkId = req.params.socialLinkId;
+    const socialLinkKey = req.params.socialLinkKey; // assuming key is passed as a param
 
     let organizationalUser = await OrganizationalUser.findById(userId);
     if (!organizationalUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const socialLinkIndex = organizationalUser.socialLinks.findIndex(
-      (link) => link._id.toString() === socialLinkId
-    );
-
-    if (socialLinkIndex === -1) {
+    if (!organizationalUser.socialLinks.hasOwnProperty(socialLinkKey)) {
       return res.status(404).json({ message: "Social link not found" });
     }
 
-    organizationalUser.socialLinks.splice(socialLinkIndex, 1);
+    // Delete the social link
+    organizationalUser.socialLinks[socialLinkKey] = undefined;
+
     await organizationalUser.save();
 
     res.status(200).json({
@@ -727,6 +694,7 @@ export const deleteSocialLink = async (req, res) => {
     sendErrorResponse(res, error);
   }
 };
+
 
 
 

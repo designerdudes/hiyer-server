@@ -1,19 +1,15 @@
-import { deleteImageFromCloudinary, deleteVideoFromCloudinary } from "../../config/cloudinary/cloudinary.config";
-import JobApplication from "../../models/organization.model/jobApplication.model";
-import { uploadImageController, uploadMedia } from "../mediaControl.controller/mediaUpload";
+import { deleteImageFromCloudinary, deleteVideoFromCloudinary } from "../../config/cloudinary/cloudinary.config.js";
+import JobApplication from "../../models/organization.model/jobApplication.model.js";
+import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
+import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
+import { uploadImageController, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
+
 
 export const addJobApplication = async (req, res) => {
     try {
-        const authorizationHeader = req.headers.authorization;
-
-        if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-
-        const token = authorizationHeader.split("Bearer ")[1];
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-        const userId = decodedToken.id;
-
+        const userId = getUserIdFromToken(req);
+        
+        // Destructure the request body
         const {
             title,
             description,
@@ -29,17 +25,20 @@ export const addJobApplication = async (req, res) => {
         } = req.body;
 
         let mediaResult = {};
-        if (req.file.video) {
-            mediaResult = await uploadMedia(req, res);
-        } else if (req.file.image) {
+        if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
+            mediaResult = await uploadMedia(req);
+        } else if (req.files && req.files.image) {
             mediaResult = await uploadImageController(req, res);
         }
 
-        const media = {
-            mediaType: req.file ? (req.file.video ? 'Video' : req.file.image ? 'Image' : '') : '',
-            mediaRef: mediaResult.video_id || mediaResult.image_id || null
-        };
+        console.log('mediaResult:', mediaResult);
 
+        const Media = {
+            mediaType: req.files ? (req.files.video ? 'Video' : req.files.image ? 'Image' : '') : '',
+            mediaRef: mediaResult?.video_id || mediaResult?.image_id || null
+        };
+        console.log('Media:', Media);
+ 
         const filteredFields = {
             title,
             description,
@@ -49,10 +48,10 @@ export const addJobApplication = async (req, res) => {
             salary,
             applicationDeadline,
             location,
-            skills,
+            skills: JSON.parse(skills),
             category,
-            tags,
-            media,
+            tags: JSON.parse(tags),
+            media: Media, // Assign the Media object here
             postedBy: userId // Associate the application with the user who posted it
         };
 
@@ -79,6 +78,9 @@ export const addJobApplication = async (req, res) => {
     }
 };
 
+
+
+// Edit Job Application Details
 export const editJobApplicationDetails = async (req, res) => {
     try {
         const { id } = req.params; // Get job application ID from request parameters
@@ -135,8 +137,7 @@ export const editJobApplicationDetails = async (req, res) => {
     }
 };
 
-
-
+// Edit Job Application Video
 export const editJobApplicationVideo = async (req, res) => {
     try {
         const { id } = req.params; // Get job application ID from request parameters
@@ -149,51 +150,59 @@ export const editJobApplicationVideo = async (req, res) => {
 
         // Check if req.file.video exists
         if (req.file && req.file.video) {
-            let uploadResult1;
+            let uploadResult;
             // Upload the new video to Cloudinary
             try {
-                uploadResult1 = await uploadVideoToCloudinary(req.file.video);
+                uploadResult = await uploadVideoToCloudinary(req.file.video);
             } catch (uploadError) {
                 console.error('Error uploading video to Cloudinary:', uploadError);
                 return res.status(500).json({ error: "Failed to upload video" });
             }
 
-            // Check if the job application has media type image
-            if (jobApplication.media && jobApplication.media.mediaType === 'Image') {
-                // Update thumbnail URL if media type is image
-                jobApplication.thumbnailUrl = jobApplication.media.mediaRef;
-            }
+            // Handle existing video reference
+            if (jobApplication.media && jobApplication.media.mediaType === 'Video') {
+                const video = await Video.findById(jobApplication.media.mediaRef);
+                if (video) {
+                    video.videoUrl = uploadResult.videoUrl;
+                    video.streamingUrls = {
+                        hls: uploadResult.hlsUrl,
+                        dash: uploadResult.dashUrl,
+                    };
+                    video.representations = uploadResult.representations;
+                    video.postedBy = jobApplication.postedBy;
+                    await video.save();
+                } else {
+                    const newVideo = new Video({
+                        videoUrl: uploadResult.videoUrl,
+                        streamingUrls: {
+                            hls: uploadResult.hlsUrl,
+                            dash: uploadResult.dashUrl,
+                        },
+                        representations: uploadResult.representations,
+                        postedBy: jobApplication.postedBy,
+                    });
+                    await newVideo.save();
 
-            // Get the existing video document
-            const video = await Video.findById(jobApplication.media.mediaRef);
-            if (video) {
-                // Update the existing video document with new video details
-                video.videoUrl = uploadResult1.videoUrl;
-                video.streamingUrls = {
-                    hls: uploadResult1.hlsUrl,
-                    dash: uploadResult1.dashUrl,
-                };
-                video.representations = uploadResult1.representations;
-                video.postedBy = jobApplication.postedBy; // Assuming postedBy is the user ID
-                await video.save();
+                    jobApplication.media = {
+                        mediaType: 'Video',
+                        mediaRef: newVideo._id,
+                    };
+                }
             } else {
-                // Create a new Video document if it does not exist
                 const newVideo = new Video({
-                    videoUrl: uploadResult1.videoUrl,
-                    thumbnailUrl: null, // Assuming no thumbnail update here
+                    videoUrl: uploadResult.videoUrl,
                     streamingUrls: {
-                        hls: uploadResult1.hlsUrl,
-                        dash: uploadResult1.dashUrl,
+                        hls: uploadResult.hlsUrl,
+                        dash: uploadResult.dashUrl,
                     },
-                    representations: uploadResult1.representations,
+                    representations: uploadResult.representations,
                     postedBy: jobApplication.postedBy,
                 });
                 await newVideo.save();
 
-                // Update the job application document with the new video reference
                 jobApplication.media = {
                     mediaType: 'Video',
-                    mediaRef: newVideo._id
+                    mediaRef: newVideo._id,
                 };
             }
         } else {
@@ -203,7 +212,6 @@ export const editJobApplicationVideo = async (req, res) => {
         // Save the updated job application document
         await jobApplication.save();
 
-        // Respond with the updated job application document
         res.status(200).json(jobApplication);
     } catch (error) {
         console.error('Error editing job application video:', error);
@@ -211,11 +219,7 @@ export const editJobApplicationVideo = async (req, res) => {
     }
 };
 
-
-
-
-
-
+// Edit Job Application Image
 export const editJobApplicationImage = async (req, res) => {
     try {
         const { id } = req.params; // Get job application ID from request parameters
@@ -227,24 +231,23 @@ export const editJobApplicationImage = async (req, res) => {
         }
 
         // Ensure the media type is an image
-        if (!jobApplication.media || jobApplication.media.mediaType !== 'Image') {
+        if (jobApplication.media && jobApplication.media.mediaType !== 'Image') {
             return res.status(400).json({ error: "The media type is not an image" });
         }
 
         // Check if req.file.image exists
         if (req.file && req.file.image) {
-            let uploadResult1;
+            let uploadResult;
             // Upload the new image to Cloudinary
             try {
-                uploadResult1 = await uploadImageToCloudinary(req.file.image);
+                uploadResult = await uploadImageToCloudinary(req.file.image);
             } catch (uploadError) {
                 console.error('Error uploading image to Cloudinary:', uploadError);
                 return res.status(500).json({ error: "Failed to upload image" });
             }
 
-            // Check if the job application has an existing image
+            // Handle existing image reference
             if (jobApplication.media && jobApplication.media.mediaRef) {
-                // Get the existing image document
                 const image = await Image.findById(jobApplication.media.mediaRef);
                 if (image) {
                     // Delete the existing image from Cloudinary
@@ -264,21 +267,19 @@ export const editJobApplicationImage = async (req, res) => {
                 }
             }
 
-            // Create a new Image document with the uploaded image URL
             const newImage = new Image({
-                imageUrl: uploadResult1.imageUrl,
+                imageUrl: uploadResult.imageUrl,
                 transformations: [
                     { width: 800, height: 800, quality: 'auto' }
                 ],
-                postedBy: jobApplication.postedBy // Assuming postedBy is the user ID
+                postedBy: jobApplication.postedBy
             });
 
             await newImage.save();
 
-            // Update the job application document with the new image reference
             jobApplication.media = {
                 mediaType: 'Image',
-                mediaRef: newImage._id
+                mediaRef: newImage._id,
             };
         } else {
             return res.status(400).json({ error: "Image file is required" });
@@ -287,7 +288,6 @@ export const editJobApplicationImage = async (req, res) => {
         // Save the updated job application document
         await jobApplication.save();
 
-        // Respond with the updated job application document
         res.status(200).json(jobApplication);
     } catch (error) {
         console.error('Error editing job application image:', error);
@@ -295,12 +295,11 @@ export const editJobApplicationImage = async (req, res) => {
     }
 };
 
-
+// Delete Job Application
 export const deleteJobApplication = async (req, res) => {
     try {
         const { id } = req.params; // Get job application ID from request parameters
 
-        // Find the job application by ID
         const jobApplication = await JobApplication.findById(id);
         if (!jobApplication) {
             return res.status(404).json({ error: "Job application not found" });
@@ -310,32 +309,25 @@ export const deleteJobApplication = async (req, res) => {
         const { media } = jobApplication;
 
         if (media && media.mediaType === 'Video') {
-            // Fetch video document
             const video = await Video.findById(media.mediaRef);
             if (video) {
-                // Delete video from Cloudinary
                 await deleteVideoFromCloudinary(video.videoUrl);
-                // Remove Video document reference
                 await Video.findByIdAndDelete(media.mediaRef);
             }
         } else if (media && media.mediaType === 'Image') {
-            // Fetch image document
             const image = await Image.findById(media.mediaRef);
             if (image) {
-                // Delete image from Cloudinary
                 await deleteImageFromCloudinary(image.imageUrl);
-                // Remove Image document reference
                 await Image.findByIdAndDelete(media.mediaRef);
             }
         }
 
-        // Delete the job application document
         await JobApplication.findByIdAndDelete(id);
 
-        // Remove job application reference from IndividualUser model
-        await IndividualUser.updateMany(
-            { "jobposting.applied": id },
-            { $pull: { "jobposting.applied": id } }
+        // Remove job application reference from OrganizationalUser model
+        await OrganizationalUser.updateMany(
+            { postedApplications: id },
+            { $pull: { postedApplications: id } }
         );
 
         res.status(200).json({ message: "Job application deleted successfully" });
@@ -350,6 +342,8 @@ export const deleteJobApplication = async (req, res) => {
 
 // Controller to update the applicant status based on user ID
 export const updateApplicantStatus = async (req, res) => {
+    const userId = getUserIdFromToken(req);
+
     try {
         const { jobId, userId } = req.params;
         const { applicantStatus } = req.body;
@@ -392,6 +386,8 @@ export const updateApplicantStatus = async (req, res) => {
 
 // Controller to remove job applicant
 export const removeJobApplicant = async (req, res) => {
+    const userId = getUserIdFromToken(req);
+
     try {
         const authorizationHeader = req.headers.authorization;
         if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
@@ -435,6 +431,9 @@ export const removeJobApplicant = async (req, res) => {
 
 // Get 5 job applications based on similarity of certain fields
 export const getSimilarJobApplications = async (req, res) => {
+
+    const userId = getUserIdFromToken(req);
+
     const { industry, skills, tags, applicationType, experienceLevel, location } = req.query;
 
     try {
@@ -476,6 +475,8 @@ export const getSimilarJobApplications = async (req, res) => {
 
 // Controller to get additional job application documents based on similar fields
 export const getSimilarJobApplicationsFromId = async (req, res) => {
+    const userId = getUserIdFromToken(req);
+
     try {
         const { id } = req.params;
         const jobApplication = await JobApplication.findById(id);
@@ -509,6 +510,8 @@ export const getSimilarJobApplicationsFromId = async (req, res) => {
 
 // Controller to get job application details by ID with populated media data and applicants count
 export const getJobApplicationDetails = async (req, res) => {
+    const userId = getUserIdFromToken(req);
+
     try {
         const { id } = req.params;
 
