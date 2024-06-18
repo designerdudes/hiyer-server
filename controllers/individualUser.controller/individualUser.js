@@ -959,7 +959,111 @@ export const addOrUpdateVideoDetails = async (req, res) => {
 };
 
 
+export const addIntroVideo = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Assuming you have a function to get userId
+    const { videoTitle, videoDescription } = req.body;
+
+    let mediaResult = {};
+    if (req.files && req.files.video) {
+      mediaResult = await uploadMedia(req); // Assuming uploadMedia returns video_id
+    } else {
+      return res.status(400).json({ error: "Video file is required" });
+    }
+
+    const newIntroVideo = {
+      videoRef: mediaResult.video_id,
+      videoTitle,
+      videoDescription,
+    };
+
+    const updatedUser = await IndividualUser.findByIdAndUpdate(
+      userId,
+      { $set: { introVideo: newIntroVideo } },
+      { new: true }
+    );
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Error adding intro video:', error);
+    res.status(500).json({ error: 'An error occurred while adding intro video' });
+  }
+};
  
+
+
+export const updateIntroVideo = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Assuming you have a function to get userId
+    const { videoTitle, videoDescription } = req.body;
+
+    // Retrieve user and current introVideo
+    const user = await IndividualUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Delete previous media if it exists
+    if (user.introVideo && user.introVideo.videoRef) {
+      await deleteMedia(user.introVideo.videoRef);
+    }
+
+    // Upload new media
+    let mediaResult = {};
+    if (req.files && req.files.video) {
+      mediaResult = await uploadMedia(req);
+    } else {
+      return res.status(400).json({ error: "Video file is required" });
+    }
+
+    // Construct updated introVideo object
+    const updatedIntroVideo = {
+      videoRef: mediaResult.video_id,
+      videoTitle,
+      videoDescription,
+    };
+
+    // Update user document with updated introVideo
+    const updatedUser = await IndividualUser.findByIdAndUpdate(
+      userId,
+      { $set: { introVideo: updatedIntroVideo } },
+      { new: true }
+    );
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Error updating intro video:', error);
+    res.status(500).json({ error: 'An error occurred while updating intro video' });
+  }
+};
+
+export const deleteIntroVideo = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Assuming you have a function to get userId
+    const user = await IndividualUser.findById(userId);
+
+    if (!user.introVideo) {
+      return res.status(404).json({ error: 'Intro video not found' });
+    }
+
+    // Delete associated media if it exists
+    if (user.introVideo.videoRef) {
+      await deleteMedia(user.introVideo.videoRef); // Assuming deleteMedia function is correctly implemented
+    }
+
+    // Update user document to remove introVideo field
+    const updatedUser = await IndividualUser.findByIdAndUpdate(
+      userId,
+      { $unset: { introVideo: "" } },
+      { new: true }
+    );
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Error deleting intro video:', error);
+    res.status(500).json({ error: 'An error occurred while deleting intro video' });
+  }
+};
 
 
 export const applyJobApplication = async (req, res) => {
