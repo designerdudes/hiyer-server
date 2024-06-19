@@ -606,6 +606,12 @@ export const deletePositionInExperience = async (req, res) => {
     // Remove the position entry from the array
     experience.positions.splice(positionIndex, 1);
 
+    // Check if the number of positions is less than or equal to 1, delete the entire experience
+    if (experience.positions.length <= 1) {
+      // Remove the experience entry from the array
+      individualUser.experiences.id(experienceId).remove();
+    }
+
     // Save the updated user data
     await individualUser.save();
 
@@ -617,6 +623,7 @@ export const deletePositionInExperience = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 export const addSkill = async (req, res) => {
 
