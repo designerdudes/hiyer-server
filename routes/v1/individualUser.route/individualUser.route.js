@@ -43,6 +43,7 @@ import {
   updateIntroVideo,
   deleteIntroVideo
 } from '../../../controllers/individualUser.controller/individualUser.js';
+import { upload } from '../../../config/multer.js';
 
 const router = express.Router();
 
@@ -51,7 +52,7 @@ const router = express.Router();
 
 // Payment Routes
 router.post('/payment/joining-fee', handleJoiningFeePayment);
-// router.post('/payment/subscription', handleSubscription);
+// router.post('/payment/subscription', handleSubscription); 
 
 // User Data Routes
 router.post('/data', addOrUpdateUserData);
@@ -99,8 +100,8 @@ router.delete('/project/:id/url/:urlId', removeProjectURL);
 router.post('/video-details/:id', addOrUpdateVideoDetails);
 
 //Intro Video 
-router.post('/intro-video/add', addIntroVideo);
-router.put('/intro-video/update', updateIntroVideo);
+router.post('/intro-video/add',upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]), addIntroVideo);
+router.put('/intro-video/update',upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]),  updateIntroVideo);
 router.delete('/intro-video/delete', deleteIntroVideo);
 
 
