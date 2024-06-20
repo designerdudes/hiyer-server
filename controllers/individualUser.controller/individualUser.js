@@ -470,7 +470,7 @@ export const deleteExperience = async (req, res) => {
       return res.status(404).json({ message: "Experience not found" });
     }
 
-    individualUser.experiences.splice(experienceIndex, 1);
+    individualUser.experiences.splice(experienceIndex, 1); 
 
     await individualUser.save();
 
