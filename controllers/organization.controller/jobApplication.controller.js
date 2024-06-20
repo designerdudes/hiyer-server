@@ -1,6 +1,7 @@
 import { deleteImageFromCloudinary, deleteVideoFromCloudinary } from "../../config/cloudinary/cloudinary.config.js";
 import JobApplication from "../../models/organization.model/jobApplication.model.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
+import Video from "../../models/video.model.js";
 import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
 import { uploadImageController, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
 

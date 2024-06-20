@@ -134,15 +134,22 @@ export const uploadImage = async (filePath,id) => {
 
 export const deleteImageFromCloudinary = async (imageUrl) => {
   try {
-    // Extract the public ID from the image URL by removing the file extension
-    const publicId = imageUrl.substring(
-      imageUrl.lastIndexOf('/') + 1,
-      imageUrl.lastIndexOf('.')
-    );
-console.log('publicIdpublicIdpublicIdpublicId',publicId)
+    // Extract the relevant part of the URL after 'upload/'
+    const urlPart = imageUrl.split('upload/')[1];
+
+    // Split by '/' and remove the first element which is the version part
+    const parts = urlPart.split('/');
+    parts.shift(); // Remove the version part
+
+    // Join the remaining parts and remove the file extension
+    const publicId = parts.join('/').split('.').slice(0, -1).join('.');
+
+    console.log('publicId:', publicId);
+
     // Delete the image from Cloudinary
-    const deletionResult = await   cloudinary.uploader.destroy(publicId);
-console.log('deletionResult', deletionResult)
+    const deletionResult = await cloudinary.uploader.destroy(publicId);
+    console.log('deletionResult:', deletionResult);
+
     // Check if the deletion was successful
     if (deletionResult.result === 'ok') {
       console.log('Image deleted from Cloudinary');
@@ -151,30 +158,49 @@ console.log('deletionResult', deletionResult)
     }
   } catch (error) {
     console.error('Error deleting image from Cloudinary:', error);
-    throw new Error(`Error deleting image from Cloudinary: ${error.message}`);
+    // throw new Error(Error deleting image from Cloudinary: ${error.message});
   }
 };
 
 
-
 export const deleteVideoFromCloudinary = async (videoUrl) => {
-  try {
-    // Extract the public ID from the video URL by removing the file extension
-    const publicId = videoUrl.substring(
-      videoUrl.lastIndexOf('/') + 1,
-      videoUrl.lastIndexOf('.')
-    );
-    console.log('publicIdpublicIdpublicIdpublicId',publicId)
+  const maxRetries = 3; // Maximum number of retry attempts
+  const retryDelay = 2000; // Delay between retries in milliseconds
 
-    // Delete the video from Cloudinary
-    const deletionResult = await cloudinary.uploader.destroy(publicId);
+  const extractPublicId = (url) => {
+    const urlPart = url.split('upload/')[1];
+    const parts = urlPart.split('/');
+    parts.shift(); // Remove the version part
+    return parts.join('/').split('.').slice(0, -1).join('.');
+  };
 
-    // Check if the deletion was successful
-    if (deletionResult.result === 'ok') {
-      console.log('Video deleted from Cloudinary');
-    } else {
-      throw new Error('Failed to delete video from Cloudinary');
+  const tryDelete = async (publicId, attempt = 1) => {
+    try {
+      const deletionResult = await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+
+      if (deletionResult.result === 'ok') {
+        console.log('Video deleted from Cloudinary');
+        return;
+      } else {
+        throw new Error('Failed to delete video from Cloudinary:', deletionResult.result);
+      }
+    } catch (error) {
+      if (attempt < maxRetries && error.message.includes('Timeout waiting for parallel processing')) {
+        console.log(`Retry attempt ${attempt} for deleting video from Cloudinary`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        return tryDelete(publicId, attempt + 1);
+      } else {
+        console.error('Error deleting video from Cloudinary:', error);
+        throw new Error(`Error deleting video from Cloudinary: ${error.message}`);
+      }
     }
+  };
+
+  try {
+    const publicId = extractPublicId(videoUrl);
+    console.log('publicId:', publicId);
+
+    await tryDelete(publicId);
   } catch (error) {
     console.error('Error deleting video from Cloudinary:', error);
     throw new Error(`Error deleting video from Cloudinary: ${error.message}`);
