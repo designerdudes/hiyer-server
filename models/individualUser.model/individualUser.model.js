@@ -33,6 +33,7 @@ const educationSchema = new mongoose.Schema({
   }, fieldofStudy: {
     type: String,
   },
+  // grade
   startDate: {
     type: Date,
     required: true,
@@ -102,13 +103,15 @@ const certificationSchema = new mongoose.Schema({
 });
 
 const projectSchema = new mongoose.Schema({
-  name: {
+  name: { 
     type: String,
     required: true,
   },
   description: {
     type: String,
-  },
+  }, logoUrl: {
+    type: String,
+  }, 
   startDate: {
     type: Date,
     required: true,
@@ -201,8 +204,8 @@ const individualUserSchema = new mongoose.Schema(
       },
       videoTitle: String,
       videoDescription: String,
-    },
-    postedVideo: [
+    }, 
+    videoResume: [
       {
         videoRef: {
           type: mongoose.Schema.Types.ObjectId,

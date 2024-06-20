@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import User from "../../models/user.model.js";
 import validator from 'validator';
 import JobApplication from "../../models/organization.model/jobApplication.model.js";
+import { deleteMedia, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
 
 // Helper function to extract user ID from token
 const getUserIdFromToken = (req) => {
@@ -461,7 +462,6 @@ export const deleteExperience = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Find the index of the experience to delete
     const experienceIndex = individualUser.experiences.findIndex(
       (exp) => exp._id.toString() === experienceId
     );
@@ -470,10 +470,8 @@ export const deleteExperience = async (req, res) => {
       return res.status(404).json({ message: "Experience not found" });
     }
 
-    // Remove the experience entry from the array
     individualUser.experiences.splice(experienceIndex, 1);
 
-    // Save the updated user data
     await individualUser.save();
 
     res.status(200).json({
@@ -481,6 +479,7 @@ export const deleteExperience = async (req, res) => {
       experiences: individualUser.experiences,
     });
   } catch (error) {
+    console.error('Error deleting experience:', error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -594,7 +593,6 @@ export const deletePositionInExperience = async (req, res) => {
       return res.status(404).json({ message: "Experience not found" });
     }
 
-    // Find the index of the position to delete
     const positionIndex = experience.positions.findIndex(
       (pos) => pos._id.toString() === positionId
     );
@@ -603,16 +601,12 @@ export const deletePositionInExperience = async (req, res) => {
       return res.status(404).json({ message: "Position not found" });
     }
 
-    // Remove the position entry from the array
     experience.positions.splice(positionIndex, 1);
 
-    // Check if the number of positions is less than or equal to 1, delete the entire experience
-    if (experience.positions.length <= 1) {
-      // Remove the experience entry from the array
-      individualUser.experiences.id(experienceId).remove();
+    if (experience.positions.length === 0) {
+      experience.remove();
     }
 
-    // Save the updated user data
     await individualUser.save();
 
     res.status(200).json({
@@ -620,6 +614,7 @@ export const deletePositionInExperience = async (req, res) => {
       experiences: individualUser.experiences,
     });
   } catch (error) {
+    console.error('Error deleting position:', error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -1071,7 +1066,7 @@ export const addOrUpdateVideoDetails = async (req, res) => {
     }
 
     // Find the video by its reference ID
-    const video = individualUser.postedVideo.find(
+    const video = individualUser.videoResume.find(
       (video) => video.videoRef.toString() === videoRef
     );
 
@@ -1375,7 +1370,7 @@ export const getUserDetailsFromToken = async (req, res) => {
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
     .populate('jobposting.applied')
     .populate('jobposting.saved')
-    .populate('postedVideo.videoRef');
+    .populate('videoResume.videoRef');
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
@@ -1402,7 +1397,7 @@ export const getUserDetailsById = async (req, res) => {
     }
 
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
-    .populate('postedVideo.videoRef');
+    .populate('videoResume.videoRef');
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }

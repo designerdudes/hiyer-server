@@ -137,163 +137,163 @@ export const editJobApplicationDetails = async (req, res) => {
     }
 };
 
-// Edit Job Application Video
-export const editJobApplicationVideo = async (req, res) => {
-    try {
-        const { id } = req.params; // Get job application ID from request parameters
+// // Edit Job Application Video
+// export const editJobApplicationVideo = async (req, res) => {
+//     try {
+//         const { id } = req.params; // Get job application ID from request parameters
 
-        const jobApplication = await JobApplication.findById(id);
+//         const jobApplication = await JobApplication.findById(id);
 
-        if (!jobApplication) {
-            return res.status(404).json({ error: "Job application not found" });
-        }
+//         if (!jobApplication) {
+//             return res.status(404).json({ error: "Job application not found" });
+//         }
 
-        // Check if req.file.video exists
-        if (req.file && req.file.video) {
-            let uploadResult;
-            // Upload the new video to Cloudinary
-            try {
-                uploadResult = await uploadVideoToCloudinary(req.file.video);
-            } catch (uploadError) {
-                console.error('Error uploading video to Cloudinary:', uploadError);
-                return res.status(500).json({ error: "Failed to upload video" });
-            }
+//         // Check if req.file.video exists
+//         if (req.file && req.file.video) {
+//             let uploadResult;
+//             // Upload the new video to Cloudinary
+//             try {
+//                 uploadResult = await uploadVideoToCloudinary(req.file.video);
+//             } catch (uploadError) {
+//                 console.error('Error uploading video to Cloudinary:', uploadError);
+//                 return res.status(500).json({ error: "Failed to upload video" });
+//             }
 
-            // Handle existing video reference
-            if (jobApplication.media && jobApplication.media.mediaType === 'Video') {
-                const video = await Video.findById(jobApplication.media.mediaRef);
-                if (video) {
-                    video.videoUrl = uploadResult.videoUrl;
-                    video.streamingUrls = {
-                        hls: uploadResult.hlsUrl,
-                        dash: uploadResult.dashUrl,
-                    };
-                    video.representations = uploadResult.representations;
-                    video.postedBy = jobApplication.postedBy;
-                    await video.save();
-                } else {
-                    const newVideo = new Video({
-                        videoUrl: uploadResult.videoUrl,
-                        streamingUrls: {
-                            hls: uploadResult.hlsUrl,
-                            dash: uploadResult.dashUrl,
-                        },
-                        representations: uploadResult.representations,
-                        postedBy: jobApplication.postedBy,
-                    });
-                    await newVideo.save();
+//             // Handle existing video reference
+//             if (jobApplication.media && jobApplication.media.mediaType === 'Video') {
+//                 const video = await Video.findById(jobApplication.media.mediaRef);
+//                 if (video) {
+//                     video.videoUrl = uploadResult.videoUrl;
+//                     video.streamingUrls = {
+//                         hls: uploadResult.hlsUrl,
+//                         dash: uploadResult.dashUrl,
+//                     };
+//                     video.representations = uploadResult.representations;
+//                     video.postedBy = jobApplication.postedBy;
+//                     await video.save();
+//                 } else {
+//                     const newVideo = new Video({
+//                         videoUrl: uploadResult.videoUrl,
+//                         streamingUrls: {
+//                             hls: uploadResult.hlsUrl,
+//                             dash: uploadResult.dashUrl,
+//                         },
+//                         representations: uploadResult.representations,
+//                         postedBy: jobApplication.postedBy,
+//                     });
+//                     await newVideo.save();
 
-                    jobApplication.media = {
-                        mediaType: 'Video',
-                        mediaRef: newVideo._id,
-                    };
-                }
-            } else {
-                const newVideo = new Video({
-                    videoUrl: uploadResult.videoUrl,
-                    streamingUrls: {
-                        hls: uploadResult.hlsUrl,
-                        dash: uploadResult.dashUrl,
-                    },
-                    representations: uploadResult.representations,
-                    postedBy: jobApplication.postedBy,
-                });
-                await newVideo.save();
+//                     jobApplication.media = {
+//                         mediaType: 'Video',
+//                         mediaRef: newVideo._id,
+//                     };
+//                 }
+//             } else {
+//                 const newVideo = new Video({
+//                     videoUrl: uploadResult.videoUrl,
+//                     streamingUrls: {
+//                         hls: uploadResult.hlsUrl,
+//                         dash: uploadResult.dashUrl,
+//                     },
+//                     representations: uploadResult.representations,
+//                     postedBy: jobApplication.postedBy,
+//                 });
+//                 await newVideo.save();
 
-                jobApplication.media = {
-                    mediaType: 'Video',
-                    mediaRef: newVideo._id,
-                };
-            }
-        } else {
-            return res.status(400).json({ error: "Video file is required" });
-        }
+//                 jobApplication.media = {
+//                     mediaType: 'Video',
+//                     mediaRef: newVideo._id,
+//                 };
+//             }
+//         } else {
+//             return res.status(400).json({ error: "Video file is required" });
+//         }
 
-        // Save the updated job application document
-        await jobApplication.save();
+//         // Save the updated job application document
+//         await jobApplication.save();
 
-        res.status(200).json(jobApplication);
-    } catch (error) {
-        console.error('Error editing job application video:', error);
-        res.status(500).json({ error: error.message });
-    }
-};
+//         res.status(200).json(jobApplication);
+//     } catch (error) {
+//         console.error('Error editing job application video:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// };
 
-// Edit Job Application Image
-export const editJobApplicationImage = async (req, res) => {
-    try {
-        const { id } = req.params; // Get job application ID from request parameters
+// // Edit Job Application Image
+// export const editJobApplicationImage = async (req, res) => {
+//     try {
+//         const { id } = req.params; // Get job application ID from request parameters
 
-        const jobApplication = await JobApplication.findById(id);
+//         const jobApplication = await JobApplication.findById(id);
 
-        if (!jobApplication) {
-            return res.status(404).json({ error: "Job application not found" });
-        }
+//         if (!jobApplication) {
+//             return res.status(404).json({ error: "Job application not found" });
+//         }
 
-        // Ensure the media type is an image
-        if (jobApplication.media && jobApplication.media.mediaType !== 'Image') {
-            return res.status(400).json({ error: "The media type is not an image" });
-        }
+//         // Ensure the media type is an image
+//         if (jobApplication.media && jobApplication.media.mediaType !== 'Image') {
+//             return res.status(400).json({ error: "The media type is not an image" });
+//         }
 
-        // Check if req.file.image exists
-        if (req.file && req.file.image) {
-            let uploadResult;
-            // Upload the new image to Cloudinary
-            try {
-                uploadResult = await uploadImageToCloudinary(req.file.image);
-            } catch (uploadError) {
-                console.error('Error uploading image to Cloudinary:', uploadError);
-                return res.status(500).json({ error: "Failed to upload image" });
-            }
+//         // Check if req.file.image exists
+//         if (req.file && req.file.image) {
+//             let uploadResult;
+//             // Upload the new image to Cloudinary
+//             try {
+//                 uploadResult = await uploadImageToCloudinary(req.file.image);
+//             } catch (uploadError) {
+//                 console.error('Error uploading image to Cloudinary:', uploadError);
+//                 return res.status(500).json({ error: "Failed to upload image" });
+//             }
 
-            // Handle existing image reference
-            if (jobApplication.media && jobApplication.media.mediaRef) {
-                const image = await Image.findById(jobApplication.media.mediaRef);
-                if (image) {
-                    // Delete the existing image from Cloudinary
-                    try {
-                        await deleteImageFromCloudinary(image.imageUrl);
-                    } catch (deleteError) {
-                        console.error('Error deleting image from Cloudinary:', deleteError);
-                        return res.status(500).json({ error: "Failed to delete existing image" });
-                    }
-                    // Remove the existing image document from the database
-                    try {
-                        await Image.findByIdAndDelete(jobApplication.media.mediaRef);
-                    } catch (deleteError) {
-                        console.error('Error deleting image document:', deleteError);
-                        return res.status(500).json({ error: "Failed to delete existing image document" });
-                    }
-                }
-            }
+//             // Handle existing image reference
+//             if (jobApplication.media && jobApplication.media.mediaRef) {
+//                 const image = await Image.findById(jobApplication.media.mediaRef);
+//                 if (image) {
+//                     // Delete the existing image from Cloudinary
+//                     try {
+//                         await deleteImageFromCloudinary(image.imageUrl);
+//                     } catch (deleteError) {
+//                         console.error('Error deleting image from Cloudinary:', deleteError);
+//                         return res.status(500).json({ error: "Failed to delete existing image" });
+//                     }
+//                     // Remove the existing image document from the database
+//                     try {
+//                         await Image.findByIdAndDelete(jobApplication.media.mediaRef);
+//                     } catch (deleteError) {
+//                         console.error('Error deleting image document:', deleteError);
+//                         return res.status(500).json({ error: "Failed to delete existing image document" });
+//                     }
+//                 }
+//             }
 
-            const newImage = new Image({
-                imageUrl: uploadResult.imageUrl,
-                transformations: [
-                    { width: 800, height: 800, quality: 'auto' }
-                ],
-                postedBy: jobApplication.postedBy
-            });
+//             const newImage = new Image({
+//                 imageUrl: uploadResult.imageUrl,
+//                 transformations: [
+//                     { width: 800, height: 800, quality: 'auto' }
+//                 ],
+//                 postedBy: jobApplication.postedBy
+//             });
 
-            await newImage.save();
+//             await newImage.save();
 
-            jobApplication.media = {
-                mediaType: 'Image',
-                mediaRef: newImage._id,
-            };
-        } else {
-            return res.status(400).json({ error: "Image file is required" });
-        }
+//             jobApplication.media = {
+//                 mediaType: 'Image',
+//                 mediaRef: newImage._id,
+//             };
+//         } else {
+//             return res.status(400).json({ error: "Image file is required" });
+//         }
 
-        // Save the updated job application document
-        await jobApplication.save();
+//         // Save the updated job application document
+//         await jobApplication.save();
 
-        res.status(200).json(jobApplication);
-    } catch (error) {
-        console.error('Error editing job application image:', error);
-        res.status(500).json({ error: error.message });
-    }
-};
+//         res.status(200).json(jobApplication);
+//     } catch (error) {
+//         console.error('Error editing job application image:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// };
 
 // Delete Job Application
 export const deleteJobApplication = async (req, res) => {

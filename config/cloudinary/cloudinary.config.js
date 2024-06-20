@@ -139,10 +139,10 @@ export const deleteImageFromCloudinary = async (imageUrl) => {
       imageUrl.lastIndexOf('/') + 1,
       imageUrl.lastIndexOf('.')
     );
-
+console.log('publicIdpublicIdpublicIdpublicId',publicId)
     // Delete the image from Cloudinary
-    const deletionResult = await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
-
+    const deletionResult = await   cloudinary.uploader.destroy(publicId);
+console.log('deletionResult', deletionResult)
     // Check if the deletion was successful
     if (deletionResult.result === 'ok') {
       console.log('Image deleted from Cloudinary');
@@ -164,9 +164,10 @@ export const deleteVideoFromCloudinary = async (videoUrl) => {
       videoUrl.lastIndexOf('/') + 1,
       videoUrl.lastIndexOf('.')
     );
+    console.log('publicIdpublicIdpublicIdpublicId',publicId)
 
     // Delete the video from Cloudinary
-    const deletionResult = await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    const deletionResult = await cloudinary.uploader.destroy(publicId);
 
     // Check if the deletion was successful
     if (deletionResult.result === 'ok') {

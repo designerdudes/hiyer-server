@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { uploadFile, uploadImage } from "../../config/cloudinary/cloudinary.config.js";
+import { deleteImageFromCloudinary, deleteVideoFromCloudinary, uploadFile, uploadImage } from "../../config/cloudinary/cloudinary.config.js";
 import Video from "../../models/video.model.js";
 import Image from "../../models/image.model.js";
 import path from "path";
@@ -82,7 +82,7 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
       userId,
       {
         $push: {
-          postedVideo: {
+          videoResume: {
             videoRef: newVideo._id,
             videoTitle: videoTitle || '',
             videoDescription: videoDescription || '',
@@ -127,7 +127,7 @@ export const uploadImageController = async (req, res) => {
       return res.status(400).json({ error: "Image is required" });
     }
 
-    const uploadResult = await uploadImage(req.file.image);
+    const uploadResult = await uploadImage(req.file.image,userId);
 
     const newImage = new Image({
       imageUrl: uploadResult.imageUrl,
@@ -165,14 +165,14 @@ export const uploadMedia = async (req, res) => {
     // Resolve the absolute path for the video file
     const videoPath = path.resolve(video[0].path);
     console.log('Uploading video file:', videoPath);
-    const uploadResult = await uploadFile(videoPath);
+    const uploadResult = await uploadFile(videoPath,userId);
     console.log('Uploading .secure_url  :',uploadResult.uploadResult.secure_url, uploadResult);
 
     let newImage;
     if (image && image.length > 0) {
       const imagePath = path.resolve(image[0].path);
       console.log('Uploading image file:', imagePath);
-      const uploadResult1 = await uploadImage(imagePath);
+      const uploadResult1 = await uploadImage(imagePath,userId);
 
       newImage = new Image({
         imageUrl: uploadResult1.imageUrl,
