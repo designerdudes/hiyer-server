@@ -597,6 +597,8 @@ export const deletePositionInExperience = async (req, res) => {
       (pos) => pos._id.toString() === positionId
     );
 
+
+
     if (positionIndex === -1) {
       return res.status(404).json({ message: "Position not found" });
     }
@@ -604,7 +606,7 @@ export const deletePositionInExperience = async (req, res) => {
     experience.positions.splice(positionIndex, 1);
 
     if (experience.positions.length === 0) {
-      experience.remove();
+      experience.deleteOne({ _id: experienceId })
     }
 
     await individualUser.save();
@@ -696,7 +698,7 @@ export const deleteSkill = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const  skillId = req.params.id;
+    const skillId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -800,7 +802,7 @@ export const deleteCertification = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const  certificationId  = req.params.id;
+    const certificationId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -860,7 +862,7 @@ export const updateProject = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const  projectId  = req.params.id;
+    const projectId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -899,7 +901,7 @@ export const deleteProject = async (req, res) => {
 
   try {
     const userId = getUserIdFromToken(req);
-    const   projectId  = req.params.id;
+    const projectId = req.params.id;
 
     let individualUser = await IndividualUser.findById(userId);
 
@@ -971,8 +973,8 @@ export const addUrlToProject = async (req, res) => {
 };
 
 export const updateUrlInProject = async (req, res) => {
- 
-  
+
+
   try {
     const userId = getUserIdFromToken(req);
     const { id, urlId } = req.params;
@@ -1056,7 +1058,7 @@ export const addOrUpdateVideoDetails = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { videoTitle, videoDescription } = req.body;
-    const videoRef  = req.params.id;
+    const videoRef = req.params.id;
 
     // Find the individual user by their ID
     const individualUser = await IndividualUser.findById(userId);
@@ -1121,7 +1123,7 @@ export const addIntroVideo = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while adding intro video' });
   }
 };
- 
+
 
 
 export const updateIntroVideo = async (req, res) => {
@@ -1366,11 +1368,11 @@ export const getUserDetailsFromToken = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
-    .populate('jobposting.applied')
-    .populate('jobposting.saved')
-    .populate('videoResume.videoRef');
+      .populate('jobposting.applied')
+      .populate('jobposting.saved')
+      .populate('videoResume.videoRef');
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
@@ -1397,7 +1399,7 @@ export const getUserDetailsById = async (req, res) => {
     }
 
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
-    .populate('videoResume.videoRef');
+      .populate('videoResume.videoRef');
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
@@ -1502,7 +1504,7 @@ export const getSimilarUsers = async (req, res) => {
 
     // Find similar users from IndividualUser collection
     let similarIndividualUsers = await IndividualUser.find(query);
-console.log(similarIndividualUsers)
+    console.log(similarIndividualUsers)
     if (!similarIndividualUsers || similarIndividualUsers.length === 0) {
       return res.status(404).json({ message: "No similar users found" });
     }
