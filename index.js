@@ -8,6 +8,8 @@ import organizationRoute from "./routes/v1/organization.route/organizationUser.r
 import organizationMemberRoute from "./routes/v1/organization.route/organizationMember.route.js"
 import jobApplicationRoute from "./routes/v1/jobApplication.route/jobApplication.js"
 import mediaControllRoute from "./routes/v1/mediaControll.route/mediaControll.js";
+import dropDownControllRoute from "./routes/v1/api/dropdownRoutes.js";
+
 import authRoute from "./routes/v1/auth.route.js";
 import errorHandler from "./middleware/error.js";
 
@@ -44,6 +46,9 @@ app.use("/organizationMember/v1", organizationMemberRoute);
 app.use("/jobApplication/v1", jobApplicationRoute);
 
 app.use("/media/v1", mediaControllRoute);
+
+
+app.use("/dropDown/v1", dropDownControllRoute);
 
 
 

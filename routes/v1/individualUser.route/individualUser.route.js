@@ -41,7 +41,8 @@ import {
   deletePositionInExperience,
   addIntroVideo,
   updateIntroVideo,
-  deleteIntroVideo
+  deleteIntroVideo,
+  applyBulkJobApplications
 } from '../../../controllers/individualUser.controller/individualUser.js';
 import { upload } from '../../../config/multer.js';
 
@@ -100,14 +101,18 @@ router.delete('/project/:id/url/:urlId', removeProjectURL);
 router.post('/video-details/:id', addOrUpdateVideoDetails);
 
 //Intro Video 
-router.post('/intro-video/add',upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]), addIntroVideo);
-router.put('/intro-video/update',upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]),  updateIntroVideo);
-router.delete('/intro-video/delete', deleteIntroVideo);
+router.post('/introVideo/add',upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]), addIntroVideo);
+router.put('/introVideo/update',upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]),  updateIntroVideo);
+router.delete('/introVideo/delete', deleteIntroVideo);
 
 
 // Job Application Routes
 router.post('/jobs/:id/apply', applyJobApplication);
-router.post('/jobs/:jobId/applicants/', withdrawJobApplicant);
+router.post('/jobs/bulkApply', applyBulkJobApplications);
+
+
+// router.post('/jobs/:jobId/remove', withdrawJobApplicant);
+router.delete('/jobs/:jobId/withdraw', withdrawJobApplicant);
 router.post('/jobs/:id/toggle-save', toggleSaveJobApplication);
 
 // Industry and Companies Routes
