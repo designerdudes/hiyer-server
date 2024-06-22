@@ -16,60 +16,56 @@ const roundSchema = new mongoose.Schema({
 
 const mediaSchema = new mongoose.Schema({
     mediaType: {
-        type: String,
-        enum: ['Video', 'Image'],
-        required: true
-    },
+        type: String
+       
+      },
     mediaRef: {
-        type: mongoose.Schema.Types.ObjectId,
-        refPath: 'mediaType', // Dynamic reference path based on mediaType
-        required: true
-    }
-}, {
-    timestamps: true,
-}); 
-
-const applicantSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+      type: String,
+      required: true,
     },
-    resumeVideo: { mediaSchema },
+  });
+  
+  const applicantSchema = new mongoose.Schema({
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    resumeVideo: mediaSchema,  
     coverLetter: {
-        type: String,
-
+      type: String,
     },
     applicantStatus: {
-        type: String,
-        enum: ['pending', 'reviewed', 'accepted', 'rejected'],
-        default: 'pending',
+      type: String,
+      enum: ['pending', 'reviewed', 'accepted', 'rejected'],
+      default: 'pending',
     },
     applicantNotes: String,
     appliedDate: {
-        type: Date,
-        default: Date.now,
+      type: Date,
+      default: Date.now,
     },
     companyReview: {
-        status: {
-            type: String,
-            enum: ['pending', 'completed'],
-            default: 'pending',
-        },
-        interviewer: String,
-        interviewDate: Date,
-        interviewNotes: String,
-        technicalAssessment: String,
-        culturalFitAssessment: String,
-        referencesChecked: Boolean,
+      status: {
+        type: String,
+        enum: ['pending', 'completed'],
+        default: 'pending',
+      },
+      interviewer: String,
+      interviewDate: Date,
+      interviewNotes: String,
+      technicalAssessment: String,
+      culturalFitAssessment: String,
+      referencesChecked: Boolean,
     },
     applicationHistory: [{
-        status: String,
-        notes: String,
-        updatedAt: Date,
+      status: String,
+      notes: String,
+      updatedAt: Date,
     }],
     evaluationRounds: [roundSchema],
-});
+  });
+  
 
 
 
