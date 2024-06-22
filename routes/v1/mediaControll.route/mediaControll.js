@@ -1,6 +1,6 @@
 import express from 'express'; 
 import { upload } from '../../../config/multer.js';
-import { uploadMediaForIndividualUsers } from '../../../controllers/mediaControl.controller/mediaUpload.js';
+import { deleteMediaForIndividualUsers, uploadMediaForIndividualUsers } from '../../../controllers/mediaControl.controller/mediaUpload.js';
 
 
 const router = express.Router();
@@ -21,4 +21,5 @@ const router = express.Router();
 
 router.post('/upload', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]),  uploadMediaForIndividualUsers);
 
+router.delete('/videoResume/:videoId', deleteMediaForIndividualUsers);
 export default router;

@@ -104,6 +104,46 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
 
 
 
+export const deleteMediaForIndividualUsers = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Get user ID from token
+    const { videoId } = req.params; // Assuming videoId is passed in the request param
+
+    // Find the individual user profile
+    const user = await IndividualUser.findById(userId).populate('videoResume.videoRef');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const videoResumeIndex = user.videoResume.findIndex(v => v.videoRef._id.toString() === videoId);
+    if (videoResumeIndex === -1) {
+      return res.status(404).json({ error: 'Video resume not found' });
+    }
+
+    const videoResume = user.videoResume[videoResumeIndex];
+    
+    // Delete associated video media
+    if (videoResume.videoRef) {
+      await deleteMedia(videoResume.videoRef._id); // Assuming deleteMedia function deletes the file from storage
+      await Video.findByIdAndDelete(videoResume.videoRef._id);
+      
+      
+    }
+
+    // Update user document to remove the specific video resume entry
+    user.videoResume.splice(videoResumeIndex, 1);
+    await user.save();
+
+    res.status(200).json({ message: 'Video resume deleted successfully', user });
+  } catch (error) {
+    console.error('Error deleting media:', error);
+    res.status(500).json({ error: 'An error occurred while deleting media' });
+  }
+};
+
+ 
+
 
 export const uploadImageController = async (req, res) => {
   const authorizationHeader = req.headers.authorization;
