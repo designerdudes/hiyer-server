@@ -1086,6 +1086,7 @@ export const addOrUpdateVideoDetails = async (req, res) => {
     res.status(200).json({
       message: "Video details updated successfully",
       video,
+      videoResume:individualUser.videoResume
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1444,21 +1445,8 @@ export const getUserDetailsFromToken = async (req, res) => {
 
     // Find the individual user profile using profileRef
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
-      .populate({
-        path: 'jobposting.applied jobposting.saved',
-        populate: {
-          path: 'mediaRef',
-          model: 'Media', // Assuming Media is the model name for mediaSchema
-          populate: {
-            path: 'mediaRef',
-            model: 'Video',
-            populate: {
-              path: 'thumbnailUrl',
-              model: 'Image'
-            }
-          }
-        }
-      })
+    .populate('jobposting.applied')
+    .populate('jobposting.saved')
       .populate({
         path: 'videoResume.videoRef',
         populate: {
