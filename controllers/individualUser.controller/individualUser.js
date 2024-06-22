@@ -1457,7 +1457,7 @@ export const getUserDetailsFromToken = async (req, res) => {
       .populate({
         path: 'introVideo.videoRef',
         populate: {
-          path: 'thumbnailUrl',
+          path: 'thumbnailUrl', 
           model: 'Image'
         }
       });
