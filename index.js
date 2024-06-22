@@ -12,6 +12,7 @@ import dropDownControllRoute from "./routes/v1/api/dropdownRoutes.js";
 
 import authRoute from "./routes/v1/auth.route.js";
 import errorHandler from "./middleware/error.js";
+import { updateAllImageUrls, updateAllVideoUrls } from "./controllers/mediaControl.controller/mediaUpload.js";
 
 dotenv.config();
 
@@ -50,7 +51,11 @@ app.use("/media/v1", mediaControllRoute);
 
 app.use("/dropDown/v1", dropDownControllRoute);
 
+// Route to update all video URLs
+app.put('/update-videos', updateAllVideoUrls);
 
+// Route to update all image URLs
+app.put('/update-images', updateAllImageUrls);
 
 app.use(errorHandler);
 app.listen(process.env.PORT, () => {

@@ -1428,23 +1428,36 @@ export const addOrUpdateInterestedCompanies = async (req, res) => {
 };
 
 
+
 // Controller to get user details from token
 export const getUserDetailsFromToken = async (req, res) => {
   try {
+    // Extract user ID from the token
     const userId = getUserIdFromToken(req);
+
+    // Find the user by ID and select specific fields
     const user = await User.findById(userId).select('email phone name profilePicture profile');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Find the individual user profile using profileRef
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
       .populate('jobposting.applied')
       .populate('jobposting.saved')
-      .populate('videoResume.videoRef');
+      .populate({
+        path: 'videoResume.videoRef',
+        populate: {
+          path: 'thumbnailUrl',
+          model: 'Image', // Assuming Image is the model name for images
+        }
+      });
+
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
 
+    // Send response with user and individual user profile details
     res.status(200).json({
       user,
       individualUser,
@@ -1456,22 +1469,33 @@ export const getUserDetailsFromToken = async (req, res) => {
 };
 
 
-//Controller to get user details by ID from URL parameter
+
+// Controller to get user details by ID from URL parameter
 export const getUserDetailsById = async (req, res) => {
   try {
     const { userId } = req.params;
 
+    // Find the user by ID and select specific fields
     const user = await User.findById(userId).select('email phone name profile profilePicture');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Find the individual user profile using profileRef
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
-      .populate('videoResume.videoRef');
+      .populate({
+        path: 'videoResume.videoRef',
+        populate: {
+          path: 'thumbnailUrl',
+          model: 'Image', // Assuming Image is the model name for images
+        }
+      });
+
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
 
+    // Send response with user and individual user profile details
     res.status(200).json({
       user,
       individualUser,
