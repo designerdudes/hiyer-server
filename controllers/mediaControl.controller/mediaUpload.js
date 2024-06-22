@@ -328,3 +328,49 @@ export const deleteMedia = async (videoId) => {
     return { status: 500, message: error.message };
   }
 };
+
+
+
+
+
+// Function to update all video URLs
+export const updateAllVideoUrls = async (req, res) => {
+  try {
+      const updatedVideos = await Video.updateMany({}, { 
+          $set: { 
+              videoUrl: 'https://res.cloudinary.com/dgcbwb05z/video/upload/v1717288451/yaizoigumu5eu5ld7owr.mp4' 
+          } 
+      });
+      res.status(200).json({
+          message: 'All video URLs have been updated successfully',
+          updatedCount: updatedVideos.nModified
+      });
+  } catch (error) {
+      console.error('Error updating video URLs:', error);
+      res.status(500).json({
+          message: 'Internal Server Error',
+          error: error.message
+      });
+  }
+};
+
+// Function to update all image URLs
+export const updateAllImageUrls = async (req, res) => {
+  try {
+      const updatedImages = await Image.updateMany({}, { 
+          $set: { 
+              'imageUrl': 'https://res.cloudinary.com/dgcbwb05z/image/upload/v1714989757/samples/coffee.jpg' 
+          } 
+      });
+      res.status(200).json({
+          message: 'All image URLs have been updated successfully',
+          updatedCount: updatedImages.nModified
+      });
+  } catch (error) {
+      console.error('Error updating image URLs:', error);
+      res.status(500).json({
+          message: 'Internal Server Error',
+          error: error.message
+      });
+  }
+};
