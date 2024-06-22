@@ -1244,9 +1244,9 @@ export const withdrawJobApplicant = async (req, res) => {
     const userId = getUserIdFromToken(req);
     const { jobId } = req.params;
 
-    // Convert jobId and userId to ObjectId
-    const jobObjectId = mongoose.Types.ObjectId(jobId);
-    const userObjectId = mongoose.Types.ObjectId(userId);
+    // Convert jobId and userId to ObjectId with new
+    const jobObjectId = new mongoose.Types.ObjectId(jobId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
     // Find the job application by ID
     const jobApplication = await JobApplication.findById(jobObjectId);
@@ -1275,6 +1275,8 @@ export const withdrawJobApplicant = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while removing the applicant' });
   }
 };
+
+
 
 export const toggleSaveJobApplication = async (req, res) => {
   try {
@@ -1309,6 +1311,72 @@ export const toggleSaveJobApplication = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while toggling the saved job application' });
   }
 };
+
+
+export const applyBulkJobApplications = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { jobIds, coverLetter, mediaType, mediaRef } = req.body;
+console.log( jobIds, coverLetter, mediaType, mediaRef)
+    // Validate that jobIds is an array
+    if (!Array.isArray(jobIds)) {
+      return res.status(400).json({ error: 'jobIds must be an array' });
+    }
+
+    // Ensure the mediaType matches one of the allowed enum values
+    const allowedMediaTypes = ['video', 'image', 'document'];
+    const normalizedMediaType = mediaType.toLowerCase();
+    if (!allowedMediaTypes.includes(normalizedMediaType)) {
+      return res.status(400).json({ error: `mediaType must be one of ${allowedMediaTypes.join(', ')}` });
+    }
+
+    const media = {
+      mediaType: normalizedMediaType, // Convert to lowercase
+      mediaRef,
+    };
+
+    const newApplicant = {
+      user: userId,
+      resumeVideo: media, // Ensure this matches the schema definition
+      coverLetter,
+    };
+
+    const jobApplicationPromises = jobIds.map(async (id) => {
+      const jobId = new mongoose.Types.ObjectId(id);
+      const jobApplication = await JobApplication.findById(jobId);
+      if (!jobApplication) {
+        console.error(`Job application not found for ID: ${id}`);
+        return { id, status: 'not_found' };
+      }
+
+      jobApplication.applicants.push(newApplicant);
+      await jobApplication.save();
+      return { id, status: 'applied' };
+    });
+
+    const jobApplicationResults = await Promise.all(jobApplicationPromises);
+
+    // Updating the user's applied jobs once
+    const appliedJobIds = jobApplicationResults
+      .filter(result => result.status === 'applied')
+      .map(result => result.id);
+
+    await IndividualUser.findByIdAndUpdate(userId, {
+      $push: { "jobposting.applied": { $each: appliedJobIds } },
+    });
+
+    res.status(201).json({
+      message: 'Bulk application completed',
+      results: jobApplicationResults,
+    });
+  } catch (error) {
+    console.error('Error adding applicants in bulk:', error);
+    res.status(500).json({ error: 'An error occurred while adding the applicants in bulk' });
+  }
+};
+
+
+
 
 
 // Add or Update Industry
