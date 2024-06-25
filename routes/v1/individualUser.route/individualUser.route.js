@@ -42,7 +42,17 @@ import {
   addIntroVideo,
   updateIntroVideo,
   deleteIntroVideo,
-  applyBulkJobApplications
+  applyBulkJobApplications,
+  getUserAppliedJobPostings,
+  getCurrentUserAppliedJobPostings,
+  getCurrentUserPendingJobs,
+  getCurrentUserReviewedJobs,
+  getCurrentUserAcceptedJobs,
+  getCurrentUserRejectedJobs,
+  getUserPendingJobs,
+  getUserReviewedJobs,
+  getUserAcceptedJobs,
+  getUserRejectedJobs
 } from '../../../controllers/individualUser.controller/individualUser.js';
 import { upload } from '../../../config/multer.js';
 
@@ -125,6 +135,20 @@ router.get('/users/:userId', getUserDetailsById);
 router.get('/users/:userId/similar', getUserDetailsByIdandSimilarUser);
 router.post('/users/similar', getSimilarUsers);
 
- 
 
+router.get('/jobs/applied-job-postings', getCurrentUserAppliedJobPostings);
+router.get('/jobs/:userId/applied-job-postings', getUserAppliedJobPostings);
+
+
+// Routes for current user
+router.get('/jobs/current/pending', getCurrentUserPendingJobs);
+router.get('/jobs/current/reviewed', getCurrentUserReviewedJobs);
+router.get('/jobs/current/accepted', getCurrentUserAcceptedJobs);
+router.get('/jobs/current/rejected', getCurrentUserRejectedJobs);
+
+// Routes for specified user
+router.get('/jobs/:userId/pending', getUserPendingJobs);
+router.get('/jobs/:userId/reviewed', getUserReviewedJobs);
+router.get('/jobs/:userId/accepted', getUserAcceptedJobs);
+router.get('/jobs/:userId/rejected', getUserRejectedJobs);
 export default router;
