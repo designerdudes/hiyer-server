@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { deleteImageFromCloudinary, deleteVideoFromCloudinary } from "../../config/cloudinary/cloudinary.config.js";
 import JobApplication from "../../models/organization.model/jobApplication.model.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
@@ -390,14 +391,7 @@ export const removeJobApplicant = async (req, res) => {
     const userId = getUserIdFromToken(req);
 
     try {
-        const authorizationHeader = req.headers.authorization;
-        if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-
-        const token = authorizationHeader.split("Bearer ")[1];
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
-        const userId = decodedToken.id;
+        
         const { jobId } = req.params;
 
         // Find the job application by ID
@@ -553,3 +547,199 @@ export const getJobApplicationDetails = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching job application details' });
     }
 };
+
+
+
+
+export const getOrganizationalUserPostedApplications = async (req, res) => {
+    try {
+      const userId = req.params.userId; // Assuming userId is passed as a URL parameter
+  
+      // Find the organizational user by ID and populate the postedApplications
+      const organization = await OrganizationalUser.findById(userId)
+        .populate({
+          path: 'postedApplications',
+          populate: {
+            path: 'applicants.user',  
+            select: 'name email', 
+          }
+        })
+        .lean();
+  
+      if (!organization) {
+        return res.status(404).json({ message: 'Organization not found' });
+      }
+  
+      // Send the populated job applications
+      res.status(200).json(organization.postedApplications);
+    } catch (error) {
+      console.error('Error fetching posted applications:', error);
+      res.status(500).json({ message: 'An error occurred while fetching posted applications' });
+    }
+  };
+
+
+  export const getOrganizationalCurrentUserPostedApplications = async (req, res) => {
+      const userId = getUserIdFromToken(req);
+      
+      console.log('userIduserId',userId)
+      try {
+     
+  
+      // Find the organizational user by ID and populate the postedApplications
+      const organization = await OrganizationalUser.findById(userId)
+        .populate({
+          path: 'postedApplications',
+          populate: {
+            path: 'applicants.user',
+            select: 'name email', // Select the necessary fields from the user model
+          }
+        })
+        .lean();
+  
+      if (!organization) {
+        return res.status(404).json({ message: 'Organization not found' });
+      }
+  
+      // Send the populated job applications
+      res.status(200).json(organization.postedApplications);
+    } catch (error) {
+      console.error('Error fetching posted applications:', error);
+      res.status(500).json({ message: 'An error occurred while fetching posted applications' });
+    } 
+  };
+
+  const getCurrentUserJobApplicationsByApplicantStatus = async (req, res, status) => {
+    try {
+      const organizatioId = getorganizatioIdFromToken(req);
+  
+      // Check if organizatioId is a valid ObjectId
+      if (!mongoose.Types.ObjectId.isValid(organizatioId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+  
+      // Find the organizational user by ID and populate the postedApplications
+      const organization = await OrganizationalUser.findById(organizatioId)
+        .populate({
+          path: 'postedApplications',
+          populate: {
+            path: 'applicants.user',
+            select: 'name email', // Select the necessary fields from the user model
+          },
+        })
+        .lean();
+  
+      if (!organization) {
+        return res.status(404).json({ message: 'Organization not found' });
+      }
+  
+      // Filter job applications to include only those with matching applicants
+      const filteredApplications = organization.postedApplications.map(application => {
+        const filteredApplicants = application.applicants.filter(applicant => applicant.applicantStatus === status);
+        return {
+          ...application,
+          applicants: filteredApplicants
+        };
+      }).filter(application => application.applicants.length > 0);
+  
+      // Send the filtered job applications
+      res.status(200).json(filteredApplications);
+    } catch (error) {
+      console.error(`Error fetching ${status} applications:`, error);
+      res.status(500).json({ message: `An error occurred while fetching ${status} applications` });
+    }
+  };
+  
+  
+  
+  // Controller for pending applicants
+  export const getCurrentUserPendingApplicants = (req, res) => {
+    getCurrentUserJobApplicationsByApplicantStatus(req, res, 'pending');
+  };
+  
+  // Controller for reviewed applicants
+  export const getCurrentUserReviewedApplicants = (req, res) => {
+    getCurrentUserJobApplicationsByApplicantStatus(req, res, 'reviewed');
+  };
+  
+  // Controller for accepted applicants
+  export const getCurrentUserAcceptedApplicants = (req, res) => {
+    getCurrentUserJobApplicationsByApplicantStatus(req, res, 'accepted');
+  };
+  
+  // Controller for rejected applicants
+  export const getCurrentUserRejectedApplicants = (req, res) => {
+    getCurrentUserJobApplicationsByApplicantStatus(req, res, 'rejected');
+  };
+
+
+
+
+
+
+
+
+  const getJobApplicationsByApplicantStatus = async (req, res, status) => {
+    try {
+
+        const { organizatioId } = req.params;
+ 
+  
+      // Check if organizatioId is a valid ObjectId
+      if (!mongoose.Types.ObjectId.isValid(organizatioId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+  
+      // Find the organizational user by ID and populate the postedApplications
+      const organization = await OrganizationalUser.findById(organizatioId)
+        .populate({
+          path: 'postedApplications',
+          populate: {
+            path: 'applicants.user',
+            select: 'name email', // Select the necessary fields from the user model
+          },
+        })
+        .lean();
+  
+      if (!organization) {
+        return res.status(404).json({ message: 'Organization not found' });
+      }
+  
+      // Filter job applications to include only those with matching applicants
+      const filteredApplications = organization.postedApplications.map(application => {
+        const filteredApplicants = application.applicants.filter(applicant => applicant.applicantStatus === status);
+        return {
+          ...application,
+          applicants: filteredApplicants
+        };
+      }).filter(application => application.applicants.length > 0);
+  
+      // Send the filtered job applications
+      res.status(200).json(filteredApplications);
+    } catch (error) {
+      console.error(`Error fetching ${status} applications:`, error);
+      res.status(500).json({ message: `An error occurred while fetching ${status} applications` });
+    }
+  };
+  
+  
+  
+  // Controller for pending applicants
+  export const getPendingApplicants = (req, res) => {
+    getJobApplicationsByApplicantStatus(req, res, 'pending');
+  };
+  
+  // Controller for reviewed applicants
+  export const getReviewedApplicants = (req, res) => {
+    getJobApplicationsByApplicantStatus(req, res, 'reviewed');
+  };
+  
+  // Controller for accepted applicants
+  export const getAcceptedApplicants = (req, res) => {
+    getJobApplicationsByApplicantStatus(req, res, 'accepted');
+  };
+  
+  // Controller for rejected applicants
+  export const getRejectedApplicants = (req, res) => {
+    getJobApplicationsByApplicantStatus(req, res, 'rejected');
+  };
