@@ -181,7 +181,7 @@ const individualUserSchema = new mongoose.Schema(
     portfolio: String,
     bio: String,
     joiningFeePaid: {
-      type: Boolean,
+      type: Boolean, 
       default: false,
     },
     subscription: subscriptionSchema,
