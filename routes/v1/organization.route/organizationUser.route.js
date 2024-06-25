@@ -20,6 +20,7 @@ import {
   removeProjectURL,
   updateSocialLinks, 
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
+import { getCurrentUserAcceptedApplicants, getOrganizationalCurrentUserPostedApplications, getOrganizationalUserPostedApplications, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserReviewedApplicants, getPendingApplicants, getReviewedApplicants, getAcceptedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobApplication.controller.js';
 
 const router = express.Router();
 
@@ -81,5 +82,35 @@ router.put('/user/social-links', updateSocialLinks);
 // Route for deleting a social link
 router.delete('/user/social-links/:socialLinkKey', deleteSocialLink);
 
+
+router.post('/:userId/posted-applications', getOrganizationalUserPostedApplications);
+router.get('/currentUser/posted-applications', getOrganizationalCurrentUserPostedApplications);
+
+
+// Route to get pending applicants
+router.get('/applications/pending', getCurrentUserPendingApplicants);
+
+// Route to get reviewed applicants
+router.get('/applications/reviewed', getCurrentUserReviewedApplicants);
+
+// Route to get accepted applicants
+router.get('/applications/accepted', getCurrentUserAcceptedApplicants);
+
+// Route to get rejected applicants
+router.get('/applications/rejected', getCurrentUserRejectedApplicants);
+
+
+
+// Route to get pending applicants
+router.get('/applications/:organizatioId/pending', getPendingApplicants);
+
+// Route to get reviewed applicants
+router.get('/applications/:organizatioId/reviewed', getReviewedApplicants);
+
+// Route to get accepted applicants
+router.get('/applications/:organizatioId/accepted', getAcceptedApplicants);
+
+// Route to get rejected applicants
+router.get('/applications/:organizatioId/rejected', getRejectedApplicants);
 
 export default router;
