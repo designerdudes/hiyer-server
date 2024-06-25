@@ -100,6 +100,11 @@ const organizationalUserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobApplication',
     }],
+    savedCandidates:[{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      
+    }]
   },
   {
     timestamps: true,
