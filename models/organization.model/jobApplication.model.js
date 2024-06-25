@@ -17,7 +17,6 @@ const roundSchema = new mongoose.Schema({
 const mediaSchema = new mongoose.Schema({
     mediaType: {
         type: String
-       
       },
     mediaRef: {
       type: String,
@@ -67,10 +66,6 @@ const mediaSchema = new mongoose.Schema({
   });
   
 
-
-
-
-
 const jobApplicationSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -111,10 +106,7 @@ const jobApplicationSchema = new mongoose.Schema({
         type: String,
     },
     tags: [String],
-
     applicants: [applicantSchema],
-
-
 }, {
     timestamps: true,
 });
