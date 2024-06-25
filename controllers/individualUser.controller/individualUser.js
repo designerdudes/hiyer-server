@@ -1649,3 +1649,246 @@ export const getSimilarUsers = async (req, res) => {
 
 
 
+ 
+
+export const getCurrentUserAppliedJobPostings = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Get user ID from token
+
+    // Find the user by ID and populate the applied job postings
+    const user = await IndividualUser.findById(userId)
+      .select('jobposting')
+      .populate({
+        path: 'jobposting.applied',
+        select: 'title description applicationType  applicants._id experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        populate: {
+          path: 'postedBy',
+          select: 'name email', // Adjust fields as necessary
+        }
+      });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    
+
+    // Send response with user details and job postings with applicants count
+    res.status(200).json({
+      user 
+    });
+  } catch (error) {
+    console.error('Error fetching applied job postings:', error);
+    res.status(500).json({ message: 'An error occurred while fetching applied job postings' });
+  }
+};
+
+
+
+export const getUserAppliedJobPostings = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find the user by ID and populate the applied job postings
+    const user = await IndividualUser.findById(userId)
+      .select('jobposting')
+      .populate({
+        path: 'jobposting.applied',
+        select: 'title description applicationType  applicants._id experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        populate: {
+          path: 'postedBy',
+          select: 'name email', // Adjust fields as necessary
+        }
+      });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    
+
+    // Send response with user details and job postings with applicants count
+    res.status(200).json({
+      user 
+    });
+  } catch (error) {
+    console.error('Error fetching applied job postings:', error);
+    res.status(500).json({ message: 'An error occurred while fetching applied job postings' });
+  }
+};
+
+
+
+
+
+ 
+
+
+const getJobsCurrentUserByApplicantStatus = async (req, res, status) => {
+  try {
+    const userId = getUserIdFromToken(req);
+
+    // Find the user by ID and get the applied job postings
+    const user = await IndividualUser.findById(userId).select('jobposting');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Fetch job postings with the specified applicant status for the user
+    const jobPostingsWithStatus = await Promise.all(
+      user.jobposting.applied.map(async (jobId) => {
+        const job = await JobApplication.findById(jobId)
+          .select('title description applicationType experienceLevel applicants remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags')
+          .populate({
+            path: 'postedBy',
+            select: 'name email', // Adjust fields as necessary
+          })
+          .lean();
+
+        if (job) {
+          // Check if there are applicants matching userId and applicantStatus
+          const hasMatchingApplicant = job.applicants.some(applicant =>
+            applicant.user.toString() === userId && applicant.applicantStatus === status
+          );
+
+          // Return the job only if there are matching applicants
+          if (hasMatchingApplicant) {
+            // Process applicants to include full details for the current user and only user field for others
+            const processedApplicants = job.applicants.map(applicant => {
+              if (applicant.user.toString() === userId && applicant.applicantStatus === status) {
+                return applicant; // Include full details for the current user
+              } else {
+                return { user: applicant.user }; // Include only the user field for others
+              }
+            });
+
+            // Modify job object to include processed applicants only
+            return { ...job, applicants: processedApplicants };
+          }
+        }
+
+        return null; // Return null if no matching applicants or job not found
+      })
+    );
+
+    // Filter out null values (jobs without matching applicants)
+    const filteredJobPostings = jobPostingsWithStatus.filter(job => job !== null);
+
+    // Send response with filtered job postings
+    res.status(200).json(filteredJobPostings);
+  } catch (error) {
+    console.error(`Error fetching ${status} job postings:`, error);
+    res.status(500).json({ message: `An error occurred while fetching ${status} job postings` });
+  }
+};
+
+
+
+
+
+
+// Controller for pending job postings
+export const getCurrentUserPendingJobs = (req, res) => {
+  getJobsCurrentUserByApplicantStatus(req, res, 'pending');
+};
+
+// Controller for reviewed job postings
+export const getCurrentUserReviewedJobs = (req, res) => {
+  getJobsCurrentUserByApplicantStatus(req, res, 'reviewed');
+};
+
+// Controller for accepted job postings
+export const getCurrentUserAcceptedJobs = (req, res) => {
+  getJobsCurrentUserByApplicantStatus(req, res, 'accepted');
+};
+
+// Controller for rejected job postings
+export const getCurrentUserRejectedJobs = (req, res) => {
+  getJobsCurrentUserByApplicantStatus(req, res, 'rejected');
+};
+
+
+ 
+ 
+
+
+const getJobsUserByApplicantStatus = async (req, res, status) => {
+  try {
+    const { userId } = req.params;
+
+    // Find the user by ID and get the applied job postings
+    const user = await IndividualUser.findById(userId).select('jobposting');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Fetch job postings with the specified applicant status for the user
+    const jobPostingsWithStatus = await Promise.all(
+      user.jobposting.applied.map(async (jobId) => {
+        const job = await JobApplication.findById(jobId)
+          .select('title description applicationType experienceLevel applicants remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags')
+          .populate({
+            path: 'postedBy',
+            select: 'name email', // Adjust fields as necessary
+          })
+          .lean();
+
+        if (job) {
+          // Check if there are applicants matching userId and applicantStatus
+          const hasMatchingApplicant = job.applicants.some(applicant =>
+            applicant.user.toString() === userId && applicant.applicantStatus === status
+          );
+
+          // Return the job only if there are matching applicants
+          if (hasMatchingApplicant) {
+            // Process applicants to include full details for the current user and only user field for others
+            const processedApplicants = job.applicants.map(applicant => {
+              if (applicant.user.toString() === userId && applicant.applicantStatus === status) {
+                return applicant; // Include full details for the current user
+              } else {
+                return { user: applicant.user }; // Include only the user field for others
+              }
+            });
+
+            // Modify job object to include processed applicants only
+            return { ...job, applicants: processedApplicants };
+          }
+        }
+
+        return null; // Return null if no matching applicants or job not found
+      })
+    );
+
+    // Filter out null values (jobs without matching applicants)
+    const filteredJobPostings = jobPostingsWithStatus.filter(job => job !== null);
+
+    // Send response with filtered job postings
+    res.status(200).json(filteredJobPostings);
+  } catch (error) {
+    console.error(`Error fetching ${status} job postings:`, error);
+    res.status(500).json({ message: `An error occurred while fetching ${status} job postings` });
+  }
+};
+
+
+// Controller for pending job postings
+export const getUserPendingJobs = (req, res) => {
+  getJobsUserByApplicantStatus(req, res, 'pending');
+};
+
+// Controller for reviewed job postings
+export const getUserReviewedJobs = (req, res) => {
+  getJobsUserByApplicantStatus(req, res, 'reviewed');
+};
+
+// Controller for accepted job postings
+export const getUserAcceptedJobs = (req, res) => {
+  getJobsUserByApplicantStatus(req, res, 'accepted');
+};
+
+// Controller for rejected job postings
+export const getUserRejectedJobs = (req, res) => {
+  getJobsUserByApplicantStatus(req, res, 'rejected');
+};
