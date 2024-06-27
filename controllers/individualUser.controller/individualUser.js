@@ -1663,17 +1663,60 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req); // Get user ID from token
 
-    // Find the user by ID and populate the applied job postings
     const user = await IndividualUser.findById(userId)
       .select('jobposting')
       .populate({
         path: 'jobposting.applied',
         select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
-        populate: {
-          path: 'postedBy',
-          select: 'name email', // Adjust fields as necessary
-        }
-      });
+        populate: [
+          {
+            path: 'postedBy',
+            select: 'name email' // Adjust fields as necessary
+          },
+          {
+            path: 'media.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          },
+          {
+            path: 'applicants.resumeVideo.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          }
+        ]
+      })
+      .populate({
+        path: 'jobposting.saved',
+        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        populate: [
+          {
+            path: 'postedBy',
+            select: 'name email' // Adjust fields as necessary
+          },
+          {
+            path: 'media.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          },
+          {
+            path: 'applicants.resumeVideo.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          }
+        ]
+      });;
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -1691,7 +1734,8 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
             _id: applicant._id,
             appliedDate: applicant.appliedDate,
             applicationHistory: applicant.applicationHistory,
-            evaluationRounds: applicant.evaluationRounds
+            evaluationRounds: applicant.evaluationRounds,
+            resumeVideo: applicant.resumeVideo
           };
         } else {
           return {
@@ -1720,6 +1764,9 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while fetching applied job postings' });
   }
 };
+
+
+
 
 
 
@@ -1729,17 +1776,60 @@ export const getUserAppliedJobPostings = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Find the user by ID and populate the applied job postings
     const user = await IndividualUser.findById(userId)
       .select('jobposting')
       .populate({
         path: 'jobposting.applied',
         select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
-        populate: {
-          path: 'postedBy',
-          select: 'name email', // Adjust fields as necessary
-        }
-      });
+        populate: [
+          {
+            path: 'postedBy',
+            select: 'name email' // Adjust fields as necessary
+          },
+          {
+            path: 'media.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          },
+          {
+            path: 'applicants.resumeVideo.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          }
+        ]
+      })
+      .populate({
+        path: 'jobposting.saved',
+        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        populate: [
+          {
+            path: 'postedBy',
+            select: 'name email' // Adjust fields as necessary
+          },
+          {
+            path: 'media.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          },
+          {
+            path: 'applicants.resumeVideo.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          }
+        ]
+      });;
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -1757,7 +1847,8 @@ export const getUserAppliedJobPostings = async (req, res) => {
             _id: applicant._id,
             appliedDate: applicant.appliedDate,
             applicationHistory: applicant.applicationHistory,
-            evaluationRounds: applicant.evaluationRounds
+            evaluationRounds: applicant.evaluationRounds,
+            resumeVideo: applicant.resumeVideo
           };
         } else {
           return {
@@ -1786,6 +1877,9 @@ export const getUserAppliedJobPostings = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while fetching applied job postings' });
   }
 };
+
+
+ 
 
 
 
