@@ -1285,7 +1285,7 @@ export const toggleSaveJobApplication = async (req, res) => {
     const { id } = req.params;
 
     // Convert id to ObjectId
-    const jobId = mongoose.Types.ObjectId(id);
+    const jobId = new mongoose.Types.ObjectId(id);
 
     const individualUser = await IndividualUser.findById(userId);
     if (!individualUser) {
