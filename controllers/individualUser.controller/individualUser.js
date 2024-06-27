@@ -470,7 +470,7 @@ export const deleteExperience = async (req, res) => {
       return res.status(404).json({ message: "Experience not found" });
     }
 
-    individualUser.experiences.splice(experienceIndex, 1); 
+    individualUser.experiences.splice(experienceIndex, 1);
 
     await individualUser.save();
 
@@ -1086,7 +1086,7 @@ export const addOrUpdateVideoDetails = async (req, res) => {
     res.status(200).json({
       message: "Video details updated successfully",
       video,
-      videoResume:individualUser.videoResume
+      videoResume: individualUser.videoResume
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1279,14 +1279,13 @@ export const withdrawJobApplicant = async (req, res) => {
 
 
 
- 
 export const toggleSaveJobApplication = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { id } = req.params;
 
     // Convert id to ObjectId
-    const jobId = new mongoose.Types.ObjectId(id);
+    const jobId = mongoose.Types.ObjectId(id);
 
     const individualUser = await IndividualUser.findById(userId);
     if (!individualUser) {
@@ -1315,12 +1314,11 @@ export const toggleSaveJobApplication = async (req, res) => {
 };
 
 
-
 export const applyBulkJobApplications = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { jobIds, coverLetter, mediaType, mediaRef } = req.body;
-console.log( jobIds, coverLetter, mediaType, mediaRef)
+    console.log(jobIds, coverLetter, mediaType, mediaRef)
     // Validate that jobIds is an array
     if (!Array.isArray(jobIds)) {
       return res.status(400).json({ error: 'jobIds must be an array' });
@@ -1447,16 +1445,25 @@ export const getUserDetailsFromToken = async (req, res) => {
 
     // Find the individual user profile using profileRef
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
-    .populate({
-      path: 'jobposting.applied',
-      select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
- 
-    })
-    .populate({
-      path: 'jobposting.saved',
-      select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
-      
-    })
+      .populate({
+        path: 'jobposting.applied',
+        select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
+
+      })
+      .populate({
+        path: 'jobposting.saved',
+        select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
+        populate: [
+          {
+            path: 'media.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          },
+        ]
+      })
       .populate({
         path: 'videoResume.videoRef',
         populate: {
@@ -1467,7 +1474,7 @@ export const getUserDetailsFromToken = async (req, res) => {
       .populate({
         path: 'introVideo.videoRef',
         populate: {
-          path: 'thumbnailUrl', 
+          path: 'thumbnailUrl',
           model: 'Image'
         }
       });
@@ -1502,20 +1509,20 @@ export const getUserDetailsById = async (req, res) => {
 
     // Find the individual user profile using profileRef
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
-    .populate({
-      path: 'videoResume.videoRef',
-      populate: {
-        path: 'thumbnailUrl',
-        model: 'Image', // Assuming Image is the model name for images
-      }
-    })
-    .populate({
-      path: 'introVideo.videoRef',
-      populate: {
-        path: 'thumbnailUrl',
-        model: 'Image'
-      }
-    });
+      .populate({
+        path: 'videoResume.videoRef',
+        populate: {
+          path: 'thumbnailUrl',
+          model: 'Image', // Assuming Image is the model name for images
+        }
+      })
+      .populate({
+        path: 'introVideo.videoRef',
+        populate: {
+          path: 'thumbnailUrl',
+          model: 'Image'
+        }
+      });
 
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
@@ -1659,7 +1666,7 @@ export const getSimilarUsers = async (req, res) => {
 
 
 
- 
+
 
 export const getCurrentUserAppliedJobPostings = async (req, res) => {
   try {
@@ -1881,17 +1888,17 @@ export const getUserAppliedJobPostings = async (req, res) => {
 };
 
 
- 
-
-
-
- 
 
 
 
 
 
- 
+
+
+
+
+
+
 
 
 const getJobsCurrentUserByApplicantStatus = async (req, res, status) => {
@@ -1979,8 +1986,8 @@ export const getCurrentUserRejectedJobs = (req, res) => {
 };
 
 
- 
- 
+
+
 
 
 const getJobsUserByApplicantStatus = async (req, res, status) => {
