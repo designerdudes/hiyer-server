@@ -1279,13 +1279,14 @@ export const withdrawJobApplicant = async (req, res) => {
 
 
 
+ 
 export const toggleSaveJobApplication = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { id } = req.params;
 
     // Convert id to ObjectId
-    const jobId = mongoose.Types.ObjectId(id);
+    const jobId = new mongoose.Types.ObjectId(id);
 
     const individualUser = await IndividualUser.findById(userId);
     if (!individualUser) {
@@ -1312,6 +1313,7 @@ export const toggleSaveJobApplication = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while toggling the saved job application' });
   }
 };
+
 
 
 export const applyBulkJobApplications = async (req, res) => {
