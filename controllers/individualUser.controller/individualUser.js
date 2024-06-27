@@ -1445,8 +1445,16 @@ export const getUserDetailsFromToken = async (req, res) => {
 
     // Find the individual user profile using profileRef
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
-    .populate('jobposting.applied')
-    .populate('jobposting.saved')
+    .populate({
+      path: 'jobposting.applied',
+      select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
+ 
+    })
+    .populate({
+      path: 'jobposting.saved',
+      select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
+      
+    })
       .populate({
         path: 'videoResume.videoRef',
         populate: {
@@ -1660,7 +1668,7 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
       .select('jobposting')
       .populate({
         path: 'jobposting.applied',
-        select: 'title description applicationType  applicants._id experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
         populate: {
           path: 'postedBy',
           select: 'name email', // Adjust fields as necessary
@@ -1671,17 +1679,49 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    
+    // Process the applied job postings to filter and format applicants
+    const appliedJobPostings = user.jobposting.applied.map(job => {
+      const applicants = job.applicants.map(applicant => {
+        if (String(applicant.user) === String(userId)) {
+          return {
+            companyReview: applicant.companyReview,
+            user: applicant.user,
+            coverLetter: applicant.coverLetter,
+            applicantStatus: applicant.applicantStatus,
+            _id: applicant._id,
+            appliedDate: applicant.appliedDate,
+            applicationHistory: applicant.applicationHistory,
+            evaluationRounds: applicant.evaluationRounds
+          };
+        } else {
+          return {
+            user: applicant.user
+          };
+        }
+      });
+      return {
+        ...job.toObject(),
+        applicants: applicants
+      };
+    });
 
-    // Send response with user details and job postings with applicants count
+    // Send response with user details and processed job postings
     res.status(200).json({
-      user 
+      user: {
+        jobposting: {
+          applied: appliedJobPostings,
+          saved: user.jobposting.saved
+        },
+        _id: user._id
+      }
     });
   } catch (error) {
     console.error('Error fetching applied job postings:', error);
     res.status(500).json({ message: 'An error occurred while fetching applied job postings' });
   }
 };
+
+
 
 
 
@@ -1694,7 +1734,7 @@ export const getUserAppliedJobPostings = async (req, res) => {
       .select('jobposting')
       .populate({
         path: 'jobposting.applied',
-        select: 'title description applicationType  applicants._id experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
         populate: {
           path: 'postedBy',
           select: 'name email', // Adjust fields as necessary
@@ -1705,17 +1745,51 @@ export const getUserAppliedJobPostings = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    
+    // Process the applied job postings to filter and format applicants
+    const appliedJobPostings = user.jobposting.applied.map(job => {
+      const applicants = job.applicants.map(applicant => {
+        if (String(applicant.user) === String(userId)) {
+          return {
+            companyReview: applicant.companyReview,
+            user: applicant.user,
+            coverLetter: applicant.coverLetter,
+            applicantStatus: applicant.applicantStatus,
+            _id: applicant._id,
+            appliedDate: applicant.appliedDate,
+            applicationHistory: applicant.applicationHistory,
+            evaluationRounds: applicant.evaluationRounds
+          };
+        } else {
+          return {
+            user: applicant.user
+          };
+        }
+      });
+      return {
+        ...job.toObject(),
+        applicants: applicants
+      };
+    });
 
-    // Send response with user details and job postings with applicants count
+    // Send response with user details and processed job postings
     res.status(200).json({
-      user 
+      user: {
+        jobposting: {
+          applied: appliedJobPostings,
+          saved: user.jobposting.saved
+        },
+        _id: user._id
+      }
     });
   } catch (error) {
     console.error('Error fetching applied job postings:', error);
     res.status(500).json({ message: 'An error occurred while fetching applied job postings' });
   }
 };
+
+
+
+ 
 
 
 
@@ -1794,13 +1868,13 @@ export const getCurrentUserPendingJobs = (req, res) => {
 };
 
 // Controller for reviewed job postings
-export const getCurrentUserReviewedJobs = (req, res) => {
-  getJobsCurrentUserByApplicantStatus(req, res, 'reviewed');
+export const getCurrentUserShortlistedJobs = (req, res) => {
+  getJobsCurrentUserByApplicantStatus(req, res, 'shortlisted');
 };
 
 // Controller for accepted job postings
-export const getCurrentUserAcceptedJobs = (req, res) => {
-  getJobsCurrentUserByApplicantStatus(req, res, 'accepted');
+export const getCurrentUserSelectedJobs = (req, res) => {
+  getJobsCurrentUserByApplicantStatus(req, res, 'selected');
 };
 
 // Controller for rejected job postings
@@ -1879,13 +1953,13 @@ export const getUserPendingJobs = (req, res) => {
 };
 
 // Controller for reviewed job postings
-export const getUserReviewedJobs = (req, res) => {
-  getJobsUserByApplicantStatus(req, res, 'reviewed');
+export const getUserShortlistedJobs = (req, res) => {
+  getJobsUserByApplicantStatus(req, res, 'shortlisted');
 };
 
-// Controller for accepted job postings
-export const getUserAcceptedJobs = (req, res) => {
-  getJobsUserByApplicantStatus(req, res, 'accepted');
+// Controller for selected job postings
+export const getUserSelectedJobs = (req, res) => {
+  getJobsUserByApplicantStatus(req, res, 'selected');
 };
 
 // Controller for rejected job postings
