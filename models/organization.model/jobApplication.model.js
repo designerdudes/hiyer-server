@@ -14,15 +14,21 @@ const roundSchema = new mongoose.Schema({
     interviewDate: Date,
 });
 
+
 const mediaSchema = new mongoose.Schema({
-    mediaType: {
-        type: String
-      },
-    mediaRef: {
-      type: String,
-      required: true,
-    },
-  });
+  mediaType: {
+    type: String,
+    enum: ['Video', 'Image'],
+    required: true
+  },
+  mediaRef: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: 'mediaType', 
+    required: true
+  }
+}, {
+  timestamps: true,
+}); 
   
   const applicantSchema = new mongoose.Schema({
     user: {
@@ -36,7 +42,7 @@ const mediaSchema = new mongoose.Schema({
     },
     applicantStatus: {
       type: String,
-      enum: ['pending', 'reviewed', 'accepted', 'rejected'],
+      enum: ['pending', 'shortlisted', 'selected', 'rejected'],
       default: 'pending',
     },
     applicantNotes: String,
@@ -99,7 +105,7 @@ const jobApplicationSchema = new mongoose.Schema({
     applicationSource: String,
     postedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Organization',
         required: true
     },
     industry: {

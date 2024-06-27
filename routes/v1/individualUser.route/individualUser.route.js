@@ -46,12 +46,12 @@ import {
   getUserAppliedJobPostings,
   getCurrentUserAppliedJobPostings,
   getCurrentUserPendingJobs,
-  getCurrentUserReviewedJobs,
-  getCurrentUserAcceptedJobs,
+  getCurrentUserShortlistedJobs,
+  getCurrentUserSelectedJobs,
   getCurrentUserRejectedJobs,
   getUserPendingJobs,
-  getUserReviewedJobs,
-  getUserAcceptedJobs,
+  getUserShortlistedJobs,
+  getUserSelectedJobs,
   getUserRejectedJobs
 } from '../../../controllers/individualUser.controller/individualUser.js';
 import { upload } from '../../../config/multer.js';
@@ -142,13 +142,13 @@ router.get('/jobs/:userId/applied-job-postings', getUserAppliedJobPostings);
 
 // Routes for current user
 router.get('/jobs/current/pending', getCurrentUserPendingJobs);
-router.get('/jobs/current/reviewed', getCurrentUserReviewedJobs);
-router.get('/jobs/current/accepted', getCurrentUserAcceptedJobs);
+router.get('/jobs/current/shortlisted', getCurrentUserShortlistedJobs);
+router.get('/jobs/current/selected', getCurrentUserSelectedJobs);
 router.get('/jobs/current/rejected', getCurrentUserRejectedJobs);
 
 // Routes for specified user
 router.get('/jobs/:userId/pending', getUserPendingJobs);
-router.get('/jobs/:userId/reviewed', getUserReviewedJobs);
-router.get('/jobs/:userId/accepted', getUserAcceptedJobs);
+router.get('/jobs/:userId/shortlisted', getUserShortlistedJobs);
+router.get('/jobs/:userId/selected', getUserSelectedJobs);
 router.get('/jobs/:userId/rejected', getUserRejectedJobs);
 export default router;

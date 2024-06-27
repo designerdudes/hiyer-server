@@ -20,7 +20,7 @@ import {
   removeProjectURL,
   updateSocialLinks, 
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
-import { getCurrentUserAcceptedApplicants, getOrganizationalCurrentUserPostedApplications, getOrganizationalUserPostedApplications, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserReviewedApplicants, getPendingApplicants, getReviewedApplicants, getAcceptedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobApplication.controller.js';
+import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedApplications, getOrganizationalUserPostedApplications, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobApplication.controller.js';
 
 const router = express.Router();
 
@@ -91,10 +91,10 @@ router.get('/currentUser/posted-applications', getOrganizationalCurrentUserPoste
 router.get('/applications/pending', getCurrentUserPendingApplicants);
 
 // Route to get reviewed applicants
-router.get('/applications/reviewed', getCurrentUserReviewedApplicants);
+router.get('/applications/shortlisted', getCurrentUserShortlistedApplicants);
 
 // Route to get accepted applicants
-router.get('/applications/accepted', getCurrentUserAcceptedApplicants);
+router.get('/applications/selected', getCurrentUserSelectedApplicants);
 
 // Route to get rejected applicants
 router.get('/applications/rejected', getCurrentUserRejectedApplicants);
@@ -104,11 +104,11 @@ router.get('/applications/rejected', getCurrentUserRejectedApplicants);
 // Route to get pending applicants
 router.get('/applications/:organizatioId/pending', getPendingApplicants);
 
-// Route to get reviewed applicants
-router.get('/applications/:organizatioId/reviewed', getReviewedApplicants);
+// Route to get shortlisted applicants
+router.get('/applications/:organizatioId/shortlisted', getShortlistedApplicants);
 
-// Route to get accepted applicants
-router.get('/applications/:organizatioId/accepted', getAcceptedApplicants);
+// Route to get selected applicants
+router.get('/applications/:organizatioId/selected', getSelectedApplicants);
 
 // Route to get rejected applicants
 router.get('/applications/:organizatioId/rejected', getRejectedApplicants);

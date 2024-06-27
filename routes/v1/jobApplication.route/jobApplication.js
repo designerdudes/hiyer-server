@@ -3,7 +3,11 @@ import {     addJobApplication,
     editJobApplicationDetails,
     // editJobApplicationVideo,
     // editJobApplicationImage,
-    deleteJobApplication } from '../../../controllers/organization.controller/jobApplication.controller.js';
+    deleteJobApplication, 
+    getAllJobApplications,
+    getSimilarJobApplications,
+    getSimilarJobApplicationsFromId,
+    getJobApplicationDetails} from '../../../controllers/organization.controller/jobApplication.controller.js';
 // import { upload } from '../../../config/multer.js';
  
 import multer from 'multer';
@@ -26,4 +30,16 @@ router.put('/edit/:id', editJobApplicationDetails);
 // Route to delete a job application
 router.delete('/delete/:id', deleteJobApplication);
 
+
+// Route to get all job applications
+router.get('/applications', getAllJobApplications);
+
+// Route to get similar job applications based on query parameters with pagination
+router.get('/applications/similar', getSimilarJobApplications);
+
+// Route to get similar job applications based on job application ID with pagination
+router.get('/applications/:id/similar', getSimilarJobApplicationsFromId);
+
+// Route to get job application details by ID
+router.get('/applications/:id', getJobApplicationDetails);
 export default router;
