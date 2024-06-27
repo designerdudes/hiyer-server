@@ -7,7 +7,8 @@ import {     addJobApplication,
     getAllJobApplications,
     getSimilarJobApplications,
     getSimilarJobApplicationsFromId,
-    getJobApplicationDetails} from '../../../controllers/organization.controller/jobApplication.controller.js';
+    getJobApplicationDetails,
+    getJobApplicationDetailsForPoster} from '../../../controllers/organization.controller/jobApplication.controller.js';
 // import { upload } from '../../../config/multer.js';
  
 import multer from 'multer';
@@ -42,4 +43,8 @@ router.get('/applications/:id/similar', getSimilarJobApplicationsFromId);
 
 // Route to get job application details by ID
 router.get('/applications/:id', getJobApplicationDetails);
+
+router.get('/org/applications/:id', getJobApplicationDetailsForPoster);
+
+
 export default router;
