@@ -73,6 +73,7 @@ const organizationalUserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    companyLogo:String,
     type: String,
     industry: String,
     address: addressSchema,
