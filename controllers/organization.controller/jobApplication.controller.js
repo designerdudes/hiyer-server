@@ -351,7 +351,7 @@ export const updateApplicantStatus = async (req, res) => {
         const { applicantStatus } = req.body;
 
         // Validate applicantStatus
-        const validStatuses = ['pending', 'reviewed', 'accepted', 'rejected'];
+        const validStatuses = ['pending', 'shortlisted', 'selected', 'rejected'];
         if (!validStatuses.includes(applicantStatus)) {
             return res.status(400).json({ error: 'Invalid applicant status' });
         }
@@ -422,67 +422,84 @@ export const removeJobApplicant = async (req, res) => {
     }
 };
 
-
-
-// Get 5 job applications based on similarity of certain fields
+ 
+// Controller to get 5 job applications based on similarity of certain fields with pagination
 export const getSimilarJobApplications = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+  const { industry, skills, tags, applicationType, experienceLevel, location, page = 1, limit = 5 } = req.query;
+console.log(req.query)
+  try {
+      let query = {};
 
-    const userId = getUserIdFromToken(req);
+      if (industry) query.industry = industry;
+      if (skills) query.skills = { $in: skills.split(',') };
+      if (tags) query.tags = { $in: tags.split(',') };
+      if (applicationType) query.applicationType = applicationType;
+      if (experienceLevel) query.experienceLevel = experienceLevel;
+      if (location) query.location = location;
 
-    const { industry, skills, tags, applicationType, experienceLevel, location } = req.query;
+      const skip = (page - 1) * limit;
+      const jobApplications1 = await JobApplication.find(query)
+      console.log(jobApplications1)
 
-    try {
-        let query = {};
+      const jobApplications = await JobApplication.find(query)
+          .select('_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags')
+          .populate({
+              path: 'postedBy',
+              select: 'name email companyLogo industry contact'
+          })
+          .skip(skip)
+          .limit(Number(limit))
+          .lean();
 
-        if (industry) {
-            query.industry = industry;
-        }
+      const detailedJobApplications = await Promise.all(jobApplications.map(async (jobApplication) => {
+          const mediaType = jobApplication.media?.mediaType;
+          if (mediaType === 'Video') {
+              await JobApplication.populate(jobApplication, {
+                  path: 'media.mediaRef',
+                  model: 'Video',
+                  populate: { path: 'thumbnailUrl', model: 'Image' }
+              });
+          } else if (mediaType === 'Image') {
+              await JobApplication.populate(jobApplication, {
+                  path: 'media.mediaRef',
+                  model: 'Image'
+              });
+          }
 
-        if (skills) {
-            query.skills = { $in: skills.split(',') };
-        }
+          const applicantsCount = jobApplication.applicants.length;
 
-        if (tags) {
-            query.tags = { $in: tags.split(',') };
-        }
+          return {
+              ...jobApplication,
+              applicantsCount
+          };
+      }));
 
-        if (applicationType) {
-            query.applicationType = applicationType;
-        }
-
-        if (experienceLevel) {
-            query.experienceLevel = experienceLevel;
-        }
-
-        if (location) {
-            query.location = location;
-        }
-
-        const similarJobApplications = await JobApplication.find(query).limit(5).populate('Media.mediaRef');
-
-        res.status(200).json(similarJobApplications);
-    } catch (error) {
-        console.error('Error fetching similar job applications:', error);
-        res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
-    }
+      res.status(200).json(detailedJobApplications);
+  } catch (error) {
+      console.error('Error fetching similar job applications:', error);
+      res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
+  }
 };
 
-
-// Controller to get additional job application documents based on similar fields
+// Controller to get additional job application documents based on similar fields with pagination
 export const getSimilarJobApplicationsFromId = async (req, res) => {
     const userId = getUserIdFromToken(req);
 
     try {
         const { id } = req.params;
+        const { page = 1, limit = 5 } = req.query;
+
         const jobApplication = await JobApplication.findById(id);
         if (!jobApplication) {
             return res.status(404).json({ error: 'Job application not found' });
         }
 
         const { industry, skills, tags, applicationType, experienceLevel, location } = jobApplication;
+        const skip = (page - 1) * limit;
 
         // Query to find similar job applications based on fields
-        const similarJobApplications = await JobApplication.find({
+        const jobApplications = await JobApplication.find({
             $or: [
                 { industry },
                 { skills: { $in: skills } },
@@ -492,54 +509,92 @@ export const getSimilarJobApplicationsFromId = async (req, res) => {
                 { location },
             ],
             _id: { $ne: id }, // Exclude the current job application
-        }).limit(5);
+        })
+            .select('_id title description applicationType remoteWork applicationDeadline media location postedBy applicants.user createdAt')
+            .populate({
+                path: 'postedBy',
+                select: 'name email companyLogo industry contact'
+            })
+            .skip(skip)
+            .limit(Number(limit))
+            .lean();
 
-        res.status(200).json({ similarJobApplications });
+        const detailedJobApplications = await Promise.all(jobApplications.map(async (jobApplication) => {
+            const mediaType = jobApplication.media?.mediaType;
+            if (mediaType === 'Video') {
+                await JobApplication.populate(jobApplication, {
+                    path: 'media.mediaRef',
+                    model: 'Video',
+                    populate: { path: 'thumbnailUrl', model: 'Image' }
+                });
+            } else if (mediaType === 'Image') {
+                await JobApplication.populate(jobApplication, {
+                    path: 'media.mediaRef',
+                    model: 'Image'
+                });
+            }
+
+            const applicantsCount = jobApplication.applicants.length;
+
+            return {
+                ...jobApplication,
+                applicantsCount
+            };
+        }));
+
+        res.status(200).json(detailedJobApplications);
     } catch (error) {
         console.error('Error getting similar job applications:', error);
         res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
     }
 };
 
-
-
 // Controller to get job application details by ID with populated media data and applicants count
+ 
 export const getJobApplicationDetails = async (req, res) => {
     const userId = getUserIdFromToken(req);
 
     try {
         const { id } = req.params;
 
-        const jobApplication = await JobApplication.findById(id)
-
+        const jobApplication = await JobApplication.findById(id).populate({
+          path: 'postedBy',
+          select: 'name email companyLogo industry contact' 
+        })
 
         if (!jobApplication) {
             return res.status(404).json({ error: 'Job application not found' });
         }
 
-        const mediaType = jobApplication.Media.mediaType;
+        const mediaType = jobApplication.media?.mediaType;
         if (mediaType === 'Video') {
-            await jobApplication.populate({
-                path: 'Media.mediaRef',
+            await JobApplication.populate(jobApplication, {
+                path: 'media.mediaRef',
                 model: 'Video',
-                populate: {
-                    path: 'thumbnailUrl',
-                    model: 'Image'
-                }
-            }).execPopulate();
+                populate: { path: 'thumbnailUrl', model: 'Image' }
+            });
         } else if (mediaType === 'Image') {
-            await jobApplication.populate({
-                path: 'Media.mediaRef',
-                model: 'Image',
-
-            }).execPopulate();
+            await JobApplication.populate(jobApplication, {
+                path: 'media.mediaRef',
+                model: 'Image'
+            });
         }
 
+        // Filter applicants to show full details if userId matches, else show only user info
+        const applicants = jobApplication.applicants.map(applicant => {
+            if (applicant.user._id.toString() === userId) {
+                return applicant;
+            }
+            return { user: applicant.user };
+        });
 
         const applicantsCount = jobApplication.applicants.length;
 
         res.status(200).json({
-            jobApplication,
+            jobApplication: {
+                ...jobApplication.toObject(),
+                applicants
+            },
             applicantsCount
         });
     } catch (error) {
@@ -547,6 +602,70 @@ export const getJobApplicationDetails = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching job application details' });
     }
 };
+
+
+
+// Controller to get all job applications with pagination
+export const getAllJobApplications = async (req, res) => {
+  try {
+    const { page = 1, limit = 2 } = req.query;  
+
+    const totalJobApplications = await JobApplication.countDocuments();
+
+    const jobApplications = await JobApplication.find()
+      .select('_id title description applicationType remoteWork applicationDeadline media location postedBy applicants.user createdAt')
+      .populate({
+        path: 'postedBy',
+        select: 'name email companyLogo industry contact' 
+      })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    const detailedJobApplications = await Promise.all(jobApplications.map(async (jobApplication) => {
+      const mediaType = jobApplication.media?.mediaType;
+      if (mediaType === 'Video') {
+        await JobApplication.populate(jobApplication, {
+          path: 'media.mediaRef',
+          model: 'Video',
+          populate: {
+            path: 'thumbnailUrl',
+            model: 'Image'
+          }
+        });
+      } else if (mediaType === 'Image') {
+        await JobApplication.populate(jobApplication, {
+          path: 'media.mediaRef',
+          model: 'Image'
+        });
+      }
+
+      // Calculate applicants count
+      const applicantsCount = jobApplication.applicants.length;
+
+      return {
+        ...jobApplication,
+        applicantsCount
+      };
+    }));
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalJobApplications / limit);
+
+    // Send the detailed job applications along with pagination info
+    res.status(200).json({
+      page: Number(page),
+      limit: Number(limit),
+      totalPages,
+      totalJobApplications,
+      data: detailedJobApplications
+    });
+  } catch (error) {
+    console.error('Error getting all job applications:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job applications' });
+  }
+};
+
 
 
 
@@ -611,7 +730,7 @@ export const getOrganizationalUserPostedApplications = async (req, res) => {
 
   const getCurrentUserJobApplicationsByApplicantStatus = async (req, res, status) => {
     try {
-      const organizatioId = getorganizatioIdFromToken(req);
+      const organizatioId = getUserIdFromToken(req);
   
       // Check if organizatioId is a valid ObjectId
       if (!mongoose.Types.ObjectId.isValid(organizatioId)) {
@@ -658,13 +777,13 @@ export const getOrganizationalUserPostedApplications = async (req, res) => {
   };
   
   // Controller for reviewed applicants
-  export const getCurrentUserReviewedApplicants = (req, res) => {
-    getCurrentUserJobApplicationsByApplicantStatus(req, res, 'reviewed');
+  export const getCurrentUserShortlistedApplicants = (req, res) => {
+    getCurrentUserJobApplicationsByApplicantStatus(req, res, 'shortlisted');
   };
   
   // Controller for accepted applicants
-  export const getCurrentUserAcceptedApplicants = (req, res) => {
-    getCurrentUserJobApplicationsByApplicantStatus(req, res, 'accepted');
+  export const getCurrentUserSelectedApplicants = (req, res) => {
+    getCurrentUserJobApplicationsByApplicantStatus(req, res, 'selected');
   };
   
   // Controller for rejected applicants
@@ -730,13 +849,13 @@ export const getOrganizationalUserPostedApplications = async (req, res) => {
   };
   
   // Controller for reviewed applicants
-  export const getReviewedApplicants = (req, res) => {
-    getJobApplicationsByApplicantStatus(req, res, 'reviewed');
+  export const getShortlistedApplicants = (req, res) => {
+    getJobApplicationsByApplicantStatus(req, res, 'shortlisted');
   };
   
-  // Controller for accepted applicants
-  export const getAcceptedApplicants = (req, res) => {
-    getJobApplicationsByApplicantStatus(req, res, 'accepted');
+  // Controller for selected applicants
+  export const getSelectedApplicants = (req, res) => {
+    getJobApplicationsByApplicantStatus(req, res, 'selected');
   };
   
   // Controller for rejected applicants
