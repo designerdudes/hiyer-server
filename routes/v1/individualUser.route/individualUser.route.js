@@ -52,7 +52,8 @@ import {
   getUserPendingJobs,
   getUserShortlistedJobs,
   getUserSelectedJobs,
-  getUserRejectedJobs
+  getUserRejectedJobs,
+  getCurrentUserSavedJobPostings
 } from '../../../controllers/individualUser.controller/individualUser.js';
 import { upload } from '../../../config/multer.js';
 
@@ -111,8 +112,8 @@ router.delete('/project/:id/url/:urlId', removeProjectURL);
 router.post('/video-details/:id', addOrUpdateVideoDetails);
 
 //Intro Video 
-router.post('/introVideo/add',upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]), addIntroVideo);
-router.put('/introVideo/update',upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]),  updateIntroVideo);
+router.post('/introVideo/add', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]), addIntroVideo);
+router.put('/introVideo/update', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]), updateIntroVideo);
 router.delete('/introVideo/delete', deleteIntroVideo);
 
 
@@ -130,13 +131,14 @@ router.post('/industry', addOrUpdateIndustry);
 router.post('/interested-companies', addOrUpdateInterestedCompanies);
 
 // User Details Routes
-router.get('/details/token', getUserDetailsFromToken); 
+router.get('/details/token', getUserDetailsFromToken);
 router.get('/users/:userId', getUserDetailsById);
 router.get('/users/:userId/similar', getUserDetailsByIdandSimilarUser);
 router.post('/users/similar', getSimilarUsers);
 
 
 router.get('/jobs/applied-job-postings', getCurrentUserAppliedJobPostings);
+router.get('/jobs/saved-job-postings', getCurrentUserSavedJobPostings);
 router.get('/jobs/:userId/applied-job-postings', getUserAppliedJobPostings);
 
 

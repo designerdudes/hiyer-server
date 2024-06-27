@@ -1453,16 +1453,16 @@ export const getUserDetailsFromToken = async (req, res) => {
       .populate({
         path: 'jobposting.saved',
         select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
-        populate: [
-          {
-            path: 'media.mediaRef',
-            model: 'Video',
-            populate: {
-              path: 'thumbnailUrl',
-              model: 'Image'
-            }
-          },
-        ]
+        // populate: [
+        //   {
+        //     path: 'media.mediaRef',
+        //     model: 'Video',
+        //     populate: {
+        //       path: 'thumbnailUrl',
+        //       model: 'Image'
+        //     }
+        //   },
+        // ]
       })
       .populate({
         path: 'videoResume.videoRef',
@@ -1700,32 +1700,7 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
           }
         ]
       })
-      .populate({
-        path: 'jobposting.saved',
-        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
-        populate: [
-          {
-            path: 'postedBy',
-            select: 'name email' // Adjust fields as necessary
-          },
-          {
-            path: 'media.mediaRef',
-            model: 'Video',
-            populate: {
-              path: 'thumbnailUrl',
-              model: 'Image'
-            }
-          },
-          {
-            path: 'applicants.resumeVideo.mediaRef',
-            model: 'Video',
-            populate: {
-              path: 'thumbnailUrl',
-              model: 'Image'
-            }
-          }
-        ]
-      });;
+
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -1763,6 +1738,61 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
       user: {
         jobposting: {
           applied: appliedJobPostings,
+        },
+        _id: user._id
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching applied job postings:', error);
+    res.status(500).json({ message: 'An error occurred while fetching applied job postings' });
+  }
+};
+
+
+export const getCurrentUserSavedJobPostings = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Get user ID from token
+
+    const user = await IndividualUser.findById(userId)
+      .select('jobposting')
+      .populate({
+        path: 'jobposting.saved',
+        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        populate: [
+          {
+            path: 'postedBy',
+            select: 'name email' // Adjust fields as necessary
+          },
+          {
+            path: 'media.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          },
+          {
+            path: 'applicants.resumeVideo.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          }
+        ]
+      });;
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Process the applied job postings to filter and format applicants
+
+
+    // Send response with user details and processed job postings
+    res.status(200).json({
+      user: {
+        jobposting: {
           saved: user.jobposting.saved
         },
         _id: user._id
