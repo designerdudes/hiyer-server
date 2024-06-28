@@ -18,7 +18,10 @@ import {
   updateUrlInProject,
   addUrlToProject,
   removeProjectURL,
-  updateSocialLinks, 
+  updateSocialLinks,
+  toggleSaveCandidate,
+  getSavedCandidates,
+  getIndividualUsersWithIntroVideo, 
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
 import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedApplications, getOrganizationalUserPostedApplications, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobApplication.controller.js';
 
@@ -113,4 +116,9 @@ router.get('/applications/:organizatioId/selected', getSelectedApplicants);
 // Route to get rejected applicants
 router.get('/applications/:organizatioId/rejected', getRejectedApplicants);
 
+router.post('/saveCandidate/:candidateId', toggleSaveCandidate);
+
+router.get('/savedCandidates', getSavedCandidates);
+
+router.get('/candidates', getIndividualUsersWithIntroVideo);
 export default router;
