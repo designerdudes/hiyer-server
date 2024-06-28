@@ -1445,12 +1445,12 @@ export const getUserDetailsFromToken = async (req, res) => {
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
       .populate({
         path: 'jobposting.applied',
-        select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
+        select: '_id ',
 
       })
       .populate({
         path: 'jobposting.saved',
-        select: '_id title description applicationType remoteWork applicationDeadline media location industry postedBy applicants.user createdAt skills tags',
+        select: '_id',
         // populate: [
         //   {
         //     path: 'media.mediaRef',
@@ -1833,7 +1833,7 @@ export const getCurrentUserSavedJobPostings = async (req, res) => {
 
 
 
- 
+
 
 export const getUserAppliedJobPostings = async (req, res) => {
   try {
