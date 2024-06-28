@@ -53,7 +53,8 @@ import {
   getUserShortlistedJobs,
   getUserSelectedJobs,
   getUserRejectedJobs,
-  getCurrentUserSavedJobPostings
+  getCurrentUserSavedJobPostings,
+  getUserSavedJobPostings
 } from '../../../controllers/individualUser.controller/individualUser.js';
 import { upload } from '../../../config/multer.js';
 
@@ -140,6 +141,8 @@ router.post('/users/similar', getSimilarUsers);
 router.get('/jobs/applied-job-postings', getCurrentUserAppliedJobPostings);
 router.get('/jobs/saved-job-postings', getCurrentUserSavedJobPostings);
 router.get('/jobs/:userId/applied-job-postings', getUserAppliedJobPostings);
+router.get('/jobs/:userId/saved-job-postings', getUserSavedJobPostings);
+
 
 
 // Routes for current user

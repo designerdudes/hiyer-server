@@ -50,19 +50,19 @@ const mediaSchema = new mongoose.Schema({
       type: Date,
       default: Date.now,
     },
-    companyReview: {
-      status: {
-        type: String,
-        enum: ['pending', 'completed'],
-        default: 'pending',
-      },
-      interviewer: String,
-      interviewDate: Date,
-      interviewNotes: String,
-      technicalAssessment: String,
-      culturalFitAssessment: String,
-      referencesChecked: Boolean,
-    },
+    // companyReview: {
+    //   status: {
+    //     type: String,
+    //     enum: ['pending', 'completed'],
+    //     default: 'pending',
+    //   },
+    //   interviewer: String,
+    //   interviewDate: Date,
+    //   interviewNotes: String,
+    //   technicalAssessment: String,
+    //   culturalFitAssessment: String,
+    //   referencesChecked: Boolean,
+    // },
     applicationHistory: [{
       status: String,
       notes: String,
