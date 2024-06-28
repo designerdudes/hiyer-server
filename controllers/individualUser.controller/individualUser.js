@@ -21,8 +21,6 @@ const getUserIdFromToken = (req) => {
 const sendErrorResponse = (res, error) => {
   res.status(400).json({ message: error.message });
 };
-
-
 // Controller to handle joining fee payment
 export const handleJoiningFeePayment = async (req, res) => {
   try {
