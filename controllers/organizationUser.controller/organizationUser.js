@@ -1,9 +1,12 @@
+import mongoose from "mongoose";
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
 import User from "../../models/user.model.js";
 import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
 import validator from 'validator';
-
+import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
+import Video from "../../models/video.model.js";
+import Image from "../../models/image.model.js";
 
  
  
@@ -697,7 +700,150 @@ export const deleteSocialLink = async (req, res) => {
 
 
 
+export const toggleSaveCandidate = async (req, res) => {
+  try {
+    const orgUserId = getUserIdFromToken(req); 
+    const { candidateId } = req.params; 
+    const candidateObjectId = new mongoose.Types.ObjectId(candidateId);
+
+    const organizationalUser = await OrganizationalUser.findById(orgUserId).select('savedCandidates');
+    if (!organizationalUser) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+
+    const candidateIndex = organizationalUser.savedCandidates.indexOf(candidateObjectId);
+    if (candidateIndex === -1) {
+      organizationalUser.savedCandidates.push(candidateObjectId);
+    } else {
+      organizationalUser.savedCandidates.splice(candidateIndex, 1);
+    }
+
+    await organizationalUser.save();
+
+    res.status(200).json({
+      message: candidateIndex === -1 ? 'Candidate saved successfully' : 'Candidate removed from saved list',
+      organization: organizationalUser,
+    });
+  } catch (error) {
+    console.error('Error toggling saved candidate:', error);
+    res.status(500).json({ error: 'An error occurred while toggling the saved candidate' });
+  }
+};
+
+   
+
+export const getSavedCandidates = async (req, res) => {
+  try {
+    const orgUserId = getUserIdFromToken(req); // Get organizational user ID from token
+
+    const organizationalUser = await OrganizationalUser.findById(orgUserId).populate({
+      path: 'savedCandidates',
+      select: '_id', // Select only the _id of each saved candidate
+      populate: {
+        path: 'introVideo.videoRef',
+        model: 'Video',
+        populate: [
+          {
+            path: 'postedBy',
+            model: 'User',
+            select: 'name profilePicture', // Select fields you want from User model
+          },
+          {
+            path: 'thumbnailUrl',
+            model: 'Image',
+          },
+        ],
+      },
+    });
+
+    if (!organizationalUser) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+
+    res.status(200).json({
+      savedCandidates: organizationalUser.savedCandidates,
+    });
+  } catch (error) {
+    console.error('Error fetching saved candidates:', error);
+    res.status(500).json({ error: 'An error occurred while fetching saved candidates' });
+  }
+};
+
+
+// Controller to get Individual Users with introVideo based on various criteria
+export const getIndividualUsersWithIntroVideo = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
+
+    // Build query based on filters
+    let query = {};
+
+    if (filters.industry) query['industry'] = { $in: filters.industry.split(',') };
+    if (filters.intrestedCompanies) query['intrestedCompanies'] = { $in: filters.intrestedCompanies.split(',') };
+    if (filters['address.state']) query['address.state'] = filters['address.state'];
+    if (filters['education.degree']) query['education.degree'] = filters['education.degree'];
+    if (filters['skills.name']) query['skills.name'] = { $in: filters['skills.name'].split(',') };
+
+    // Count total documents that match the filters
+    const totalCandidates = await IndividualUser.countDocuments(query);
+
+    // Sort order handling
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Retrieve paginated individual users based on filters and sorting
+    let individualUsersQuery = IndividualUser.find(query)
+      .select('_id introVideo')
+      .sort(sortOptions)
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    // Populate introVideo field for each individualUser based on IndividualUser model
+    individualUsersQuery = individualUsersQuery.populate({
+      path: 'introVideo.videoRef',
+      model: 'Video',
+      populate: [
+        {
+          path: 'postedBy',
+          model: 'User',
+          select: 'name profilePicture  ', // Select fields you want from User model
+        },
+        {
+          path: 'thumbnailUrl',
+          model: 'Image',
+        },
+      ],
+    });
+
+    // Execute the query
+    const individualUsers = await individualUsersQuery.exec();
+
+    // Extract necessary fields from populated data
+    const formattedUsers = individualUsers.map(user => ({
+      _id: user._id,
+      introVideo: user.introVideo,
+      // Add other necessary fields if needed
+    }));
+
+    // Calculate total pages based on total individual users and limit
+    const totalPages = Math.ceil(totalCandidates / limit);
+
+    // Send response with pagination info and detailed individual users
+    res.status(200).json({
+      page: Number(page),
+      limit: Number(limit),
+      totalPages,
+      totalCandidates,
+      candidates: formattedUsers,
+    });
+  } catch (error) {
+    console.error('Error fetching individual users:', error);
+    res.status(500).json({ error: 'An error occurred while fetching individual users' });
+  }
+};
 
 
 
 
+ 

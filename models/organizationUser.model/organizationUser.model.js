@@ -103,7 +103,7 @@ const organizationalUserSchema = new mongoose.Schema(
     }],
     savedCandidates:[{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'IndividualUser'
       
     }]
   },
