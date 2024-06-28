@@ -1784,21 +1784,45 @@ export const getCurrentUserSavedJobPostings = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Process the applied job postings to filter and format applicants
-
+    // Process the saved job postings to filter and format applicants
+    const savedJobPostings = user.jobposting.saved.map(job => {
+      const applicants = job.applicants.map(applicant => {
+        if (String(applicant.user) === String(userId)) {
+          return {
+            companyReview: applicant.companyReview,
+            user: applicant.user,
+            coverLetter: applicant.coverLetter,
+            applicantStatus: applicant.applicantStatus,
+            _id: applicant._id,
+            appliedDate: applicant.appliedDate,
+            applicationHistory: applicant.applicationHistory,
+            evaluationRounds: applicant.evaluationRounds,
+            resumeVideo: applicant.resumeVideo
+          };
+        } else {
+          return {
+            user: applicant.user
+          };
+        }
+      });
+      return {
+        ...job.toObject(),
+        applicants: applicants
+      };
+    });
 
     // Send response with user details and processed job postings
     res.status(200).json({
       user: {
         jobposting: {
-          saved: user.jobposting.saved
+          saved: savedJobPostings
         },
         _id: user._id
       }
     });
   } catch (error) {
-    console.error('Error fetching applied job postings:', error);
-    res.status(500).json({ message: 'An error occurred while fetching applied job postings' });
+    console.error('Error fetching saved job postings:', error);
+    res.status(500).json({ message: 'An error occurred while fetching saved job postings' });
   }
 };
 
@@ -1809,9 +1833,12 @@ export const getCurrentUserSavedJobPostings = async (req, res) => {
 
 
 
+ 
+
 export const getUserAppliedJobPostings = async (req, res) => {
   try {
     const { userId } = req.params;
+
 
     const user = await IndividualUser.findById(userId)
       .select('jobposting')
@@ -1841,32 +1868,7 @@ export const getUserAppliedJobPostings = async (req, res) => {
           }
         ]
       })
-      .populate({
-        path: 'jobposting.saved',
-        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
-        populate: [
-          {
-            path: 'postedBy',
-            select: 'name email' // Adjust fields as necessary
-          },
-          {
-            path: 'media.mediaRef',
-            model: 'Video',
-            populate: {
-              path: 'thumbnailUrl',
-              model: 'Image'
-            }
-          },
-          {
-            path: 'applicants.resumeVideo.mediaRef',
-            model: 'Video',
-            populate: {
-              path: 'thumbnailUrl',
-              model: 'Image'
-            }
-          }
-        ]
-      });;
+
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -1904,7 +1906,6 @@ export const getUserAppliedJobPostings = async (req, res) => {
       user: {
         jobposting: {
           applied: appliedJobPostings,
-          saved: user.jobposting.saved
         },
         _id: user._id
       }
@@ -1920,9 +1921,84 @@ export const getUserAppliedJobPostings = async (req, res) => {
 
 
 
+export const getUserSavedJobPostings = async (req, res) => {
+  try {
+    const { userId } = req.params;
 
+    const user = await IndividualUser.findById(userId)
+      .select('jobposting')
+      .populate({
+        path: 'jobposting.saved',
+        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        populate: [
+          {
+            path: 'postedBy',
+            select: 'name email' // Adjust fields as necessary
+          },
+          {
+            path: 'media.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          },
+          {
+            path: 'applicants.resumeVideo.mediaRef',
+            model: 'Video',
+            populate: {
+              path: 'thumbnailUrl',
+              model: 'Image'
+            }
+          }
+        ]
+      });;
 
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
+    // Process the saved job postings to filter and format applicants
+    const savedJobPostings = user.jobposting.saved.map(job => {
+      const applicants = job.applicants.map(applicant => {
+        if (String(applicant.user) === String(userId)) {
+          return {
+            companyReview: applicant.companyReview,
+            user: applicant.user,
+            coverLetter: applicant.coverLetter,
+            applicantStatus: applicant.applicantStatus,
+            _id: applicant._id,
+            appliedDate: applicant.appliedDate,
+            applicationHistory: applicant.applicationHistory,
+            evaluationRounds: applicant.evaluationRounds,
+            resumeVideo: applicant.resumeVideo
+          };
+        } else {
+          return {
+            user: applicant.user
+          };
+        }
+      });
+      return {
+        ...job.toObject(),
+        applicants: applicants
+      };
+    });
+
+    // Send response with user details and processed job postings
+    res.status(200).json({
+      user: {
+        jobposting: {
+          saved: savedJobPostings
+        },
+        _id: user._id
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching saved job postings:', error);
+    res.status(500).json({ message: 'An error occurred while fetching saved job postings' });
+  }
+};
 
 
 
