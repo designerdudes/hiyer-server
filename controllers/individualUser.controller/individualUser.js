@@ -1451,16 +1451,6 @@ export const getUserDetailsFromToken = async (req, res) => {
       .populate({
         path: 'jobposting.saved',
         select: '_id',
-        // populate: [
-        //   {
-        //     path: 'media.mediaRef',
-        //     model: 'Video',
-        //     populate: {
-        //       path: 'thumbnailUrl',
-        //       model: 'Image'
-        //     }
-        //   },
-        // ]
       })
       .populate({
         path: 'videoResume.videoRef',
