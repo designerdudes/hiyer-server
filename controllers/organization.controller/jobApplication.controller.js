@@ -341,9 +341,6 @@ export const deleteJobApplication = async (req, res) => {
   }
 };
 
-
-
-
 // Controller to update the applicant status based on user ID
 export const updateApplicantStatus = async (req, res) => {
   const userId = getUserIdFromToken(req);
@@ -423,7 +420,6 @@ export const removeJobApplicant = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while removing the applicant' });
   }
 };
-
 
 // Controller to get 5 job applications based on similarity of certain fields with pagination
 export const getSimilarJobApplications = async (req, res) => {
