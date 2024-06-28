@@ -669,24 +669,42 @@ export const getJobApplicationDetailsForPoster = async (req, res) => {
   }
 };
 
-
-// Controller to get all job applications with pagination
+// Controller to get all job applications with pagination, filtering, and sorting
 export const getAllJobApplications = async (req, res) => {
   try {
-    const { page = 1, limit = 2 } = req.query;
+    let { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
 
-    const totalJobApplications = await JobApplication.countDocuments();
+    // Build query based on filters
+    let query = {};
 
-    const jobApplications = await JobApplication.find()
+    // Apply filters based on req.query
+    if (filters.industry) query.industry = filters.industry;
+    if (filters.skills) query.skills = { $in: filters.skills.split(',') };
+    if (filters.tags) query.tags = { $in: filters.tags.split(',') };
+    if (filters.applicationType) query.applicationType = filters.applicationType;
+    if (filters.experienceLevel) query.experienceLevel = filters.experienceLevel;
+    if (filters.location) query.location = filters.location;
+
+    // Count total documents that match the filters
+    const totalJobApplications = await JobApplication.countDocuments(query);
+
+    // Sort order handling
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Retrieve paginated job applications based on filters and sorting
+    const jobApplications = await JobApplication.find(query)
       .select('_id title description applicationType remoteWork applicationDeadline media location postedBy applicants.user createdAt')
       .populate({
         path: 'postedBy',
         select: 'name email companyLogo industry contact'
       })
+      .sort(sortOptions)
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .lean();
 
+    // Populate media details and calculate applicants count for each job application
     const detailedJobApplications = await Promise.all(jobApplications.map(async (jobApplication) => {
       const mediaType = jobApplication.media?.mediaType;
       if (mediaType === 'Video') {
@@ -714,22 +732,24 @@ export const getAllJobApplications = async (req, res) => {
       };
     }));
 
-    // Calculate total pages
+    // Calculate total pages based on total job applications and limit
     const totalPages = Math.ceil(totalJobApplications / limit);
 
-    // Send the detailed job applications along with pagination info
+    // Send response with pagination info and detailed job applications
     res.status(200).json({
       page: Number(page),
       limit: Number(limit),
       totalPages,
       totalJobApplications,
-      data: detailedJobApplications
+      jobAds: detailedJobApplications // Changed from 'jobAds' to 'jobApplications'
     });
   } catch (error) {
     console.error('Error getting all job applications:', error);
     res.status(500).json({ error: 'An error occurred while fetching job applications' });
   }
 };
+
+
 
 export const getOrganizationalUserPostedApplications = async (req, res) => {
   try {
