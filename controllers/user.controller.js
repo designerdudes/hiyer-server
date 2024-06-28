@@ -186,10 +186,10 @@ export const registerUser = async (req, res) => {
     };
 
     switch (profileType) {
-      case 'individualUser':
+      case 'IndividualUser':
         profileModel = IndividualUser;
         break;
-      case 'organization':
+      case 'OrganizationalUser':
         profileModel = OrganizationalUser;
         profileData = {
           ...profileData,
@@ -200,7 +200,7 @@ export const registerUser = async (req, res) => {
           }
         };
         break;
-      case 'organizationMember':
+      case 'OrganizationMember':
         profileModel = OrganizationMember;
         break;
       default:
