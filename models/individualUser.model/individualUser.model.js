@@ -111,7 +111,7 @@ const projectSchema = new mongoose.Schema({
     type: String,
   }, logoUrl: {
     type: String,
-  }, 
+  },  
   startDate: {
     type: Date,
     required: true,
@@ -219,6 +219,10 @@ const individualUserSchema = new mongoose.Schema(
         },
       },
     ],
+    followingOrganizations: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization'
+    }],
   },
   {
     timestamps: true,
