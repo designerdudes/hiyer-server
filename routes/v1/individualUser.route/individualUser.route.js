@@ -54,7 +54,8 @@ import {
   getUserSelectedJobs,
   getUserRejectedJobs,
   getCurrentUserSavedJobPostings,
-  getUserSavedJobPostings
+  getUserSavedJobPostings,
+  toggleFollowOrganization
 } from '../../../controllers/individualUser.controller/individualUser.js';
 import { upload } from '../../../config/multer.js';
 
@@ -156,4 +157,8 @@ router.get('/jobs/:userId/pending', getUserPendingJobs);
 router.get('/jobs/:userId/shortlisted', getUserShortlistedJobs);
 router.get('/jobs/:userId/selected', getUserSelectedJobs);
 router.get('/jobs/:userId/rejected', getUserRejectedJobs);
+
+
+router.post('/toggleFollow/:organizationId', toggleFollowOrganization);
+
 export default router;
