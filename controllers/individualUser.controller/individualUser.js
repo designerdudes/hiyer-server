@@ -2213,3 +2213,34 @@ export const toggleFollowOrganization = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+
+
+
+
+
+// Controller to get all following organizations for an individual user
+export const getFollowingOrganizations = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+
+  try {
+    // Find the individual user by userId and populate followingOrganizations with selected fields
+    const individualUser = await IndividualUser.findById(userId)
+      .populate({
+        path: 'followingOrganizations',
+        select: 'name companyLogo bio industry address', // Select the fields you want to return
+      })
+      .select('followingOrganizations'); // Only select followingOrganizations field from the user
+
+    if (!individualUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'Following organizations retrieved successfully',
+      followingOrganizations: individualUser.followingOrganizations,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
