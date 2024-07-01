@@ -770,6 +770,43 @@ export const getSavedCandidates = async (req, res) => {
 };
 
 
+export const getCandidateFollowers = async (req, res) => {
+  try {
+    const orgUserId = getUserIdFromToken(req); // Get organizational user ID from token
+
+    const organizationalUser = await OrganizationalUser.findById(orgUserId).populate({
+      path: 'candidateFollowers',
+      select: '_id', // Select only the _id of each saved candidate
+      populate: {
+        path: 'introVideo.videoRef',
+        model: 'Video',
+        populate: [
+          {
+            path: 'postedBy',
+            model: 'User',
+            select: 'name profilePicture', // Select fields you want from User model
+          },
+          {
+            path: 'thumbnailUrl',
+            model: 'Image',
+          },
+        ],
+      },
+    });
+
+    if (!organizationalUser) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+
+    res.status(200).json({
+      savedCandidates: organizationalUser.candidateFollowers,
+    });
+  } catch (error) {
+    console.error('Error fetching saved candidates:', error);
+    res.status(500).json({ error: 'An error occurred while fetching saved candidates' });
+  }
+};
+
 // Controller to get Individual Users with introVideo based on various criteria
 export const getIndividualUsersWithIntroVideo = async (req, res) => {
   try {
