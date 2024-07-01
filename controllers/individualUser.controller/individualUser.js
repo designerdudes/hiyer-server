@@ -5,6 +5,7 @@ import User from "../../models/user.model.js";
 import validator from 'validator';
 import JobApplication from "../../models/organization.model/jobApplication.model.js";
 import { deleteMedia, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
+import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
 
 // Helper function to extract user ID from token
 const getUserIdFromToken = (req) => {
@@ -2162,4 +2163,53 @@ export const getUserSelectedJobs = (req, res) => {
 // Controller for rejected job postings
 export const getUserRejectedJobs = (req, res) => {
   getJobsUserByApplicantStatus(req, res, 'rejected');
+};
+
+
+// Controller to toggle following/unfollowing an organization
+export const toggleFollowOrganization = async (req, res) => {
+  const { organizationId } = req.params;
+  const userId = getUserIdFromToken(req);
+
+  try {
+    // Find the individual user by userId
+    const individualUser = await IndividualUser.findById(userId).select('followingOrganizations');
+    if (!individualUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find the organization by organizationId
+    const organization = await OrganizationalUser.findById(organizationId).select('candidateFollowers');
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    // Check if the user is already following the organization
+    const isFollowing = individualUser.followingOrganizations.includes(organizationId);
+
+    if (isFollowing) {
+      // If following, remove organizationId from user's followingOrganizations
+      individualUser.followingOrganizations.pull(organizationId);
+
+      // Remove userId from organization's candidateFollowers
+      organization.candidateFollowers.pull(userId);
+    } else {
+      // If not following, add organizationId to user's followingOrganizations
+      individualUser.followingOrganizations.push(organizationId);
+
+      // Add userId to organization's candidateFollowers
+      organization.candidateFollowers.push(userId);
+    }
+
+    // Save the updated documents
+    await individualUser.save();
+    await organization.save();
+
+    res.status(200).json({
+      message: isFollowing ? 'Unfollowed the organization successfully' : 'Followed the organization successfully',
+      individualUser
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
