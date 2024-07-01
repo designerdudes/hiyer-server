@@ -94,8 +94,7 @@ const organizationalUserSchema = new mongoose.Schema(
       twitter: String,
       youtube: String,
       github:String,
-    },
-    logo: String,
+    }, 
     bio: String,
     postedApplications: [{ 
       type: mongoose.Schema.Types.ObjectId,
