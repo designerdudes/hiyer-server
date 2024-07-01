@@ -678,12 +678,31 @@ export const getAllJobApplications = async (req, res) => {
     let query = {};
 
     // Apply filters based on req.query
-    if (filters.industry) query.industry = filters.industry;
-    if (filters.skills) query.skills = { $in: filters.skills.split(',') };
-    if (filters.tags) query.tags = { $in: filters.tags.split(',') };
-    if (filters.applicationType) query.applicationType = filters.applicationType;
-    if (filters.experienceLevel) query.experienceLevel = filters.experienceLevel;
-    if (filters.location) query.location = filters.location;
+    if (filters.industry) {
+      query.industry = { $regex: new RegExp(filters.industry.replace(/\s+/g, '\\s*'), 'i') };
+    }
+    if (filters.skills) {
+      query.skills = {
+        $in: filters.skills.split(',').map(skill => new RegExp(skill.trim().replace(/\s+/g, '\\s*'), 'i'))
+      };
+    }
+    if (filters.tags) {
+      query.tags = {
+        $in: filters.tags.split(',').map(tag => new RegExp(tag.trim().replace(/\s+/g, '\\s*'), 'i'))
+      };
+    }
+    if (filters.applicationType) {
+      query.applicationType = { $regex: new RegExp(filters.applicationType.replace(/\s+/g, '\\s*'), 'i') };
+    }
+    if (filters.experienceLevel) {
+      query.experienceLevel = { $regex: new RegExp(filters.experienceLevel.replace(/\s+/g, '\\s*'), 'i') };
+    }
+    if (filters.location) {
+      query.location = { $regex: new RegExp(filters.location.replace(/\s+/g, '\\s*'), 'i') };
+    }
+    if (filters.title) {
+      query.title = { $regex: new RegExp(filters.title.replace(/\s+/g, '\\s*'), 'i') };
+    }
 
     // Count total documents that match the filters
     const totalJobApplications = await JobApplication.countDocuments(query);
@@ -741,13 +760,15 @@ export const getAllJobApplications = async (req, res) => {
       limit: Number(limit),
       totalPages,
       totalJobApplications,
-      jobAds: detailedJobApplications // Changed from 'jobAds' to 'jobApplications'
+      jobApplications: detailedJobApplications
     });
   } catch (error) {
     console.error('Error getting all job applications:', error);
     res.status(500).json({ error: 'An error occurred while fetching job applications' });
   }
 };
+
+
 
 
 
