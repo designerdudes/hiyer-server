@@ -105,6 +105,9 @@ const organizationalUserSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'IndividualUser'
       
+    }],candidateFollowers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'IndividualUser'
     }]
   },
   {
