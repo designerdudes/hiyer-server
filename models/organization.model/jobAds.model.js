@@ -83,7 +83,7 @@ const mediaSchema = new mongoose.Schema({
     jobType: {
       type: String,
       enum: ['full-time', 'part-time', 'contract', 'internship', 'freelance', 'volunteer', 'seasonal', 'apprenticeship'],
-      required: true,
+      // required: true,
     },
     experienceLevel: {
       type: String,
