@@ -188,12 +188,12 @@ const individualUserSchema = new mongoose.Schema(
     jobposting: {
       applied: {
         type: [mongoose.Schema.Types.ObjectId],
-        ref: "JobApplication",
+        ref: "JobAds",
         default: [],
       },
       saved: {
         type: [mongoose.Schema.Types.ObjectId],
-        ref: "JobApplication",
+        ref: "JobAds",
         default: [],
       },
     }, 
