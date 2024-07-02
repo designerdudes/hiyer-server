@@ -68,10 +68,10 @@ export const addJobAds = async (req, res) => {
     const newJobAds = new JobAds(nonEmptyFields);
     await newJobAds.save();
 
-    // Update the organizational user's posted applications
+    // Update the organizational user's posted jobAds
     await OrganizationalUser.findByIdAndUpdate(
       userId,
-      { $push: { postedApplications: newJobAds._id } },
+      { $push: { postedJobAds: newJobAds._id } },
       { new: true }
     );
 
@@ -330,8 +330,8 @@ export const deleteJobAds = async (req, res) => {
 
     // Remove job application reference from OrganizationalUser model
     await OrganizationalUser.updateMany(
-      { postedApplications: id },
-      { $pull: { postedApplications: id } }
+      { postedJobAds: id },
+      { $pull: { postedJobAds: id } }
     );
 
     res.status(200).json({ message: "Job application deleted successfully" });
@@ -421,7 +421,7 @@ export const removeJobApplicant = async (req, res) => {
   }
 };
 
-// Controller to get 5 job applications based on similarity of certain fields with pagination
+// Controller to get 5 job jobAds based on similarity of certain fields with pagination
 export const getSimilarJobAdss = async (req, res) => {
   const userId = getUserIdFromToken(req);
   const { industry, skills, tags, jobType, experienceLevel, location, page = 1, limit = 5 } = req.query;
@@ -475,8 +475,8 @@ export const getSimilarJobAdss = async (req, res) => {
 
     res.status(200).json(detailedJobAdss);
   } catch (error) {
-    console.error('Error fetching similar job applications:', error);
-    res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
+    console.error('Error fetching similar job jobAds:', error);
+    res.status(500).json({ error: 'An error occurred while fetching similar job jobAds' });
   }
 };
 
@@ -496,7 +496,7 @@ export const getSimilarJobAdssFromId = async (req, res) => {
     const { industry, skills, tags, jobType, experienceLevel, location } = jobAds;
     const skip = (page - 1) * limit;
 
-    // Query to find similar job applications based on fields
+    // Query to find similar job jobAds based on fields
     const jobAdss = await JobAds.find({
       $or: [
         { industry },
@@ -542,8 +542,8 @@ export const getSimilarJobAdssFromId = async (req, res) => {
 
     res.status(200).json(detailedJobAdss);
   } catch (error) {
-    console.error('Error getting similar job applications:', error);
-    res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
+    console.error('Error getting similar job jobAds:', error);
+    res.status(500).json({ error: 'An error occurred while fetching similar job jobAds' });
   }
 };
 
@@ -669,7 +669,7 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
   }
 };
 
-// Controller to get all job applications with pagination, filtering, and sorting
+// Controller to get all job jobAds with pagination, filtering, and sorting
 export const getAllJobAdss = async (req, res) => {
   try {
     let { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
@@ -711,7 +711,7 @@ export const getAllJobAdss = async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    // Retrieve paginated job applications based on filters and sorting
+    // Retrieve paginated job jobAds based on filters and sorting
     const jobAdss = await JobAds.find(query)
       .select('_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt')
       .populate({
@@ -751,10 +751,10 @@ export const getAllJobAdss = async (req, res) => {
       };
     }));
 
-    // Calculate total pages based on total job applications and limit
+    // Calculate total pages based on total job jobAds and limit
     const totalPages = Math.ceil(totalJobAdss / limit);
 
-    // Send response with pagination info and detailed job applications
+    // Send response with pagination info and detailed job jobAds
     res.status(200).json({
       page: Number(page),
       limit: Number(limit),
@@ -763,8 +763,8 @@ export const getAllJobAdss = async (req, res) => {
       jobAdss: detailedJobAdss
     });
   } catch (error) {
-    console.error('Error getting all job applications:', error);
-    res.status(500).json({ error: 'An error occurred while fetching job applications' });
+    console.error('Error getting all job jobAds:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job jobAds' });
   }
 };
 
@@ -772,14 +772,14 @@ export const getAllJobAdss = async (req, res) => {
 
 
 
-export const getOrganizationalUserPostedApplications = async (req, res) => {
+export const getOrganizationalUserPostedJobAds = async (req, res) => {
   try {
     const userId = req.params.userId; // Assuming userId is passed as a URL parameter
 
-    // Find the organizational user by ID and populate the postedApplications
+    // Find the organizational user by ID and populate the postedJobAds
     const organization = await OrganizationalUser.findById(userId)
       .populate({
-        path: 'postedApplications',
+        path: 'postedJobAds',
         populate: {
           path: 'applicants.user',
           select: 'name email',
@@ -791,26 +791,26 @@ export const getOrganizationalUserPostedApplications = async (req, res) => {
       return res.status(404).json({ message: 'Organization not found' });
     }
 
-    // Send the populated job applications
-    res.status(200).json(organization.postedApplications);
+    // Send the populated job jobAds
+    res.status(200).json(organization.postedJobAds);
   } catch (error) {
-    console.error('Error fetching posted applications:', error);
-    res.status(500).json({ message: 'An error occurred while fetching posted applications' });
+    console.error('Error fetching posted jobAds:', error);
+    res.status(500).json({ message: 'An error occurred while fetching posted jobAds' });
   }
 };
 
 
-export const getOrganizationalCurrentUserPostedApplications = async (req, res) => {
+export const getOrganizationalCurrentUserPostedJobAds = async (req, res) => {
   const userId = getUserIdFromToken(req);
 
   console.log('userIduserId', userId)
   try {
 
 
-    // Find the organizational user by ID and populate the postedApplications
+    // Find the organizational user by ID and populate the postedJobAds
     const organization = await OrganizationalUser.findById(userId)
       .populate({
-        path: 'postedApplications',
+        path: 'postedJobAds',
         populate: {
           path: 'applicants.user',
           select: 'name email', // Select the necessary fields from the user model
@@ -822,11 +822,11 @@ export const getOrganizationalCurrentUserPostedApplications = async (req, res) =
       return res.status(404).json({ message: 'Organization not found' });
     }
 
-    // Send the populated job applications
-    res.status(200).json(organization.postedApplications);
+    // Send the populated job jobAds
+    res.status(200).json(organization.postedJobAds);
   } catch (error) {
-    console.error('Error fetching posted applications:', error);
-    res.status(500).json({ message: 'An error occurred while fetching posted applications' });
+    console.error('Error fetching posted jobAds:', error);
+    res.status(500).json({ message: 'An error occurred while fetching posted jobAds' });
   }
 };
 
@@ -839,10 +839,10 @@ const getCurrentUserJobAdssByApplicantStatus = async (req, res, status) => {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
 
-    // Find the organizational user by ID and populate the postedApplications
+    // Find the organizational user by ID and populate the postedJobAds
     const organization = await OrganizationalUser.findById(organizatioId)
       .populate({
-        path: 'postedApplications',
+        path: 'postedJobAds',
         populate: {
           path: 'applicants.user',
           select: 'name email', // Select the necessary fields from the user model
@@ -854,8 +854,8 @@ const getCurrentUserJobAdssByApplicantStatus = async (req, res, status) => {
       return res.status(404).json({ message: 'Organization not found' });
     }
 
-    // Filter job applications to include only those with matching applicants
-    const filteredApplications = organization.postedApplications.map(application => {
+    // Filter job jobAds to include only those with matching applicants
+    const filteredJobAds = organization.postedJobAds.map(application => {
       const filteredApplicants = application.applicants.filter(applicant => applicant.applicantStatus === status);
       return {
         ...application,
@@ -863,11 +863,11 @@ const getCurrentUserJobAdssByApplicantStatus = async (req, res, status) => {
       };
     }).filter(application => application.applicants.length > 0);
 
-    // Send the filtered job applications
-    res.status(200).json(filteredApplications);
+    // Send the filtered job jobAds
+    res.status(200).json(filteredJobAds);
   } catch (error) {
-    console.error(`Error fetching ${status} applications:`, error);
-    res.status(500).json({ message: `An error occurred while fetching ${status} applications` });
+    console.error(`Error fetching ${status} jobAds:`, error);
+    res.status(500).json({ message: `An error occurred while fetching ${status} jobAds` });
   }
 };
 
@@ -903,10 +903,10 @@ const getJobAdssByApplicantStatus = async (req, res, status) => {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
 
-    // Find the organizational user by ID and populate the postedApplications
+    // Find the organizational user by ID and populate the postedJobAds
     const organization = await OrganizationalUser.findById(organizatioId)
       .populate({
-        path: 'postedApplications',
+        path: 'postedJobAds',
         populate: {
           path: 'applicants.user',
           select: 'name email', // Select the necessary fields from the user model
@@ -918,8 +918,8 @@ const getJobAdssByApplicantStatus = async (req, res, status) => {
       return res.status(404).json({ message: 'Organization not found' });
     }
 
-    // Filter job applications to include only those with matching applicants
-    const filteredApplications = organization.postedApplications.map(application => {
+    // Filter job jobAds to include only those with matching applicants
+    const filteredJobAds = organization.postedJobAds.map(application => {
       const filteredApplicants = application.applicants.filter(applicant => applicant.applicantStatus === status);
       return {
         ...application,
@@ -927,11 +927,11 @@ const getJobAdssByApplicantStatus = async (req, res, status) => {
       };
     }).filter(application => application.applicants.length > 0);
 
-    // Send the filtered job applications
-    res.status(200).json(filteredApplications);
+    // Send the filtered job jobAds
+    res.status(200).json(filteredJobAds);
   } catch (error) {
-    console.error(`Error fetching ${status} applications:`, error);
-    res.status(500).json({ message: `An error occurred while fetching ${status} applications` });
+    console.error(`Error fetching ${status} jobAds:`, error);
+    res.status(500).json({ message: `An error occurred while fetching ${status} jobAds` });
   }
 };
 
