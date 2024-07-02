@@ -1,0 +1,956 @@
+import mongoose from "mongoose";
+import { deleteImageFromCloudinary, deleteVideoFromCloudinary } from "../../config/cloudinary/cloudinary.config.js";
+import JobAds from "../../models/organization.model/jobAds.model.js";
+import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
+import Video from "../../models/video.model.js";
+import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
+import { uploadImageController, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
+import User from "../../models/user.model.js";
+import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
+
+
+export const addJobAds = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+
+    // Destructure the request body
+    const {
+      title,
+      description,
+      jobType,
+      experienceLevel,
+      remoteWork,
+      salary,
+      jobAdDeadline,
+      location,
+      skills,
+      category,
+      tags,
+    } = req.body;
+
+    let mediaResult = {};
+    if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
+      mediaResult = await uploadMedia(req);
+    } else if (req.files && req.files.image) {
+      mediaResult = await uploadImageController(req, res);
+    }
+
+    console.log('mediaResult:', mediaResult);
+
+    const Media = {
+      mediaType: req.files ? (req.files.video ? 'Video' : req.files.image ? 'Image' : '') : '',
+      mediaRef: mediaResult?.video_id || mediaResult?.image_id || null
+    };
+    console.log('Media:', Media);
+
+    const filteredFields = {
+      title,
+      description,
+      jobType,
+      experienceLevel,
+      remoteWork,
+      salary,
+      jobAdDeadline,
+      location,
+      skills: JSON.parse(skills),
+      category,
+      tags: JSON.parse(tags),
+      media: Media, // Assign the Media object here
+      postedBy: userId // Associate the application with the user who posted it
+    };
+
+    const nonEmptyFields = Object.fromEntries(
+      Object.entries(filteredFields).filter(
+        ([key, value]) => value !== undefined && value !== null && value !== ''
+      )
+    );
+
+    const newJobAds = new JobAds(nonEmptyFields);
+    await newJobAds.save();
+
+    // Update the organizational user's posted applications
+    await OrganizationalUser.findByIdAndUpdate(
+      userId,
+      { $push: { postedApplications: newJobAds._id } },
+      { new: true }
+    );
+
+    res.status(201).json(newJobAds);
+  } catch (error) {
+    console.error('Error adding job application:', error);
+    res.status(500).json({ error: 'An error occurred while adding the job application' });
+  }
+};
+
+
+
+// Edit Job Application Details
+export const editJobAdsDetails = async (req, res) => {
+  try {
+    const { id } = req.params; // Get job application ID from request parameters
+
+    const {
+      title,
+      description,
+      jobType,
+      experienceLevel,
+      remoteWork,
+      salary,
+      jobAdDeadline,
+      location,
+      skills,
+      category,
+      tags,
+    } = req.body;
+
+    const filteredFields = {
+      title,
+      description,
+      jobType,
+      experienceLevel,
+      remoteWork,
+      salary,
+      jobAdDeadline,
+      location,
+      skills,
+      category,
+      tags,
+    };
+
+    const nonEmptyFields = Object.fromEntries(
+      Object.entries(filteredFields).filter(
+        ([key, value]) => value !== undefined && value !== null && value !== ''
+      )
+    );
+
+    // Find the job application by ID and update it with the non-empty fields
+    const updatedJobAds = await JobAds.findByIdAndUpdate(
+      id,
+      nonEmptyFields,
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedJobAds) {
+      return res.status(404).json({ error: "Job application not found" });
+    }
+
+    res.status(200).json(updatedJobAds);
+  } catch (error) {
+    console.error('Error editing job application details:', error);
+    res.status(500).json({ error: 'An error occurred while editing the job application details' });
+  }
+};
+
+// // Edit Job Application Video
+// export const editJobAdsVideo = async (req, res) => {
+//     try {
+//         const { id } = req.params; // Get job application ID from request parameters
+
+//         const jobAds = await JobAds.findById(id);
+
+//         if (!jobAds) {
+//             return res.status(404).json({ error: "Job application not found" });
+//         }
+
+//         // Check if req.file.video exists
+//         if (req.file && req.file.video) {
+//             let uploadResult;
+//             // Upload the new video to Cloudinary
+//             try {
+//                 uploadResult = await uploadVideoToCloudinary(req.file.video);
+//             } catch (uploadError) {
+//                 console.error('Error uploading video to Cloudinary:', uploadError);
+//                 return res.status(500).json({ error: "Failed to upload video" });
+//             }
+
+//             // Handle existing video reference
+//             if (jobAds.media && jobAds.media.mediaType === 'Video') {
+//                 const video = await Video.findById(jobAds.media.mediaRef);
+//                 if (video) {
+//                     video.videoUrl = uploadResult.videoUrl;
+//                     video.streamingUrls = {
+//                         hls: uploadResult.hlsUrl,
+//                         dash: uploadResult.dashUrl,
+//                     };
+//                     video.representations = uploadResult.representations;
+//                     video.postedBy = jobAds.postedBy;
+//                     await video.save();
+//                 } else {
+//                     const newVideo = new Video({
+//                         videoUrl: uploadResult.videoUrl,
+//                         streamingUrls: {
+//                             hls: uploadResult.hlsUrl,
+//                             dash: uploadResult.dashUrl,
+//                         },
+//                         representations: uploadResult.representations,
+//                         postedBy: jobAds.postedBy,
+//                     });
+//                     await newVideo.save();
+
+//                     jobAds.media = {
+//                         mediaType: 'Video',
+//                         mediaRef: newVideo._id,
+//                     };
+//                 }
+//             } else {
+//                 const newVideo = new Video({
+//                     videoUrl: uploadResult.videoUrl,
+//                     streamingUrls: {
+//                         hls: uploadResult.hlsUrl,
+//                         dash: uploadResult.dashUrl,
+//                     },
+//                     representations: uploadResult.representations,
+//                     postedBy: jobAds.postedBy,
+//                 });
+//                 await newVideo.save();
+
+//                 jobAds.media = {
+//                     mediaType: 'Video',
+//                     mediaRef: newVideo._id,
+//                 };
+//             }
+//         } else {
+//             return res.status(400).json({ error: "Video file is required" });
+//         }
+
+//         // Save the updated job application document
+//         await jobAds.save();
+
+//         res.status(200).json(jobAds);
+//     } catch (error) {
+//         console.error('Error editing job application video:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// };
+
+// // Edit Job Application Image
+// export const editJobAdsImage = async (req, res) => {
+//     try {
+//         const { id } = req.params; // Get job application ID from request parameters
+
+//         const jobAds = await JobAds.findById(id);
+
+//         if (!jobAds) {
+//             return res.status(404).json({ error: "Job application not found" });
+//         }
+
+//         // Ensure the media type is an image
+//         if (jobAds.media && jobAds.media.mediaType !== 'Image') {
+//             return res.status(400).json({ error: "The media type is not an image" });
+//         }
+
+//         // Check if req.file.image exists
+//         if (req.file && req.file.image) {
+//             let uploadResult;
+//             // Upload the new image to Cloudinary
+//             try {
+//                 uploadResult = await uploadImageToCloudinary(req.file.image);
+//             } catch (uploadError) {
+//                 console.error('Error uploading image to Cloudinary:', uploadError);
+//                 return res.status(500).json({ error: "Failed to upload image" });
+//             }
+
+//             // Handle existing image reference
+//             if (jobAds.media && jobAds.media.mediaRef) {
+//                 const image = await Image.findById(jobAds.media.mediaRef);
+//                 if (image) {
+//                     // Delete the existing image from Cloudinary
+//                     try {
+//                         await deleteImageFromCloudinary(image.imageUrl);
+//                     } catch (deleteError) {
+//                         console.error('Error deleting image from Cloudinary:', deleteError);
+//                         return res.status(500).json({ error: "Failed to delete existing image" });
+//                     }
+//                     // Remove the existing image document from the database
+//                     try {
+//                         await Image.findByIdAndDelete(jobAds.media.mediaRef);
+//                     } catch (deleteError) {
+//                         console.error('Error deleting image document:', deleteError);
+//                         return res.status(500).json({ error: "Failed to delete existing image document" });
+//                     }
+//                 }
+//             }
+
+//             const newImage = new Image({
+//                 imageUrl: uploadResult.imageUrl,
+//                 transformations: [
+//                     { width: 800, height: 800, quality: 'auto' }
+//                 ],
+//                 postedBy: jobAds.postedBy
+//             });
+
+//             await newImage.save();
+
+//             jobAds.media = {
+//                 mediaType: 'Image',
+//                 mediaRef: newImage._id,
+//             };
+//         } else {
+//             return res.status(400).json({ error: "Image file is required" });
+//         }
+
+//         // Save the updated job application document
+//         await jobAds.save();
+
+//         res.status(200).json(jobAds);
+//     } catch (error) {
+//         console.error('Error editing job application image:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// };
+
+// Delete Job Application
+export const deleteJobAds = async (req, res) => {
+  try {
+    const { id } = req.params; // Get job application ID from request parameters
+
+    const jobAds = await JobAds.findById(id);
+    if (!jobAds) {
+      return res.status(404).json({ error: "Job application not found" });
+    }
+
+    // Handle media deletion
+    const { media } = jobAds;
+
+    if (media && media.mediaType === 'Video') {
+      const video = await Video.findById(media.mediaRef);
+      if (video) {
+        await deleteVideoFromCloudinary(video.videoUrl);
+        await Video.findByIdAndDelete(media.mediaRef);
+      }
+    } else if (media && media.mediaType === 'Image') {
+      const image = await Image.findById(media.mediaRef);
+      if (image) {
+        await deleteImageFromCloudinary(image.imageUrl);
+        await Image.findByIdAndDelete(media.mediaRef);
+      }
+    }
+
+    await JobAds.findByIdAndDelete(id);
+
+    // Remove job application reference from OrganizationalUser model
+    await OrganizationalUser.updateMany(
+      { postedApplications: id },
+      { $pull: { postedApplications: id } }
+    );
+
+    res.status(200).json({ message: "Job application deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting job application:', error);
+    res.status(500).json({ error: 'An error occurred while deleting the job application' });
+  }
+};
+
+// Controller to update the applicant status based on user ID
+export const updateApplicantStatus = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+
+  try {
+    const { jobId, userId } = req.params;
+    const { applicantStatus } = req.body;
+
+    // Validate applicantStatus
+    const validStatuses = ['pending', 'shortlisted', 'selected', 'rejected'];
+    if (!validStatuses.includes(applicantStatus)) {
+      return res.status(400).json({ error: 'Invalid applicant status' });
+    }
+
+    // Find the job application by ID
+    const jobAds = await JobAds.findById(jobId);
+    if (!jobAds) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
+
+    // Find the applicant within the job application by their user ID
+    const applicant = jobAds.applicants.find(app => app.user.toString() === userId);
+    if (!applicant) {
+      return res.status(404).json({ error: 'Applicant not found' });
+    }
+
+    // Update the applicant status
+    applicant.applicantStatus = applicantStatus;
+    applicant.applicationHistory.push({
+      status: applicantStatus,
+      updatedAt: new Date(),
+      notes: `Status updated to ${applicantStatus}`,
+    });
+
+    // Save the changes to the job application
+    await jobAds.save();
+
+    res.status(200).json({ message: 'Applicant status updated successfully', applicant });
+  } catch (error) {
+    console.error('Error updating applicant status:', error);
+    res.status(500).json({ error: 'An error occurred while updating the applicant status' });
+  }
+};
+
+// Controller to remove job applicant
+export const removeJobApplicant = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+
+  try {
+
+    const { jobId } = req.params;
+
+    // Find the job application by ID
+    const jobAds = await JobAds.findById(jobId);
+    if (!jobAds) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
+
+    // Find the index of the applicant within the job application's applicants array
+    const applicantIndex = jobAds.applicants.findIndex(app => app.user.toString() === userId);
+    if (applicantIndex === -1) {
+      return res.status(404).json({ error: 'Applicant not found' });
+    }
+
+    // Remove the applicant from the applicants array
+    jobAds.applicants.splice(applicantIndex, 1);
+    await jobAds.save();
+
+    // Update IndividualUser model to remove the applied job
+    await IndividualUser.findByIdAndUpdate(userId, {
+      $pull: { "jobposting.applied": jobAds._id },
+    });
+
+    res.status(200).json({ message: 'Applicant removed successfully' });
+  } catch (error) {
+    console.error('Error removing applicant:', error);
+    res.status(500).json({ error: 'An error occurred while removing the applicant' });
+  }
+};
+
+// Controller to get 5 job applications based on similarity of certain fields with pagination
+export const getSimilarJobAdss = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+  const { industry, skills, tags, jobType, experienceLevel, location, page = 1, limit = 5 } = req.query;
+  console.log(req.query)
+  try {
+    let query = {};
+
+    if (industry) query.industry = industry;
+    if (skills) query.skills = { $in: skills.split(',') };
+    if (tags) query.tags = { $in: tags.split(',') };
+    if (jobType) query.jobType = jobType;
+    if (experienceLevel) query.experienceLevel = experienceLevel;
+    if (location) query.location = location;
+
+    const skip = (page - 1) * limit;
+    const jobAdss1 = await JobAds.find(query)
+    console.log(jobAdss1)
+
+    const jobAdss = await JobAds.find(query)
+      .select('_id title description jobType remoteWork jobAdDeadline media location industry postedBy applicants.user createdAt skills tags')
+      .populate({
+        path: 'postedBy',
+        select: 'name email companyLogo industry contact'
+      })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+
+    const detailedJobAdss = await Promise.all(jobAdss.map(async (jobAds) => {
+      const mediaType = jobAds.media?.mediaType;
+      if (mediaType === 'Video') {
+        await JobAds.populate(jobAds, {
+          path: 'media.mediaRef',
+          model: 'Video',
+          populate: { path: 'thumbnailUrl', model: 'Image' }
+        });
+      } else if (mediaType === 'Image') {
+        await JobAds.populate(jobAds, {
+          path: 'media.mediaRef',
+          model: 'Image'
+        });
+      }
+
+      const applicantsCount = jobAds.applicants.length;
+
+      return {
+        ...jobAds,
+        applicantsCount
+      };
+    }));
+
+    res.status(200).json(detailedJobAdss);
+  } catch (error) {
+    console.error('Error fetching similar job applications:', error);
+    res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
+  }
+};
+
+// Controller to get additional job application documents based on similar fields with pagination
+export const getSimilarJobAdssFromId = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 5 } = req.query;
+
+    const jobAds = await JobAds.findById(id);
+    if (!jobAds) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
+
+    const { industry, skills, tags, jobType, experienceLevel, location } = jobAds;
+    const skip = (page - 1) * limit;
+
+    // Query to find similar job applications based on fields
+    const jobAdss = await JobAds.find({
+      $or: [
+        { industry },
+        { skills: { $in: skills } },
+        { tags: { $in: tags } },
+        { jobType },
+        { experienceLevel },
+        { location },
+      ],
+      _id: { $ne: id }, // Exclude the current job application
+    })
+      .select('_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt')
+      .populate({
+        path: 'postedBy',
+        select: 'name email companyLogo industry contact'
+      })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+
+    const detailedJobAdss = await Promise.all(jobAdss.map(async (jobAds) => {
+      const mediaType = jobAds.media?.mediaType;
+      if (mediaType === 'Video') {
+        await JobAds.populate(jobAds, {
+          path: 'media.mediaRef',
+          model: 'Video',
+          populate: { path: 'thumbnailUrl', model: 'Image' }
+        });
+      } else if (mediaType === 'Image') {
+        await JobAds.populate(jobAds, {
+          path: 'media.mediaRef',
+          model: 'Image'
+        });
+      }
+
+      const applicantsCount = jobAds.applicants.length;
+
+      return {
+        ...jobAds,
+        applicantsCount
+      };
+    }));
+
+    res.status(200).json(detailedJobAdss);
+  } catch (error) {
+    console.error('Error getting similar job applications:', error);
+    res.status(500).json({ error: 'An error occurred while fetching similar job applications' });
+  }
+};
+
+// Controller to get job application details by ID for indiuidual user 
+export const getJobAdsDetails = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+  try {
+    const { id } = req.params;
+
+    const jobAds = await JobAds.findById(id).populate({
+      path: 'postedBy',
+      select: 'name email companyLogo industry contact'
+    })
+
+    if (!jobAds) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
+
+    const mediaType = jobAds.media?.mediaType;
+    if (mediaType === 'Video') {
+      await JobAds.populate(jobAds, {
+        path: 'media.mediaRef',
+        model: 'Video',
+        populate: { path: 'thumbnailUrl', model: 'Image' }
+      });
+    } else if (mediaType === 'Image') {
+      await JobAds.populate(jobAds, {
+        path: 'media.mediaRef',
+        model: 'Image'
+      });
+    }
+    // Filter applicants to show full details if userId matches, else show only user info
+    const applicants = jobAds.applicants.map(applicant => {
+      if (applicant.user._id.toString() === userId) {
+        return applicant;
+      }
+      return { user: applicant.user };
+    });
+
+    const applicantsCount = jobAds.applicants.length;
+
+    res.status(200).json({
+      jobAds: {
+        ...jobAds.toObject(),
+        applicants
+      },
+      applicantsCount
+    });
+  } catch (error) {
+    console.error('Error getting job application details:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job application details' });
+  }
+};
+
+// Controller to get job application details by ID for organization
+export const getJobAdsDetailsForPoster = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    let effectiveUserId = userId;
+
+    if (user.profile.profileType === 'OrganizationMember') {
+      const organizationMember = await OrganizationMember.findById(user.profile.profileRef);
+      if (organizationMember) {
+        effectiveUserId = organizationMember.organization;
+      }
+    }
+
+    const { id } = req.params;
+
+    // Find the job application and populate necessary fields
+    const jobAds = await JobAds.findById(id).populate({
+      path: 'postedBy',
+      select: 'name email companyLogo industry contact _id'
+    });
+
+    if (!jobAds) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
+
+    // Populate the media data
+    const mediaType = jobAds.media?.mediaType;
+    if (mediaType === 'Video') {
+      await JobAds.populate(jobAds, {
+        path: 'media.mediaRef',
+        model: 'Video',
+        populate: { path: 'thumbnailUrl', model: 'Image' }
+      });
+    } else if (mediaType === 'Image') {
+      await JobAds.populate(jobAds, {
+        path: 'media.mediaRef',
+        model: 'Image'
+      });
+    }
+
+    // Check if the user is the one who posted the job
+    const isPoster = String(jobAds.postedBy._id) === String(effectiveUserId);
+
+    // Filter applicants to show full details if the user is the poster, else show only user info
+    const applicants = jobAds.applicants.map(applicant => {
+      if (isPoster) {
+        return applicant;
+      }
+      return { user: applicant.user };
+    });
+
+    const applicantsCount = jobAds.applicants.length;
+
+    res.status(200).json({
+      jobAds: {
+        ...jobAds.toObject(),
+        applicants
+      },
+      applicantsCount
+    });
+  } catch (error) {
+    console.error('Error getting job application details for poster:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job application details' });
+  }
+};
+
+// Controller to get all job applications with pagination, filtering, and sorting
+export const getAllJobAdss = async (req, res) => {
+  try {
+    let { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
+
+    // Build query based on filters
+    let query = {};
+
+    // Apply filters based on req.query
+    if (filters.industry) {
+      query.industry = { $regex: new RegExp(filters.industry.replace(/\s+/g, '\\s*'), 'i') };
+    }
+    if (filters.skills) {
+      query.skills = {
+        $in: filters.skills.split(',').map(skill => new RegExp(skill.trim().replace(/\s+/g, '\\s*'), 'i'))
+      };
+    }
+    if (filters.tags) {
+      query.tags = {
+        $in: filters.tags.split(',').map(tag => new RegExp(tag.trim().replace(/\s+/g, '\\s*'), 'i'))
+      };
+    }
+    if (filters.jobType) {
+      query.jobType = { $regex: new RegExp(filters.jobType.replace(/\s+/g, '\\s*'), 'i') };
+    }
+    if (filters.experienceLevel) {
+      query.experienceLevel = { $regex: new RegExp(filters.experienceLevel.replace(/\s+/g, '\\s*'), 'i') };
+    }
+    if (filters.location) {
+      query.location = { $regex: new RegExp(filters.location.replace(/\s+/g, '\\s*'), 'i') };
+    }
+    if (filters.title) {
+      query.title = { $regex: new RegExp(filters.title.replace(/\s+/g, '\\s*'), 'i') };
+    }
+
+    // Count total documents that match the filters
+    const totalJobAdss = await JobAds.countDocuments(query);
+
+    // Sort order handling
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Retrieve paginated job applications based on filters and sorting
+    const jobAdss = await JobAds.find(query)
+      .select('_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt')
+      .populate({
+        path: 'postedBy',
+        select: 'name email companyLogo industry contact'
+      })
+      .sort(sortOptions)
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    // Populate media details and calculate applicants count for each job application
+    const detailedJobAdss = await Promise.all(jobAdss.map(async (jobAds) => {
+      const mediaType = jobAds.media?.mediaType;
+      if (mediaType === 'Video') {
+        await JobAds.populate(jobAds, {
+          path: 'media.mediaRef',
+          model: 'Video',
+          populate: {
+            path: 'thumbnailUrl',
+            model: 'Image'
+          }
+        });
+      } else if (mediaType === 'Image') {
+        await JobAds.populate(jobAds, {
+          path: 'media.mediaRef',
+          model: 'Image'
+        });
+      }
+
+      // Calculate applicants count
+      const applicantsCount = jobAds.applicants.length;
+
+      return {
+        ...jobAds,
+        applicantsCount
+      };
+    }));
+
+    // Calculate total pages based on total job applications and limit
+    const totalPages = Math.ceil(totalJobAdss / limit);
+
+    // Send response with pagination info and detailed job applications
+    res.status(200).json({
+      page: Number(page),
+      limit: Number(limit),
+      totalPages,
+      totalJobAdss,
+      jobAdss: detailedJobAdss
+    });
+  } catch (error) {
+    console.error('Error getting all job applications:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job applications' });
+  }
+};
+
+
+
+
+
+export const getOrganizationalUserPostedApplications = async (req, res) => {
+  try {
+    const userId = req.params.userId; // Assuming userId is passed as a URL parameter
+
+    // Find the organizational user by ID and populate the postedApplications
+    const organization = await OrganizationalUser.findById(userId)
+      .populate({
+        path: 'postedApplications',
+        populate: {
+          path: 'applicants.user',
+          select: 'name email',
+        }
+      })
+      .lean();
+
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    // Send the populated job applications
+    res.status(200).json(organization.postedApplications);
+  } catch (error) {
+    console.error('Error fetching posted applications:', error);
+    res.status(500).json({ message: 'An error occurred while fetching posted applications' });
+  }
+};
+
+
+export const getOrganizationalCurrentUserPostedApplications = async (req, res) => {
+  const userId = getUserIdFromToken(req);
+
+  console.log('userIduserId', userId)
+  try {
+
+
+    // Find the organizational user by ID and populate the postedApplications
+    const organization = await OrganizationalUser.findById(userId)
+      .populate({
+        path: 'postedApplications',
+        populate: {
+          path: 'applicants.user',
+          select: 'name email', // Select the necessary fields from the user model
+        }
+      })
+      .lean();
+
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    // Send the populated job applications
+    res.status(200).json(organization.postedApplications);
+  } catch (error) {
+    console.error('Error fetching posted applications:', error);
+    res.status(500).json({ message: 'An error occurred while fetching posted applications' });
+  }
+};
+
+const getCurrentUserJobAdssByApplicantStatus = async (req, res, status) => {
+  try {
+    const organizatioId = getUserIdFromToken(req);
+
+    // Check if organizatioId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(organizatioId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Find the organizational user by ID and populate the postedApplications
+    const organization = await OrganizationalUser.findById(organizatioId)
+      .populate({
+        path: 'postedApplications',
+        populate: {
+          path: 'applicants.user',
+          select: 'name email', // Select the necessary fields from the user model
+        },
+      })
+      .lean();
+
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    // Filter job applications to include only those with matching applicants
+    const filteredApplications = organization.postedApplications.map(application => {
+      const filteredApplicants = application.applicants.filter(applicant => applicant.applicantStatus === status);
+      return {
+        ...application,
+        applicants: filteredApplicants
+      };
+    }).filter(application => application.applicants.length > 0);
+
+    // Send the filtered job applications
+    res.status(200).json(filteredApplications);
+  } catch (error) {
+    console.error(`Error fetching ${status} applications:`, error);
+    res.status(500).json({ message: `An error occurred while fetching ${status} applications` });
+  }
+};
+
+// Controller for pending applicants
+export const getCurrentUserPendingApplicants = (req, res) => {
+  getCurrentUserJobAdssByApplicantStatus(req, res, 'pending');
+};
+
+// Controller for reviewed applicants
+export const getCurrentUserShortlistedApplicants = (req, res) => {
+  getCurrentUserJobAdssByApplicantStatus(req, res, 'shortlisted');
+};
+
+// Controller for accepted applicants
+export const getCurrentUserSelectedApplicants = (req, res) => {
+  getCurrentUserJobAdssByApplicantStatus(req, res, 'selected');
+};
+
+// Controller for rejected applicants
+export const getCurrentUserRejectedApplicants = (req, res) => {
+  getCurrentUserJobAdssByApplicantStatus(req, res, 'rejected');
+};
+
+
+const getJobAdssByApplicantStatus = async (req, res, status) => {
+  try {
+
+    const { organizatioId } = req.params;
+
+
+    // Check if organizatioId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(organizatioId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Find the organizational user by ID and populate the postedApplications
+    const organization = await OrganizationalUser.findById(organizatioId)
+      .populate({
+        path: 'postedApplications',
+        populate: {
+          path: 'applicants.user',
+          select: 'name email', // Select the necessary fields from the user model
+        },
+      })
+      .lean();
+
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    // Filter job applications to include only those with matching applicants
+    const filteredApplications = organization.postedApplications.map(application => {
+      const filteredApplicants = application.applicants.filter(applicant => applicant.applicantStatus === status);
+      return {
+        ...application,
+        applicants: filteredApplicants
+      };
+    }).filter(application => application.applicants.length > 0);
+
+    // Send the filtered job applications
+    res.status(200).json(filteredApplications);
+  } catch (error) {
+    console.error(`Error fetching ${status} applications:`, error);
+    res.status(500).json({ message: `An error occurred while fetching ${status} applications` });
+  }
+};
+
+// Controller for pending applicants
+export const getPendingApplicants = (req, res) => {
+  getJobAdssByApplicantStatus(req, res, 'pending');
+};
+
+// Controller for reviewed applicants
+export const getShortlistedApplicants = (req, res) => {
+  getJobAdssByApplicantStatus(req, res, 'shortlisted');
+};
+
+// Controller for selected applicants
+export const getSelectedApplicants = (req, res) => {
+  getJobAdssByApplicantStatus(req, res, 'selected');
+};
+
+// Controller for rejected applicants
+export const getRejectedApplicants = (req, res) => {
+  getJobAdssByApplicantStatus(req, res, 'rejected');
+};

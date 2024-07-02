@@ -98,7 +98,7 @@ const organizationalUserSchema = new mongoose.Schema(
     bio: String,
     postedApplications: [{ 
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'JobApplication',
+      ref: 'JobAds',
     }],
     savedCandidates:[{
         type: mongoose.Schema.Types.ObjectId,

@@ -28,8 +28,8 @@ import {
   removeProjectURL,
   addOrUpdateVideoDetails,
   withdrawJobApplicant,
-  applyJobApplication,
-  toggleSaveJobApplication,
+  applyJobAds,
+  toggleSaveJobAds,
   addOrUpdateIndustry,
   addOrUpdateInterestedCompanies,
   getUserDetailsFromToken,
@@ -42,7 +42,7 @@ import {
   addIntroVideo,
   updateIntroVideo,
   deleteIntroVideo,
-  applyBulkJobApplications,
+  applyBulkJobAdss,
   getUserAppliedJobPostings,
   getCurrentUserAppliedJobPostings,
   getCurrentUserPendingJobs,
@@ -121,13 +121,13 @@ router.delete('/introVideo/delete', deleteIntroVideo);
 
 
 // Job Application Routes
-router.post('/jobs/:id/apply', applyJobApplication);
-router.post('/jobs/bulkApply', applyBulkJobApplications);
+router.post('/jobs/:id/apply', applyJobAds);
+router.post('/jobs/bulkApply', applyBulkJobAdss);
 
 
 // router.post('/jobs/:jobId/remove', withdrawJobApplicant);
 router.delete('/jobs/:jobId/withdraw', withdrawJobApplicant);
-router.post('/jobs/:id/toggle-save', toggleSaveJobApplication);
+router.post('/jobs/:id/toggle-save', toggleSaveJobAds);
 
 // Industry and Companies Routes
 router.post('/industry', addOrUpdateIndustry);
