@@ -24,7 +24,7 @@ import {
   getIndividualUsersWithIntroVideo,
   getCandidateFollowers, 
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
-import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedApplications, getOrganizationalUserPostedApplications, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobApplication.controller.js';
+import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedApplications, getOrganizationalUserPostedApplications, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobAds.controller.js';
 
 const router = express.Router();
 
