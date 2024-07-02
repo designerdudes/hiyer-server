@@ -96,7 +96,7 @@ const organizationalUserSchema = new mongoose.Schema(
       github:String,
     }, 
     bio: String,
-    postedApplications: [{ 
+    postedJobAds: [{ 
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobAds',
     }],

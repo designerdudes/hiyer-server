@@ -32,19 +32,19 @@ router.put('/edit/:id', editJobAdsDetails);
 router.delete('/delete/:id', deleteJobAds);
 
 
-// Route to get all job applications
-router.get('/applications', getAllJobAdss);
+// Route to get all job jobAds
+router.get('/jobAds', getAllJobAdss);
 
-// Route to get similar job applications based on query parameters with pagination
-router.get('/applications/similar', getSimilarJobAdss);
+// Route to get similar job jobAds based on query parameters with pagination
+router.get('/jobAds/similar', getSimilarJobAdss);
 
-// Route to get similar job applications based on job application ID with pagination
-router.get('/applications/:id/similar', getSimilarJobAdssFromId);
+// Route to get similar job jobAds based on job application ID with pagination
+router.get('/jobAds/:id/similar', getSimilarJobAdssFromId);
 
 // Route to get job application details by ID
-router.get('/applications/:id', getJobAdsDetails);
+router.get('/jobAds/:id', getJobAdsDetails);
 
-router.get('/org/applications/:id', getJobAdsDetailsForPoster);
+router.get('/org/jobAds/:id', getJobAdsDetailsForPoster);
 
 
 export default router;

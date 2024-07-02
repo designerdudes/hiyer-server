@@ -24,7 +24,7 @@ import {
   getIndividualUsersWithIntroVideo,
   getCandidateFollowers, 
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
-import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedApplications, getOrganizationalUserPostedApplications, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobAds.controller.js';
+import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedJobAds, getOrganizationalUserPostedJobAds, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobAds.controller.js';
 
 const router = express.Router();
 
@@ -87,35 +87,35 @@ router.put('/user/social-links', updateSocialLinks);
 router.delete('/user/social-links/:socialLinkKey', deleteSocialLink);
 
 
-router.post('/:userId/posted-applications', getOrganizationalUserPostedApplications);
-router.get('/currentUser/posted-applications', getOrganizationalCurrentUserPostedApplications);
+router.post('/:userId/posted-jobAds', getOrganizationalUserPostedJobAds);
+router.get('/currentUser/posted-jobAds', getOrganizationalCurrentUserPostedJobAds);
 
 
 // Route to get pending applicants
-router.get('/applications/pending', getCurrentUserPendingApplicants);
+router.get('/jobAds/pending', getCurrentUserPendingApplicants);
 
 // Route to get reviewed applicants
-router.get('/applications/shortlisted', getCurrentUserShortlistedApplicants);
+router.get('/jobAds/shortlisted', getCurrentUserShortlistedApplicants);
 
 // Route to get accepted applicants
-router.get('/applications/selected', getCurrentUserSelectedApplicants);
+router.get('/jobAds/selected', getCurrentUserSelectedApplicants);
 
 // Route to get rejected applicants
-router.get('/applications/rejected', getCurrentUserRejectedApplicants);
+router.get('/jobAds/rejected', getCurrentUserRejectedApplicants);
 
 
 
 // Route to get pending applicants
-router.get('/applications/:organizatioId/pending', getPendingApplicants);
+router.get('/jobAds/:organizatioId/pending', getPendingApplicants);
 
 // Route to get shortlisted applicants
-router.get('/applications/:organizatioId/shortlisted', getShortlistedApplicants);
+router.get('/jobAds/:organizatioId/shortlisted', getShortlistedApplicants);
 
 // Route to get selected applicants
-router.get('/applications/:organizatioId/selected', getSelectedApplicants);
+router.get('/jobAds/:organizatioId/selected', getSelectedApplicants);
 
 // Route to get rejected applicants
-router.get('/applications/:organizatioId/rejected', getRejectedApplicants);
+router.get('/jobAds/:organizatioId/rejected', getRejectedApplicants);
 
 router.post('/saveCandidate/:candidateId', toggleSaveCandidate);
 
