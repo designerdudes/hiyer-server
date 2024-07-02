@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from "mongoose";
 import User from "../../models/user.model.js";
 import validator from 'validator';
-import JobApplication from "../../models/organization.model/jobApplication.model.js";
+import JobAds from "../../models/organization.model/jobAds.model.js";
 import { deleteMedia, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
 
@@ -1200,7 +1200,7 @@ export const deleteIntroVideo = async (req, res) => {
 };
 
 
-export const applyJobApplication = async (req, res) => {
+export const applyJobAds = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { id } = req.params;
@@ -1220,19 +1220,19 @@ export const applyJobApplication = async (req, res) => {
       coverLetter,
     };
 
-    const jobApplication = await JobApplication.findById(jobId);
-    if (!jobApplication) {
+    const jobAds = await JobAds.findById(jobId);
+    if (!jobAds) {
       return res.status(404).json({ error: 'Job application not found' });
     }
 
-    jobApplication.applicants.push(newApplicant);
-    await jobApplication.save();
+    jobAds.applicants.push(newApplicant);
+    await jobAds.save();
 
     await IndividualUser.findByIdAndUpdate(userId, {
-      $push: { "jobposting.applied": jobApplication._id },
+      $push: { "jobposting.applied": jobAds._id },
     });
 
-    res.status(201).json(jobApplication);
+    res.status(201).json(jobAds);
   } catch (error) {
     console.error('Error adding applicant:', error);
     res.status(500).json({ error: 'An error occurred while adding the applicant' });
@@ -1249,24 +1249,24 @@ export const withdrawJobApplicant = async (req, res) => {
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
     // Find the job application by ID
-    const jobApplication = await JobApplication.findById(jobObjectId);
-    if (!jobApplication) {
+    const jobAds = await JobAds.findById(jobObjectId);
+    if (!jobAds) {
       return res.status(404).json({ error: 'Job application not found' });
     }
 
     // Find the index of the applicant within the job application's applicants array
-    const applicantIndex = jobApplication.applicants.findIndex(app => app.user.toString() === userObjectId.toString());
+    const applicantIndex = jobAds.applicants.findIndex(app => app.user.toString() === userObjectId.toString());
     if (applicantIndex === -1) {
       return res.status(404).json({ error: 'Applicant not found' });
     }
 
     // Remove the applicant from the applicants array
-    jobApplication.applicants.splice(applicantIndex, 1);
-    await jobApplication.save();
+    jobAds.applicants.splice(applicantIndex, 1);
+    await jobAds.save();
 
     // Update IndividualUser model to remove the applied job
     await IndividualUser.findByIdAndUpdate(userObjectId, {
-      $pull: { "jobposting.applied": jobApplication._id },
+      $pull: { "jobposting.applied": jobAds._id },
     });
 
     res.status(200).json({ message: 'Applicant removed successfully' });
@@ -1278,7 +1278,7 @@ export const withdrawJobApplicant = async (req, res) => {
 
 
 
-export const toggleSaveJobApplication = async (req, res) => {
+export const toggleSaveJobAds = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { id } = req.params;
@@ -1313,7 +1313,7 @@ export const toggleSaveJobApplication = async (req, res) => {
 };
 
 
-export const applyBulkJobApplications = async (req, res) => {
+export const applyBulkJobAdss = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { jobIds, coverLetter, mediaType, mediaRef } = req.body;
@@ -1341,23 +1341,23 @@ export const applyBulkJobApplications = async (req, res) => {
       coverLetter,
     };
 
-    const jobApplicationPromises = jobIds.map(async (id) => {
+    const jobAdsPromises = jobIds.map(async (id) => {
       const jobId = new mongoose.Types.ObjectId(id);
-      const jobApplication = await JobApplication.findById(jobId);
-      if (!jobApplication) {
+      const jobAds = await JobAds.findById(jobId);
+      if (!jobAds) {
         console.error(`Job application not found for ID: ${id}`);
         return { id, status: 'not_found' };
       }
 
-      jobApplication.applicants.push(newApplicant);
-      await jobApplication.save();
+      jobAds.applicants.push(newApplicant);
+      await jobAds.save();
       return { id, status: 'applied' };
     });
 
-    const jobApplicationResults = await Promise.all(jobApplicationPromises);
+    const jobAdsResults = await Promise.all(jobAdsPromises);
 
     // Updating the user's applied jobs once
-    const appliedJobIds = jobApplicationResults
+    const appliedJobIds = jobAdsResults
       .filter(result => result.status === 'applied')
       .map(result => result.id);
 
@@ -1367,7 +1367,7 @@ export const applyBulkJobApplications = async (req, res) => {
 
     res.status(201).json({
       message: 'Bulk application completed',
-      results: jobApplicationResults,
+      results: jobAdsResults,
     });
   } catch (error) {
     console.error('Error adding applicants in bulk:', error);
@@ -1665,7 +1665,7 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
       .select('jobposting')
       .populate({
         path: 'jobposting.applied',
-        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        select: 'title description jobType applicants experienceLevel remoteWork salary jobAdDeadline media location benefits jobAdLink skills jobAdSource postedBy industry tags',
         populate: [
           {
             path: 'postedBy',
@@ -1746,7 +1746,7 @@ export const getCurrentUserSavedJobPostings = async (req, res) => {
       .select('jobposting')
       .populate({
         path: 'jobposting.saved',
-        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        select: 'title description jobType applicants experienceLevel remoteWork salary jobAdDeadline media location benefits jobAdLink skills jobAdSource postedBy industry tags',
         populate: [
           {
             path: 'postedBy',
@@ -1835,7 +1835,7 @@ export const getUserAppliedJobPostings = async (req, res) => {
       .select('jobposting')
       .populate({
         path: 'jobposting.applied',
-        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        select: 'title description jobType applicants experienceLevel remoteWork salary jobAdDeadline media location benefits jobAdLink skills jobAdSource postedBy industry tags',
         populate: [
           {
             path: 'postedBy',
@@ -1920,7 +1920,7 @@ export const getUserSavedJobPostings = async (req, res) => {
       .select('jobposting')
       .populate({
         path: 'jobposting.saved',
-        select: 'title description applicationType applicants experienceLevel remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags',
+        select: 'title description jobType applicants experienceLevel remoteWork salary jobAdDeadline media location benefits jobAdLink skills jobAdSource postedBy industry tags',
         populate: [
           {
             path: 'postedBy',
@@ -2010,8 +2010,8 @@ const getJobsCurrentUserByApplicantStatus = async (req, res, status) => {
     // Fetch job postings with the specified applicant status for the user
     const jobPostingsWithStatus = await Promise.all(
       user.jobposting.applied.map(async (jobId) => {
-        const job = await JobApplication.findById(jobId)
-          .select('title description applicationType experienceLevel applicants remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags')
+        const job = await JobAds.findById(jobId)
+          .select('title description jobType experienceLevel applicants remoteWork salary jobAdDeadline media location benefits jobAdLink skills jobAdSource postedBy industry tags')
           .populate({
             path: 'postedBy',
             select: 'name email', // Adjust fields as necessary
@@ -2099,8 +2099,8 @@ const getJobsUserByApplicantStatus = async (req, res, status) => {
     // Fetch job postings with the specified applicant status for the user
     const jobPostingsWithStatus = await Promise.all(
       user.jobposting.applied.map(async (jobId) => {
-        const job = await JobApplication.findById(jobId)
-          .select('title description applicationType experienceLevel applicants remoteWork salary applicationDeadline media location benefits applicationLink skills applicationSource postedBy industry tags')
+        const job = await JobAds.findById(jobId)
+          .select('title description jobType experienceLevel applicants remoteWork salary jobAdDeadline media location benefits jobAdLink skills jobAdSource postedBy industry tags')
           .populate({
             path: 'postedBy',
             select: 'name email', // Adjust fields as necessary
