@@ -22,7 +22,8 @@ import {
   toggleSaveCandidate,
   getSavedCandidates,
   getIndividualUsersWithIntroVideo,
-  getCandidateFollowers, 
+  getCandidateFollowers,
+  getOrganizationalUserData, 
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
 import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedJobAds, getOrganizationalUserPostedJobAds, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobAds.controller.js';
 
@@ -85,6 +86,9 @@ router.put('/user/social-links', updateSocialLinks);
 
 // Route for deleting a social link
 router.delete('/user/social-links/:socialLinkKey', deleteSocialLink);
+
+
+router.get('/:orgid', getOrganizationalUserData);
 
 
 router.post('/:userId/posted-jobAds', getOrganizationalUserPostedJobAds);
