@@ -954,3 +954,9 @@ export const getSelectedApplicants = (req, res) => {
 export const getRejectedApplicants = (req, res) => {
   getJobAdssByApplicantStatus(req, res, 'rejected');
 };
+
+
+
+ 
+
+
