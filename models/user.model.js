@@ -15,7 +15,8 @@ const userSchema = new mongoose.Schema(
         default: false,
       },
     }, profilePicture: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Image",
     },
     phone: {
       countryCode: {
