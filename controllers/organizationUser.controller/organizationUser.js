@@ -7,6 +7,7 @@ import validator from 'validator';
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 import Video from "../../models/video.model.js";
 import Image from "../../models/image.model.js";
+import JobAds from "../../models/organization.model/jobAds.model.js";
 
  
  
@@ -730,7 +731,52 @@ export const toggleSaveCandidate = async (req, res) => {
   }
 };
 
-   
+ 
+
+ 
+
+ 
+export const getOrganizationalUserData = async (req, res) => {
+    try {
+        const { orgid } = req.params;
+
+        // Find the organizational user by ID and populate posted job ads
+        const organizationalUser = await OrganizationalUser.findById(orgid)
+            .populate({
+                path: 'postedJobAds',
+                select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt'
+                
+            })
+            .exec();
+console.log(organizationalUser)
+        if (!organizationalUser) {
+            return res.status(404).json({ success: false, message: 'Organizational user not found' });
+        }
+
+        for (const jobAd of organizationalUser.postedJobAds) {
+            const mediaType = jobAd.media?.mediaType;
+            if (mediaType === 'Video') {
+                await JobAds.populate(jobAd, {
+                    path: 'media.mediaRef',
+                    model: 'Video',
+                    populate: { path: 'thumbnailUrl', model: 'Image' }
+                });
+            } else if (mediaType === 'Image') {
+                await JobAds.populate(jobAd, {
+                    path: 'media.mediaRef',
+                    model: 'Image'
+                });
+            }
+        }
+
+        res.status(200).json({ success: true, data: organizationalUser });
+    } catch (error) {
+        console.error('Error fetching organizational user data:', error);
+        res.status(500).json({ success: false, message: 'Error fetching organizational user data' });
+    }
+};
+
+
 
 export const getSavedCandidates = async (req, res) => {
   try {
