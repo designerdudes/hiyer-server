@@ -5,6 +5,7 @@ import Image from "../../models/image.model.js";
 import path from "path";
 import jwt from 'jsonwebtoken';
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
+import User from "../../models/user.model.js";
 
 
 
@@ -122,13 +123,13 @@ export const deleteMediaForIndividualUsers = async (req, res) => {
     }
 
     const videoResume = user.videoResume[videoResumeIndex];
-    
+
     // Delete associated video media
     if (videoResume.videoRef) {
       await deleteMedia(videoResume.videoRef._id); // Assuming deleteMedia function deletes the file from storage
       await Video.findByIdAndDelete(videoResume.videoRef._id);
-      
-      
+
+
     }
 
     // Update user document to remove the specific video resume entry
@@ -142,7 +143,7 @@ export const deleteMediaForIndividualUsers = async (req, res) => {
   }
 };
 
- 
+
 
 
 export const uploadImageController = async (req, res) => {
@@ -167,7 +168,7 @@ export const uploadImageController = async (req, res) => {
       return res.status(400).json({ error: "Image is required" });
     }
 
-    const uploadResult = await uploadImage(req.file.image,userId);
+    const uploadResult = await uploadImage(req.file.image, userId);
 
     const newImage = new Image({
       imageUrl: uploadResult.imageUrl,
@@ -205,14 +206,14 @@ export const uploadMedia = async (req, res) => {
     // Resolve the absolute path for the video file
     const videoPath = path.resolve(video[0].path);
     console.log('Uploading video file:', videoPath);
-    const uploadResult = await uploadFile(videoPath,userId);
-    console.log('Uploading .secure_url  :',uploadResult.uploadResult.secure_url, uploadResult);
+    const uploadResult = await uploadFile(videoPath, userId);
+    console.log('Uploading .secure_url  :', uploadResult.uploadResult.secure_url, uploadResult);
 
     let newImage;
     if (image && image.length > 0) {
       const imagePath = path.resolve(image[0].path);
       console.log('Uploading image file:', imagePath);
-      const uploadResult1 = await uploadImage(imagePath,userId);
+      const uploadResult1 = await uploadImage(imagePath, userId);
 
       newImage = new Image({
         imageUrl: uploadResult1.imageUrl,
@@ -253,8 +254,8 @@ export const uploadMedia = async (req, res) => {
     // Update IndividualUser with the new video reference
 
 
-     // Return the media result
-     return { video_id: newVideo._id, image_id: newImage ? newImage._id : null };
+    // Return the media result
+    return { video_id: newVideo._id, image_id: newImage ? newImage._id : null };
   } catch (error) {
     console.error('Error uploading file uploadMedia:', error);
     if (!res.headersSent) {
@@ -376,41 +377,99 @@ export const deleteMedia = async (videoId) => {
 // Function to update all video URLs
 export const updateAllVideoUrls = async (req, res) => {
   try {
-      const updatedVideos = await Video.updateMany({}, { 
-          $set: { 
-              videoUrl: 'https://res.cloudinary.com/dgcbwb05z/video/upload/v1717288451/yaizoigumu5eu5ld7owr.mp4' 
-          } 
-      });
-      res.status(200).json({
-          message: 'All video URLs have been updated successfully',
-          updatedCount: updatedVideos.nModified
-      });
+    const updatedVideos = await Video.updateMany({}, {
+      $set: {
+        videoUrl: 'https://res.cloudinary.com/dgcbwb05z/video/upload/v1717288451/yaizoigumu5eu5ld7owr.mp4'
+      }
+    });
+    res.status(200).json({
+      message: 'All video URLs have been updated successfully',
+      updatedCount: updatedVideos.nModified
+    });
   } catch (error) {
-      console.error('Error updating video URLs:', error);
-      res.status(500).json({
-          message: 'Internal Server Error',
-          error: error.message
-      });
+    console.error('Error updating video URLs:', error);
+    res.status(500).json({
+      message: 'Internal Server Error',
+      error: error.message
+    });
   }
 };
 
 // Function to update all image URLs
 export const updateAllImageUrls = async (req, res) => {
   try {
-      const updatedImages = await Image.updateMany({}, { 
-          $set: { 
-              'imageUrl': 'https://res.cloudinary.com/dgcbwb05z/image/upload/v1714989757/samples/coffee.jpg' 
-          } 
-      });
-      res.status(200).json({
-          message: 'All image URLs have been updated successfully',
-          updatedCount: updatedImages.nModified
-      });
+    const updatedImages = await Image.updateMany({}, {
+      $set: {
+        'imageUrl': 'https://res.cloudinary.com/dgcbwb05z/image/upload/v1714989757/samples/coffee.jpg'
+      }
+    });
+    res.status(200).json({
+      message: 'All image URLs have been updated successfully',
+      updatedCount: updatedImages.nModified
+    });
   } catch (error) {
-      console.error('Error updating image URLs:', error);
-      res.status(500).json({
-          message: 'Internal Server Error',
-          error: error.message
-      });
+    console.error('Error updating image URLs:', error);
+    res.status(500).json({
+      message: 'Internal Server Error',
+      error: error.message
+    });
   }
 };
+
+
+export const uploadProfilePicture = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+  } catch (error) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const userId = decodedToken.id;
+
+  try {
+    // Check if an image is provided
+    if (!req.files || !req.files.image || req.files.image.length === 0) {
+      return res.status(400).json({ error: "Image is required" });
+    }
+
+    const imageFile = req.files.image[0];
+    const uploadResult = await uploadImage(imageFile, userId);
+
+    const newImage = new Image({
+      imageUrl: uploadResult.imageUrl,
+      transformations: [
+        { width: 800, height: 800, quality: 'auto' }
+      ],
+      postedBy: userId
+    });
+
+    await newImage.save();
+
+    // Update user's profilePicture with the new image ID
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profilePicture: newImage._id },
+      { new: true }
+    );
+
+    // Respond with the download URL and image ID
+    res.status(200).json({
+      success: true,
+      message: 'Profile picture updated successfully',
+      downloadUrl: uploadResult.imageUrl,
+      image_id: newImage._id,
+      user
+    });
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    res.status(500).json({ error: 'An error occurred while uploading the image' });
+  }
+};
+

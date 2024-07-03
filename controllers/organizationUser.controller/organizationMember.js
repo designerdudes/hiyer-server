@@ -3,7 +3,7 @@ import OrganizationMember from '../../models/organizationUser.model/organization
 import { getUserIdFromToken } from '../../utils/getUserIdFromToken.js';
 import User from '../../models/user.model.js';
 
- 
+
 // Add or Update Organization Member Data
 export const addOrUpdateOrganizationMember = async (req, res) => {
   try {
@@ -74,8 +74,8 @@ const updateOrganizationMemberField = async (req, res, field) => {
 // Update Address
 export const updateAddress = (req, res) => updateOrganizationMemberField(req, res, 'address');
 
- 
- 
+
+
 
 // Update Department
 export const updateDepartment = (req, res) => updateOrganizationMemberField(req, res, 'department');
