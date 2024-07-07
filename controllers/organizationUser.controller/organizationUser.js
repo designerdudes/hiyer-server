@@ -734,24 +734,32 @@ export const toggleSaveCandidate = async (req, res) => {
 
 
 
-
-
 export const getOrganizationalUserData = async (req, res) => {
   try {
-    const { orgid } = req.params;
+    const {   orgid } = req.params;
+
+    // Find the user by ID and select specific fields
+    const user = await User.findById(orgid)
+      .select('email phone name profilePicture profile')
+      .populate('profilePicture');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     // Find the organizational user by ID and populate posted job ads
     const organizationalUser = await OrganizationalUser.findById(orgid)
       .populate({
         path: 'postedJobAds',
         select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt'
-
       })
       .exec();
+
     if (!organizationalUser) {
       return res.status(404).json({ success: false, message: 'Organizational user not found' });
     }
 
+    // Populate media references for job ads
     for (const jobAd of organizationalUser.postedJobAds) {
       const mediaType = jobAd.media?.mediaType;
       if (mediaType === 'Video') {
@@ -768,13 +776,17 @@ export const getOrganizationalUserData = async (req, res) => {
       }
     }
 
-    res.status(200).json({ success: true, data: organizationalUser });
+    // Return both user and organizational user data
+    res.status(200).json({
+      success: true,
+      user,
+      organizationalUser
+    });
   } catch (error) {
     console.error('Error fetching organizational user data:', error);
     res.status(500).json({ success: false, message: 'Error fetching organizational user data' });
   }
 };
-
 
 
 export const getSavedCandidates = async (req, res) => {
