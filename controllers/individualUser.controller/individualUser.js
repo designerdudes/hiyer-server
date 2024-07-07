@@ -1437,7 +1437,7 @@ export const getUserDetailsFromToken = async (req, res) => {
     const userId = getUserIdFromToken(req);
 
     // Find the user by ID and select specific fields
-    const user = await User.findById(userId).select('email phone name profilePicture profile');
+    const user = await User.findById(userId).select('email phone name profilePicture profile').populate('profilePicture');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -1491,7 +1491,7 @@ export const getUserDetailsById = async (req, res) => {
     const { userId } = req.params;
 
     // Find the user by ID and select specific fields
-    const user = await User.findById(userId).select('email phone name profile profilePicture');
+    const user = await User.findById(userId).select('email phone name profile profilePicture').populate('profilePicture');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -1538,7 +1538,7 @@ export const getUserDetailsByIdandSimilarUser = async (req, res) => {
     const { userId } = req.params;
 
     // Find user by ID
-    const user = await User.findById(userId).select('email phone name profilePicture profile');
+    const user = await User.findById(userId).select('email phone name profilePicture profile').populate('profilePicture');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
