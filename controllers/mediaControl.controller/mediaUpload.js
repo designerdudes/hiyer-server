@@ -144,8 +144,6 @@ export const deleteMediaForIndividualUsers = async (req, res) => {
 };
 
 
-
-
 export const uploadImageController = async (req, res) => {
   const authorizationHeader = req.headers.authorization;
   if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
@@ -168,7 +166,7 @@ export const uploadImageController = async (req, res) => {
       return res.status(400).json({ error: "Image is required" });
     }
 
-    const uploadResult = await uploadImage(req.file.image, userId);
+    const uploadResult = await uploadImage(req.file.image,userId);
 
     const newImage = new Image({
       imageUrl: uploadResult.imageUrl,
@@ -180,6 +178,54 @@ export const uploadImageController = async (req, res) => {
 
     await newImage.save();
 
+    // Respond with the download URL and image ID
+    res.status(200).json({
+      downloadUrl: uploadResult.imageUrl,
+      image_id: newImage._id
+    });
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    res.status(500).json({ error: 'An error occurred while uploading the image' });
+  }
+};
+
+export const uploadProfileImageController = async (req, res) => {
+  const authorizationHeader = req.headers.authorization;
+  if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authorizationHeader.split("Bearer ")[1];
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(token, process.env.JWT_SECRETKEY);
+  } catch (error) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  console.log(req.files.image[0].path)
+  const userId = decodedToken.id;
+
+  try {
+    // Check if an image is provided
+    if (!req.files || !req.files.image) {
+      return res.status(400).json({ error: "Image is required" });
+    }
+
+    const uploadResult = await uploadImage(req.files.image[0].path, userId);
+
+    const newImage = new Image({
+      imageUrl: uploadResult.imageUrl,
+      transformations: [
+        { width: 800, height: 800, quality: 'auto' }
+      ],
+      postedBy: userId
+    });
+
+    await newImage.save();
+
+    // Update the user's profilePicture field with the new image ID
+    await User.findByIdAndUpdate(userId, { profilePicture: newImage._id });
+    console.log(newImage._id)
     // Respond with the download URL and image ID
     res.status(200).json({
       downloadUrl: uploadResult.imageUrl,
