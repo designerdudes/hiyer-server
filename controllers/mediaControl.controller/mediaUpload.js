@@ -159,16 +159,16 @@ export const uploadImageController = async (req, res) => {
   } catch (error) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-
+console.log(req.files.image[0].path)
   const userId = decodedToken.id;
 
   try {
     // Check if an image is provided
-    if (!req.file || !req.file.image) {
+    if (!req.files || !req.files.image) {
       return res.status(400).json({ error: "Image is required" });
     }
 
-    const uploadResult = await uploadImage(req.file.image, userId);
+    const uploadResult = await uploadImage(req.files.image[0].path, userId);
 
     const newImage = new Image({
       imageUrl: uploadResult.imageUrl,
@@ -180,6 +180,9 @@ export const uploadImageController = async (req, res) => {
 
     await newImage.save();
 
+     // Update the user's profilePicture field with the new image ID
+     await User.findByIdAndUpdate(userId, { profilePicture: newImage._id });
+console.log(newImage._id)
     // Respond with the download URL and image ID
     res.status(200).json({
       downloadUrl: uploadResult.imageUrl,
