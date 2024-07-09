@@ -1,7 +1,7 @@
 import express from 'express';
 import {
   addOrUpdateUserData,
-  addOrUpdateAddress, 
+  addOrUpdateAddress,
   addOrUpdateContactInfo,
   addOrUpdateWebsite,
   addOrUpdateSocialLinks,
@@ -13,7 +13,7 @@ import {
   addTeamMember,
   updateTeamMember,
   deleteTeamMember,
-  addSocialLink, 
+  addSocialLink,
   deleteSocialLink,
   updateUrlInProject,
   addUrlToProject,
@@ -23,11 +23,15 @@ import {
   getSavedCandidates,
   getIndividualUsersWithIntroVideo,
   getCandidateFollowers,
-  getOrganizationalUserData, 
+  getOrganizationalUserData,
+  getOrganizationalUserDataFromToken,
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
 import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedJobAds, getOrganizationalUserPostedJobAds, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobAds.controller.js';
 
 const router = express.Router();
+
+//Route for getting user data from token
+router.get('/details/token', getOrganizationalUserDataFromToken);
 
 // Route for adding or updating user data
 router.post('/user/data', addOrUpdateUserData);
