@@ -40,7 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-
+.client_secret_351359205776-atud9sgoh75sn8am7hvcdnle0tv3tgj8.apps.googleusercontent.com.json
 /media
 
 /uploads

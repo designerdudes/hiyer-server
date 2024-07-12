@@ -160,6 +160,8 @@ export const registerUser = async (req, res) => {
     const userData = {
       email: {
         id: email,
+        verified: true,
+
       },
       phone: {
         countryCode,
