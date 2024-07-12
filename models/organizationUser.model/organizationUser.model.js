@@ -107,7 +107,10 @@ const organizationalUserSchema = new mongoose.Schema(
     }],candidateFollowers: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'IndividualUser'
-    }]
+    }] ,recommendedJobs: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Recommendation',
+    }],
   },
   {
     timestamps: true,
