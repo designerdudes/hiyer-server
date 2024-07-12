@@ -807,6 +807,14 @@ export const getOrganizationalUserDataFromToken = async (req, res) => {
       .populate({
         path: 'postedJobAds',
         select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt'
+      }).populate({
+        path: 'recommendedJobs',
+        select: '_id job recommendedTo recommendedBy recommendationDate',
+        populate: {
+          path: 'job',
+          model: 'JobAds',
+          select: '_id title company',
+        }
       })
       .exec();
 
@@ -996,3 +1004,173 @@ export const getIndividualUsersWithIntroVideo = async (req, res) => {
 
 
 
+// Controller to add recommendation by an organizational user
+export const addOrganizationRecommendation = async (req, res) => {
+  try {
+    const { jobId, toUserId } = req.body;
+    const fromUserId = getUserIdFromToken(req);
+
+    // Validate inputs
+    if (!jobId || !toUserId || !fromUserId) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    // Check if the job exists
+    const job = await JobAds.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    // Check if the recommending user is an organizational user
+    const fromUser = await OrganizationalUser.findById(fromUserId);
+    if (!fromUser) {
+      return res.status(404).json({ success: false, message: 'Organizational user not found' });
+    }
+
+    // Create the recommendation
+    const recommendation = new Recommendation({
+      job: jobId,
+      recommendedTo: toUserId,
+      recommendedBy: fromUserId,
+    });
+
+    await recommendation.save();
+
+    // Update recommending user's recommendedJobs array
+    fromUser.recommendedJobs.push(recommendation._id);
+    await fromUser.save();
+
+    // Update the individual user's receivedRecommendations array
+    const toUser = await IndividualUser.findById(toUserId);
+    if (!toUser) {
+      return res.status(404).json({ success: false, message: 'User to recommend to not found' });
+    }
+    toUser.receivedRecommendations.push(recommendation._id);
+    await toUser.save();
+
+    res.status(200).json({ success: true, message: 'Job recommended successfully' });
+  } catch (error) {
+    console.error('Error recommending job:', error);
+    res.status(500).json({ success: false, message: 'Error recommending job' });
+  }
+};
+
+// Controller to update recommendation by an organizational user
+export const updateOrganizationRecommendation = async (req, res) => {
+  try {
+    const { recommendationId, jobId, toUserId } = req.body;
+    const fromUserId = getUserIdFromToken(req);
+
+    // Validate inputs
+    if (!recommendationId || !jobId || !toUserId || !fromUserId) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    // Check if the recommendation exists
+    const recommendation = await Recommendation.findById(recommendationId);
+    if (!recommendation) {
+      return res.status(404).json({ success: false, message: 'Recommendation not found' });
+    }
+
+    // Verify that the requesting user matches the recommending user
+    if (!recommendation.recommendedBy.equals(fromUserId)) {
+      return res.status(403).json({ success: false, message: 'Unauthorized to update this recommendation' });
+    }
+
+    // Update the recommendation
+    recommendation.job = jobId;
+    recommendation.recommendedTo = toUserId;
+    await recommendation.save();
+
+    // Update the receivedRecommendations in the individual user
+    const toUser = await IndividualUser.findById(toUserId);
+    if (!toUser) {
+      return res.status(404).json({ success: false, message: 'User to recommend to not found' });
+    }
+    if (!toUser.receivedRecommendations.includes(recommendation._id)) {
+      toUser.receivedRecommendations.push(recommendation._id);
+      await toUser.save();
+    }
+
+    res.status(200).json({ success: true, message: 'Recommendation updated successfully' });
+  } catch (error) {
+    console.error('Error updating recommendation:', error);
+    res.status(500).json({ success: false, message: 'Error updating recommendation' });
+  }
+};
+
+
+// Controller to delete recommendation by an organizational user
+export const deleteOrganizationRecommendation = async (req, res) => {
+  try {
+    const { recommendationId } = req.params;
+    const fromUserId = getUserIdFromToken(req);
+
+    // Check if the recommendation exists
+    const recommendation = await Recommendation.findById(recommendationId);
+    if (!recommendation) {
+      return res.status(404).json({ success: false, message: 'Recommendation not found' });
+    }
+
+    // Verify that the requesting user matches the recommending user
+    if (!recommendation.recommendedBy.equals(fromUserId)) {
+      return res.status(403).json({ success: false, message: 'Unauthorized to delete this recommendation' });
+    }
+
+    // Remove recommendation from recommending user's recommendedJobs array
+    const fromUser = await OrganizationalUser.findById(fromUserId);
+    if (!fromUser) {
+      return res.status(404).json({ success: false, message: 'Organizational user not found' });
+    }
+    fromUser.recommendedJobs = fromUser.recommendedJobs.filter(id => !id.equals(recommendation._id));
+    await fromUser.save();
+
+    // Remove recommendation from receivedRecommendations in the individual user
+    const toUser = await IndividualUser.findById(recommendation.recommendedTo);
+    if (toUser) {
+      toUser.receivedRecommendations = toUser.receivedRecommendations.filter(id => !id.equals(recommendation._id));
+      await toUser.save();
+    }
+
+    // Delete the recommendation document
+    await recommendation.remove();
+
+    res.status(200).json({ success: true, message: 'Recommendation deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting recommendation:', error);
+    res.status(500).json({ success: false, message: 'Error deleting recommendation' });
+  }
+};
+
+
+// Controller to get recommended jobs for a user
+export const getRecommendedJobs = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Assuming you have a function to get user ID from token
+
+    // Find the individual user by ID
+    const user = await IndividualUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Populate recommendedJobs array with JobAds details
+    await user.populate({
+      path: 'recommendedJobs',
+      select: '_id title company',
+      populate: {
+        path: 'job',
+        model: 'JobAds',
+        select: '_id title company',
+      },
+    }).execPopulate();
+
+    // Extract and send only the populated job details
+    const recommendedJobs = user.recommendedJobs.map(recommendation => recommendation.job);
+
+    res.status(200).json({ success: true, recommendedJobs });
+  } catch (error) {
+    console.error('Error fetching recommended jobs:', error);
+    res.status(500).json({ success: false, message: 'Error fetching recommended jobs' });
+  }
+};
