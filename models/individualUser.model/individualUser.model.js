@@ -133,6 +133,11 @@ const projectSchema = new mongoose.Schema({
 
 // Schema for Subscription
 const subscriptionSchema = new mongoose.Schema({
+  transactionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Transaction',
+    required: true,
+  },
   plan: {
     type: String,
     enum: ['basic', 'premium', 'enterprise'],
@@ -153,7 +158,22 @@ const subscriptionSchema = new mongoose.Schema({
   },
 });
 
+const videoResumePackSchema = new mongoose.Schema({
+  transactionIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Transaction",
+  }],
+  numberOfVideoResumesAllowed: {
+    type: Number,
+    required: true,
+    default: 1,
 
+  },
+  currentNumberOfVideoResumes: {
+    type: Number,
+    default: 0,
+  },
+}, { _id: false }); 
 
 // Schema for Individual User
 const individualUserSchema = new mongoose.Schema(
@@ -180,10 +200,10 @@ const individualUserSchema = new mongoose.Schema(
     resume: String,
     portfolio: String,
     bio: String,
-    joiningFeePaid: {
-      type: Boolean, 
-      default: false,
-    },
+    // joiningFeePaid: {
+    //   type: Boolean, 
+    //   default: false,
+    // },
     subscription: subscriptionSchema,
     jobposting: {
       applied: {
@@ -219,10 +239,24 @@ const individualUserSchema = new mongoose.Schema(
         },
       },
     ],
+    videoResumePack: videoResumePackSchema,
     followingOrganizations: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Organization'
     }],
+    recommendedJobs: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Recommendation',
+      },
+    ],
+
+    receivedRecommendations: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Recommendation',
+      },
+    ],
   },
   {
     timestamps: true,

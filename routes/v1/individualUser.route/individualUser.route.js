@@ -56,7 +56,12 @@ import {
   getCurrentUserSavedJobPostings,
   getUserSavedJobPostings,
   toggleFollowOrganization,
-  getFollowingOrganizations
+  getFollowingOrganizations,
+  addRecommendation,
+  updateRecommendation,
+  deleteRecommendation,
+  getRecommendedJobs,
+  getReceivedRecommendations
 } from '../../../controllers/individualUser.controller/individualUser.js';
 import { upload } from '../../../config/multer.js';
 
@@ -163,4 +168,11 @@ router.get('/jobs/:userId/rejected', getUserRejectedJobs);
 router.post('/toggleFollow/:organizationId', toggleFollowOrganization);
 
 router.get('/followingOrganizations', getFollowingOrganizations);
+
+router.post('/recommendations', addRecommendation); // Add a recommendation
+router.put('/recommendations/:recommendationId', updateRecommendation); // Update a recommendation
+router.delete('/recommendations/:recommendationId', deleteRecommendation); // Delete a recommendation
+router.get('/recommendations/recommended-jobs', getRecommendedJobs); // Get recommended jobs for an IndividualUser
+router.get('/recommendations/received-recommendations', getReceivedRecommendations); // Get received recommendations for an IndividualUser
+
 export default router;
