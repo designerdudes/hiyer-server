@@ -48,8 +48,52 @@ export const sendEmailOTPforverification = async (req, res) => {
 };
 
 
+
+export const sendOTPforMobileverification = async (req, res) => {
+  try {
+    const { mobileNumber } = req.body;
+    console.log('Request Body:', req.body);
+
+    // const validMobileNumberUser = await User.findOne({ mobileNumber });
+    // console.log('Valid Mobile Number User:', validMobileNumberUser);
+
+    // if (!validMobileNumberUser) {
+    //   return res.status(404).send({
+    //     ok: false,
+    //     msg: 'User with this mobile number not found',
+    //   });
+    // }
+
+    const url = `https://2factor.in/API/V1/7d3208f4-0209-11ef-8cbb-0200cd936042/SMS/${mobileNumber}/AUTOGEN/OTP_Template2`;
+
+    const response = await axios.get(url, { maxBodyLength: Infinity });
+
+    console.log('Response Data:', response.data);
+
+    if (response.data.Status === 'Success') {
+      return res.status(200).send({
+        ok: true,
+        msg: 'OTP sent successfully',
+        data: response.data,
+      });
+    } else {
+      return res.status(400).send({
+        ok: false,
+        msg: 'Failed to send OTP',
+        data: response.data,
+      });
+    }
+  } catch (error) {
+    console.error('Error in sendOTPforMobileVerification:', error);
+    return res.status(500).send({
+      msg: error.message,
+    });
+  }
+};
+
 // verifyOtpCore function with modifications
-const verifyOtpCore = async (email, mobileNo, otp, countryCode) => {
+
+const verifyOtpCore = async (email, mobileNo, otp) => {
   try {
     let field, value, verificationSuccessFunction, provider;
     if (email) {
@@ -59,43 +103,50 @@ const verifyOtpCore = async (email, mobileNo, otp, countryCode) => {
       provider = "email";
     } else {
       field = "mobileNumber";
-      value = countryCode + mobileNo;
+      value = `${mobileNo}`;
       verificationSuccessFunction = mobileVerificationSuccess;
       provider = "phone";
+
+      // External API verification for mobile OTP
+      const url = `https://2factor.in/API/V1/7d3208f4-0209-11ef-8cbb-0200cd936042/SMS/VERIFY3/${value}/${otp}`;
+      const response = await axios.get(url, { maxBodyLength: Infinity });
+
+      if (response.data.Status !== 'Success') {
+        return { ok: false, msg: response.data.Details, statusCode: 401 };
+      }
     }
 
-    const databaseotp = await UserOTP.find({ [field]: value });
-
-    if (!databaseotp || databaseotp.length === 0) {
-      return { ok: false, msg: "No OTP records found", statusCode: 404 };
-    }
-
-    const matchingOTP = databaseotp.find((record) => record.otp == otp);
-
-    if (!matchingOTP) {
-      return { ok: false, msg: "Wrong OTP!", statusCode: 401 };
-    }
-
-    const currentTime = new Date();
-    const createdAt = new Date(matchingOTP.createdAt);
-    const timeDifference = currentTime - createdAt;
-
-    if (timeDifference > 900000) {
-      await UserOTP.deleteMany({ [field]: value });
-      return { ok: false, msg: "Your OTP has expired, can't verify", statusCode: 402 };
-    }
-
+    // Internal OTP verification for email
     if (email) {
-      field = "email.id";
-    } else {
-      field = "phone.number";
+      const databaseOtp = await UserOTP.find({ [field]: value });
+
+      if (!databaseOtp || databaseOtp.length === 0) {
+        return { ok: false, msg: "No OTP records found", statusCode: 404 };
+      }
+
+      const matchingOTP = databaseOtp.find((record) => record.otp == otp);
+
+      if (!matchingOTP) {
+        return { ok: false, msg: "Wrong OTP!", statusCode: 401 };
+      }
+
+      const currentTime = new Date();
+      const createdAt = new Date(matchingOTP.createdAt);
+      const timeDifference = currentTime - createdAt;
+
+      if (timeDifference > 900000) {
+        await UserOTP.deleteMany({ [field]: value });
+        return { ok: false, msg: "Your OTP has expired, can't verify", statusCode: 402 };
+      }
     }
 
     const searchCriteria =
-      field === "email.id"
-        ? { [field]: value }
-        : { [field]: value, countryCode: countryCode };
+      field === "email"
+        ? { "email.id": value }
+        : { "phone.number": mobileNo, countryCode: countryCode };
+
     const validUser = await User.findOne(searchCriteria);
+
     if (!validUser) {
       return { ok: true, msg: "Verification successful", token: null, statusCode: 202, provider };
     }
@@ -104,15 +155,58 @@ const verifyOtpCore = async (email, mobileNo, otp, countryCode) => {
       id: validUser._id,
     };
 
-    const Token = jwt.sign(tokenPayload, process.env.JWT_SECRETKEY);
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRETKEY);
 
-    await UserOTP.deleteMany({ [field]: value });
-    await verificationSuccessFunction(value);
+    if (email) {
+      await UserOTP.deleteMany({ [field]: value });
+      await verificationSuccessFunction(value);
+    }
 
-    return { ok: true, msg: "Verification successful", token: Token, statusCode: 200, provider };
+    return { ok: true, msg: "Verification successful", token: token, statusCode: 200, provider };
   } catch (error) {
     console.error("Error in verifyOtpCore:", error);
     return { ok: false, msg: "Internal Server Error", statusCode: 500 };
+  }
+};
+
+
+export const verifymobileotp = async (req, res) => {
+  try {
+    const { mobileNumber, otp } = req.body;
+    console.log('User:', req.body);
+
+    if (!mobileNumber || !otp) {
+      return res.status(400).send({
+        ok: false,
+        msg: 'Mobile number and OTP are required',
+      });
+    }
+
+    const url = `https://2factor.in/API/V1/7d3208f4-0209-11ef-8cbb-0200cd936042/SMS/VERIFY3/${mobileNumber}/${otp}`;
+
+    const response = await axios.get(url, { maxBodyLength: Infinity });
+
+    console.log('Response Data:', response.data);
+
+    if (response.data.Status === 'Success') {
+      return res.status(200).send({
+        ok: true,
+        msg: 'Mobile number verified',
+        data: response.data,
+      });
+    } else {
+      return res.status(401).send({
+        ok: false,
+        msg: 'Wrong OTP!',
+        data: response.data,
+      });
+    }
+  } catch (error) {
+    console.error('Error in verifymobileotp:', error);
+    return res.status(500).send({
+      ok: false,
+      msg: 'Internal Server Error',
+    });
   }
 };
 
