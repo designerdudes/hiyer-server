@@ -1472,14 +1472,22 @@ export const getUserDetailsFromToken = async (req, res) => {
         path: 'recommendedJobs',
         populate: [
           // { path: 'job', model: 'JobAds',select:'_id' }, // Populate job details
-          { path: 'recommendedTo', model: 'User', select: 'name email' }, // Populate user who recommended
+          { path: 'recommendedTo', model: 'User', select: 'name email  profilePicture',
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            } }, // Populate user who recommended
         ]
       })
       .populate({
         path: 'receivedRecommendations',
         populate: [
           // { path: 'job', model: 'JobAds',select:'_id' }, // Populate job details
-          { path: 'recommendedTo', model: 'User', select: 'name email' }, // Populate user who recommended
+          { path: 'recommendedBy', model: 'User', select: 'name email profile  profilePicture',
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            } }, // Populate user who recommended
         ]
       });
 
@@ -2288,6 +2296,25 @@ export const addRecommendation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User to recommend to not found' });
     }
 
+    //  Check if the recommending user has an active subscription
+     const subscription = recommendingUser.subscription;
+     const today = new Date();
+     if (!subscription || subscription.status !== 'active' || new Date(subscription.endDate) < today) {
+       return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
+     }
+
+
+
+    // Check if a similar recommendation already exists
+    const existingRecommendation = await Recommendation.findOne({
+      job: jobId,
+      recommendedTo: toUserId,
+      recommendedBy: fromUserId
+    });
+
+    if (existingRecommendation) {
+      return res.status(409).json({ success: false, message: 'Recommendation already exists' });
+    }
     // Create the recommendation
     const recommendation = new Recommendation({
       job: jobId,
@@ -2395,7 +2422,11 @@ export const getRecommendedJobs = async (req, res) => {
           { 
             path: 'recommendedTo', 
             model: 'User', 
-            select: 'name email' 
+            select: 'name email profilePicture',
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            }
           }, // Populate user who recommended
         ]
       })
@@ -2469,7 +2500,11 @@ export const getReceivedRecommendations = async (req, res) => {
           { 
             path: 'recommendedBy', 
             model: 'User', 
-            select: 'name email profile' 
+            select: 'name email profile profilePicture',
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            }
           }, // Populate user who recommended
         ]
       })
@@ -2522,3 +2557,39 @@ export const getReceivedRecommendations = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error fetching recommended jobs' });
   }
 }; 
+
+export const getAllIndividualUsersForRecommendation = async (req, res) => {
+  try {
+    const { name, email, phone } = req.query;
+
+    // Build the query object
+    const query = { 'profile.profileType': 'IndividualUser' };
+
+    if (name) {
+      const nameParts = name.split(' ').map(part => new RegExp(part, 'i'));
+      query['$or'] = [
+        { 'name.first': { $in: nameParts } },
+        { 'name.middle': { $in: nameParts } },
+        { 'name.last': { $in: nameParts } }
+      ];
+    }
+
+    if (email) {
+      query['email.id'] = new RegExp(email, 'i');
+    }
+
+    if (phone) {
+      query['phone.number'] = new RegExp(phone, 'i');
+    }
+
+    // Find users matching the query
+    const users = await User.find(query)
+      .select('email phone name profilePicture profile')
+      .populate('profilePicture');
+
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    console.error('Error fetching individual users:', error);
+    res.status(500).json({ success: false, message: 'Error fetching individual users' });
+  }
+};
