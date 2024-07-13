@@ -142,7 +142,7 @@ router.post('/recommendations/add', addOrganizationRecommendation);
 // PUT /api/recommendations/update
 router.put('/recommendations/update', updateOrganizationRecommendation);
 // DELETE /api/recommendations/:recommendationId/delete
-router.delete('/recommendations/:recommendationId/delete', deleteOrganizationRecommendation);
+router.delete('/recommendations/:recommendationId', deleteOrganizationRecommendation);
 
 // GET /api/recommendations/recommendedJobs
 router.get('/recommendations/recommendedJobs', getRecommendedJobs );
