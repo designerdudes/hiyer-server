@@ -244,19 +244,16 @@ const individualUserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Organization'
     }],
-    recommendedJobs: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Recommendation',
-      },
-    ],
-
-    receivedRecommendations: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Recommendation',
-      },
-    ],
+    recommendedJobs: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'Recommendation',
+      default: [],
+    },
+    receivedRecommendations: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'Recommendation',
+      default: [],
+    },
   },
   {
     timestamps: true,
