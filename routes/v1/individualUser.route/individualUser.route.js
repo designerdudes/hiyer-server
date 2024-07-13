@@ -61,7 +61,8 @@ import {
   updateRecommendation,
   deleteRecommendation,
   getRecommendedJobs,
-  getReceivedRecommendations
+  getReceivedRecommendations,
+  getAllIndividualUsersForRecommendation
 } from '../../../controllers/individualUser.controller/individualUser.js';
 import { upload } from '../../../config/multer.js';
 
@@ -174,5 +175,8 @@ router.put('/recommendations/:recommendationId', updateRecommendation); // Updat
 router.delete('/recommendations/:recommendationId', deleteRecommendation); // Delete a recommendation
 router.get('/recommendations/recommended-jobs', getRecommendedJobs); // Get recommended jobs for an IndividualUser
 router.get('/recommendations/received-recommendations', getReceivedRecommendations); // Get received recommendations for an IndividualUser
+router.get('/getallusersforrecommendation', getAllIndividualUsersForRecommendation);  
+
+
 
 export default router;
