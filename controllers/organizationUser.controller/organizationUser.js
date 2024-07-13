@@ -8,6 +8,7 @@ import IndividualUser from "../../models/individualUser.model/individualUser.mod
 import Video from "../../models/video.model.js";
 import Image from "../../models/image.model.js";
 import JobAds from "../../models/organization.model/jobAds.model.js";
+import Recommendation from "../../models/individualUser.model/recommendation,model.js";
 
 
 
@@ -810,11 +811,16 @@ export const getOrganizationalUserDataFromToken = async (req, res) => {
       }).populate({
         path: 'recommendedJobs',
         select: '_id job recommendedTo recommendedBy recommendationDate',
-        populate: {
+        populate: [{
           path: 'job',
           model: 'JobAds',
           select: '_id title company',
-        }
+        },
+        {
+          path: 'recommendedTo',
+          model: 'User',
+          select: 'name email'
+        }]
       })
       .exec();
 
@@ -1022,7 +1028,19 @@ export const addOrganizationRecommendation = async (req, res) => {
     }
 
     // Check if the recommending user is an organizational user
-    const fromUser = await OrganizationalUser.findById(fromUserId);
+    let fromUser;
+
+    // Check if the recommending user is an OrganizationalUser
+    fromUser = await OrganizationalUser.findById(fromUserId);
+
+    // If not found, check if the recommending user is an OrganizationMember
+    if (!fromUser) {
+      const organizationMember = await OrganizationMember.findById(fromUserId);
+      if (organizationMember) {
+        fromUser = organizationMember.organization; // Assigning the organization ID to fromUser
+      }
+    }
+
     if (!fromUser) {
       return res.status(404).json({ success: false, message: 'Organizational user not found' });
     }
@@ -1054,7 +1072,6 @@ export const addOrganizationRecommendation = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error recommending job' });
   }
 };
-
 // Controller to update recommendation by an organizational user
 export const updateOrganizationRecommendation = async (req, res) => {
   try {
@@ -1101,6 +1118,7 @@ export const updateOrganizationRecommendation = async (req, res) => {
 
 
 // Controller to delete recommendation by an organizational user
+
 export const deleteOrganizationRecommendation = async (req, res) => {
   try {
     const { recommendationId } = req.params;
@@ -1133,7 +1151,7 @@ export const deleteOrganizationRecommendation = async (req, res) => {
     }
 
     // Delete the recommendation document
-    await recommendation.remove();
+    await Recommendation.findByIdAndDelete(recommendationId);
 
     res.status(200).json({ success: true, message: 'Recommendation deleted successfully' });
   } catch (error) {
@@ -1142,31 +1160,61 @@ export const deleteOrganizationRecommendation = async (req, res) => {
   }
 };
 
-
-// Controller to get recommended jobs for a user
 export const getRecommendedJobs = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req); // Assuming you have a function to get user ID from token
 
-    // Find the individual user by ID
-    const user = await IndividualUser.findById(userId);
+    // Find the organizational user by ID
+    const user = await OrganizationalUser.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Populate recommendedJobs array with JobAds details
+    // Populate recommendedJobs array with JobAds details and recommendedTo user info
     await user.populate({
       path: 'recommendedJobs',
-      select: '_id title company',
-      populate: {
-        path: 'job',
-        model: 'JobAds',
-        select: '_id title company',
-      },
-    }).execPopulate();
+      populate: [
+        {
+          path: 'job',
+          model: 'JobAds',
+          select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt',
+        },
+        {
+          path: 'recommendedTo',
+          model: 'User',
+          select: 'name email'
+        }
+      ]
+    }) ;
+
+    // Function to populate media for job ads
+    const populateMedia = async (jobAds) => {
+      for (const jobAd of jobAds) {
+        const mediaType = jobAd.job.media?.mediaType;
+        if (mediaType === 'Video') {
+          await JobAds.populate(jobAd.job, {
+            path: 'media.mediaRef',
+            model: 'Video',
+            populate: { path: 'thumbnailUrl', model: 'Image' }
+          });
+        } else if (mediaType === 'Image') {
+          await JobAds.populate(jobAd.job, {
+            path: 'media.mediaRef',
+            model: 'Image'
+          });
+        }
+      }
+    };
+
+    // Populate media references for job ads
+    await populateMedia(user.recommendedJobs);
 
     // Extract and send only the populated job details
-    const recommendedJobs = user.recommendedJobs.map(recommendation => recommendation.job);
+    const recommendedJobs = user.recommendedJobs.map(recommendation => ({
+      job: recommendation.job,
+      recommendedTo: recommendation.recommendedTo,
+      recommendationDate: recommendation.recommendationDate // Add any other fields as needed
+    }));
 
     res.status(200).json({ success: true, recommendedJobs });
   } catch (error) {

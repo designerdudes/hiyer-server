@@ -1471,15 +1471,15 @@ export const getUserDetailsFromToken = async (req, res) => {
       .populate({
         path: 'recommendedJobs',
         populate: [
-          { path: 'job', model: 'JobAds' }, // Populate job details
-          { path: 'recommendedBy', model: 'User', select: 'name email' }, // Populate user who recommended
+          // { path: 'job', model: 'JobAds',select:'_id' }, // Populate job details
+          { path: 'recommendedTo', model: 'User', select: 'name email' }, // Populate user who recommended
         ]
       })
       .populate({
         path: 'receivedRecommendations',
         populate: [
-          { path: 'job', model: 'JobAds' }, // Populate job details
-          { path: 'recommendedBy', model: 'User', select: 'name email' }, // Populate user who recommended
+          // { path: 'job', model: 'JobAds',select:'_id' }, // Populate job details
+          { path: 'recommendedTo', model: 'User', select: 'name email' }, // Populate user who recommended
         ]
       });
 
@@ -2278,7 +2278,7 @@ export const addRecommendation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
 
-    const recommendingUser = await User.findById(fromUserId);
+    const recommendingUser = await IndividualUser.findById(fromUserId);
     if (!recommendingUser) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -2314,7 +2314,7 @@ export const addRecommendation = async (req, res) => {
 
 export const updateRecommendation = async (req, res) => {
   try {
-    const { recommendationId } = req.params;
+    const { recommendationId } = req.params; 
     const { isRecommended } = req.body;
 
     // Validate inputs
@@ -2355,8 +2355,18 @@ export const deleteRecommendation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Recommendation not found' });
     }
 
+    // Remove recommendation ID from recommending user's recommendedJobs array
+    await IndividualUser.findByIdAndUpdate(recommendation.recommendedBy, {
+      $pull: { recommendedJobs: recommendationId }
+    });
+
+    // Remove recommendation ID from recommended-to user's receivedRecommendations array
+    await IndividualUser.findByIdAndUpdate(recommendation.recommendedTo, {
+      $pull: { receivedRecommendations: recommendationId }
+    });
+
     // Delete recommendation
-    await recommendation.delete();
+    await Recommendation.deleteOne({ _id: recommendationId });
 
     res.status(200).json({ success: true, message: 'Recommendation deleted successfully' });
   } catch (error) {
@@ -2364,6 +2374,8 @@ export const deleteRecommendation = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error deleting recommendation' });
   }
 };
+
+
 
 
 // Controller to get recommended jobs for an IndividualUser
@@ -2375,8 +2387,16 @@ export const getRecommendedJobs = async (req, res) => {
       .populate({
         path: 'recommendedJobs',
         populate: [
-          { path: 'job', model: 'JobAds' }, // Populate job details
-          { path: 'recommendedBy', model: 'User', select: 'name email' }, // Populate user who recommended
+          { 
+            path: 'job', 
+            model: 'JobAds', 
+           select:'_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt',
+          }, // Populate job details and applicants' user info
+          { 
+            path: 'recommendedTo', 
+            model: 'User', 
+            select: 'name email' 
+          }, // Populate user who recommended
         ]
       })
       .exec();
@@ -2386,34 +2406,53 @@ export const getRecommendedJobs = async (req, res) => {
     }
 
     // Extract recommended jobs with detailed job, recommendedBy, and media information
-    const recommendedJobs = user.recommendedJobs.map(recommendation => ({
-      ...recommendation.toObject(),
-      job: {
-        ...recommendation.job.toObject(),
-        // Populate media details based on mediaType
-        media: recommendation.job.media ? {
-          ...recommendation.job.media.toObject(),
-          mediaRef: recommendation.job.media.mediaType === 'Video'
-            ? recommendation.job.media.mediaRef.thumbnailUrl // Populate thumbnail for video media
-            : recommendation.job.media.mediaRef // Directly reference for image media
-        } : null,
-        // Filter applicants to show full details if userId matches, else show only user info
-        applicants: recommendation.job.applicants.map(applicant => ({
-          ...applicant.toObject(),
-          user: applicant.user._id.toString() === userId ? applicant.user.toObject() : { _id: applicant.user._id }
-        })),
-        applicantsCount: recommendation.job.applicants.length,
+    const detailedRecommendedJobs = await Promise.all(user.recommendedJobs.map(async (recommendation) => {
+      const job = recommendation.job.toObject();
+      
+      // Populate mediaRef based on mediaType
+      if (job.media?.mediaType === 'Video') {
+        await JobAds.populate(job, {
+          path: 'media.mediaRef',
+          model: 'Video',
+          populate: { path: 'thumbnailUrl', model: 'Image' }
+        });
+      } else if (job.media?.mediaType === 'Image') {
+        await JobAds.populate(job, { path: 'media.mediaRef', model: 'Image' });
       }
+
+      // Process applicants to filter details
+      job.applicants = job.applicants.map(applicant => {
+        if (applicant.user) {
+          return {
+            ...applicant,
+            user: applicant.user._id.toString() === userId 
+              ? applicant.user 
+              : { _id: applicant.user._id }
+          };
+        }
+        return applicant; // Return applicant as is if user is null
+      });
+
+      return {
+        ...recommendation.toObject(),
+        job: {
+          ...job,
+          applicantsCount: job.applicants.length,
+        }
+      };
     }));
 
-    res.status(200).json({ success: true, recommendedJobs });
+    res.status(200).json({ success: true, recommendedJobs: detailedRecommendedJobs });
   } catch (error) {
     console.error('Error fetching recommended jobs:', error);
     res.status(500).json({ success: false, message: 'Error fetching recommended jobs' });
   }
 };
 
+
+
 // Controller to get received recommendations for an IndividualUser
+
 export const getReceivedRecommendations = async (req, res) => {
   const userId = getUserIdFromToken(req); // Function to get user ID from token
 
@@ -2422,8 +2461,16 @@ export const getReceivedRecommendations = async (req, res) => {
       .populate({
         path: 'receivedRecommendations',
         populate: [
-          { path: 'job', model: 'JobAds' }, // Populate job details
-          { path: 'recommendedBy', model: 'User', select: 'name email' }, // Populate user who recommended
+          { 
+            path: 'job', 
+            model: 'JobAds', 
+           select:'_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt',
+          }, // Populate job details and applicants' user info
+          { 
+            path: 'recommendedBy', 
+            model: 'User', 
+            select: 'name email profile' 
+          }, // Populate user who recommended
         ]
       })
       .exec();
@@ -2432,30 +2479,46 @@ export const getReceivedRecommendations = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Extract received recommendations with detailed job and recommendedBy information
-    const receivedRecommendations = user.receivedRecommendations.map(recommendation => ({
-      ...recommendation.toObject(),
-      job: {
-        ...recommendation.job.toObject(),
-        // Populate media details based on mediaType
-        media: recommendation.job.media ? {
-          ...recommendation.job.media.toObject(),
-          mediaRef: recommendation.job.media.mediaType === 'Video'
-            ? recommendation.job.media.mediaRef.thumbnailUrl // Populate thumbnail for video media
-            : recommendation.job.media.mediaRef // Directly reference for image media
-        } : null,
-        // Filter applicants to show full details if userId matches, else show only user info
-        applicants: recommendation.job.applicants.map(applicant => ({
-          ...applicant.toObject(),
-          user: applicant.user._id.toString() === userId ? applicant.user.toObject() : { _id: applicant.user._id }
-        })),
-        applicantsCount: recommendation.job.applicants.length,
+    // Extract recommended jobs with detailed job, recommendedBy, and media information
+    const detailedReceivedRecommendedJobs = await Promise.all(user.receivedRecommendations.map(async (recommendation) => {
+      const job = recommendation.job.toObject();
+      
+      // Populate mediaRef based on mediaType
+      if (job.media?.mediaType === 'Video') {
+        await JobAds.populate(job, {
+          path: 'media.mediaRef',
+          model: 'Video',
+          populate: { path: 'thumbnailUrl', model: 'Image' }
+        });
+      } else if (job.media?.mediaType === 'Image') {
+        await JobAds.populate(job, { path: 'media.mediaRef', model: 'Image' });
       }
+
+      // Process applicants to filter details
+      job.applicants = job.applicants.map(applicant => {
+        if (applicant.user) {
+          return {
+            ...applicant,
+            user: applicant.user._id.toString() === userId 
+              ? applicant.user 
+              : { _id: applicant.user._id }
+          };
+        }
+        return applicant; // Return applicant as is if user is null
+      });
+
+      return {
+        ...recommendation.toObject(),
+        job: {
+          ...job,
+          applicantsCount: job.applicants.length,
+        }
+      };
     }));
 
-    res.status(200).json({ success: true, receivedRecommendations });
+    res.status(200).json({ success: true, recommendedJobs: detailedReceivedRecommendedJobs });
   } catch (error) {
-    console.error('Error fetching received recommendations:', error);
-    res.status(500).json({ success: false, message: 'Error fetching received recommendations' });
+    console.error('Error fetching recommended jobs:', error);
+    res.status(500).json({ success: false, message: 'Error fetching recommended jobs' });
   }
-};
+}; 
