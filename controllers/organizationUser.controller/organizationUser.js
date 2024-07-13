@@ -819,7 +819,11 @@ export const getOrganizationalUserDataFromToken = async (req, res) => {
         {
           path: 'recommendedTo',
           model: 'User',
-          select: 'name email'
+          select: 'name email  profilePicture',
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            }
         }]
       })
       .exec();
@@ -1182,7 +1186,11 @@ export const getRecommendedJobs = async (req, res) => {
         {
           path: 'recommendedTo',
           model: 'User',
-          select: 'name email'
+          select: 'name email  profilePicture',
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            }
         }
       ]
     }) ;
