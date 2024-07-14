@@ -176,7 +176,7 @@ const videoResumePackSchema = new mongoose.Schema({
   numberOfVideoResumesAllowed: {
     type: Number,
     required: true,
-    default: 1,
+    default: 0,
 
   },
   currentNumberOfVideoResumes: {
