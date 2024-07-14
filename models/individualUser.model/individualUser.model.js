@@ -27,6 +27,9 @@ const educationSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  logoUrl: {
+    type: String,
+  }, 
   institute: {
     type: String,
     required: true,
@@ -46,6 +49,9 @@ const experienceSchema = new mongoose.Schema({
   company: {
     type: String,
   },
+  logoUrl: {
+    type: String,
+  }, 
   positions: {
     type: [
       {
@@ -87,7 +93,9 @@ const skillSchema = new mongoose.Schema({
     type: String,
     enum: ["Beginner", "Intermediate", "Advanced"],
     required: true,
-  },
+  }, logoUrl: {
+    type: String,
+  }, 
 });
 
 // Schema for Certification
@@ -95,7 +103,9 @@ const certificationSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-  },
+  }, logoUrl: {
+    type: String,
+  }, 
   issuer: String,
   issueDate: Date,
   expirationDate: Date,
