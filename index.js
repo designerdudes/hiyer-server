@@ -16,6 +16,8 @@ import { updateAllImageUrls, updateAllVideoUrls } from "./controllers/mediaContr
 import JobAds from "./models/organization.model/jobAds.model.js";
 import passport from "passport";
 import session from "express-session";
+import {sendEmail} from "./config/zohoMail.js";
+import paymentRouter from "./routes/v1/individualUser.route/payment.js";
 
 dotenv.config();
 
@@ -60,11 +62,14 @@ app.use("/individualUser/v1", individualUserRoute);
 app.use("/organization/v1", organizationRoute);
 app.use("/organizationMember/v1", organizationMemberRoute);
 app.use("/jobAds/v1", jobAdsRoute);
-
+app.use("/payments/v1",paymentRouter)
 app.use("/media/v1", mediaControllRoute);
 
 
 app.use("/dropDown/v1", dropDownControllRoute);
+
+
+
 
 // Route to update all video URLs
 app.put('/update-videos', updateAllVideoUrls);
@@ -342,6 +347,24 @@ app.get('/auth/microsoft/success', (req, res) => {
 app.get('/auth/microsoft/failure', (req, res) => {
   res.json({ success: false, message: 'Authentication failed' });
 });
+
+
+ const sendDynamicEmail = async (req, res) => {
+  const { toAddress, toName, subject, body } = req.body;
+
+  if (!toAddress || !toName || !subject || !body) {
+    return res.status(400).json({ error: 'All fields (toAddress, toName, subject, body) are required' });
+  }
+
+  try {
+    await sendEmail(toAddress, toName, subject, body);
+    res.status(200).json({ message: 'Email sent successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error sending email' });
+  }
+};
+
+app.post('/send-email', sendDynamicEmail);
 
 
 app.use(errorHandler);
