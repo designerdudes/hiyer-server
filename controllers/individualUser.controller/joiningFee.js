@@ -124,7 +124,7 @@ export const handleJoiningFeePayment = async (req, res) => {
       currency: paymentDetails.currency,
       status: paymentDetails.status,
       razorpay_order_id,
-      method: paymentDetails.method,
+      method: paymentDetails.method || paymentMethod,
       captured: paymentDetails.captured,
       card_id: paymentDetails.card_id,
       bank: paymentDetails.bank,
@@ -162,3 +162,71 @@ export const handleJoiningFeePayment = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while processing payment' });
   }
 };
+
+
+export const handlevideoResumePack = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req); // Assuming a function to get user ID from token
+    const { amount, paymentMethod, razorpay_order_id, razorpay_payment_id, razorpay_signature, orderid } = req.body;
+
+    if (amount <= 0) {
+      return res.status(400).json({ message: 'Invalid payment amount' });
+    }
+
+    const user = await IndividualUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Fetch payment details from Razorpay
+    const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+    if (!paymentDetails) {
+      return res.status(400).json({ message: 'Invalid payment details' });
+    }
+
+    // Save the payment details
+    const transaction = new Transaction({
+      payment_id: razorpay_payment_id,
+      razorpay_signature,
+      user_id: userId,
+      entity: paymentDetails.entity,
+      amount: paymentDetails.amount,
+      currency: paymentDetails.currency,
+      status: paymentDetails.status,
+      razorpay_order_id,
+      method: paymentDetails.method || paymentMethod,
+      captured: paymentDetails.captured,
+      card_id: paymentDetails.card_id,
+      bank: paymentDetails.bank,
+      wallet: paymentDetails.wallet,
+      vpa: paymentDetails.vpa,
+      fee: paymentDetails.fee,
+      tax: paymentDetails.tax,
+      error_code: paymentDetails.error_code,
+      error_description: paymentDetails.error_description,
+      acquirer_data: {
+        rrn: paymentDetails.acquirer_data.rrn,
+        upi_transaction_id: paymentDetails.acquirer_data.upi_transaction_id,
+      },
+      created_at: paymentDetails.created_at,
+      upi: {
+        vpa: paymentDetails.upi.vpa,
+      },
+    });
+
+    const savedTransaction = await transaction.save();
+
+    // Update user's videoResumePack with the transaction ID and increment numberOfVideoResumesAllowed
+    user.videoResumePack.transactionIds.push(savedTransaction._id);
+    user.videoResumePack.numberOfVideoResumesAllowed += 3;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Video resume pack updated and payment details saved successfully' });
+  } catch (error) {
+    console.error('Error handling video resume pack payment:', error);
+    res.status(500).json({ message: 'An error occurred while processing payment' });
+  }
+};
+
+ 

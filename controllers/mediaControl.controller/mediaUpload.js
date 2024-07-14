@@ -31,6 +31,16 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
     if (!video || video.length === 0) {
       return res.status(400).json({ error: "Video is required" });
     }
+    // Fetch the user
+    const user = await IndividualUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if the user has enough video resume allowance
+    if (user.videoResumePack.numberOfVideoResumesAllowed <= user.videoResumePack.currentNumberOfVideoResumes) {
+      return res.status(400).json({ error: "You need to buy a video resume pack to upload more videos" });
+    }
 
     // Resolve the absolute path for the video file
     const videoPath = path.resolve(video[0].path);
@@ -78,6 +88,7 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
     await newVideo.save();
     console.log('newVideo', newVideo);
 
+ 
     // Update IndividualUser with the new video reference
     const updatedUser = await IndividualUser.findByIdAndUpdate(
       userId,
@@ -89,6 +100,9 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
             videoDescription: videoDescription || '',
           },
         },
+        $inc: {
+          'videoResumePack.currentNumberOfVideoResumes': 1
+        }
       },
       { new: true } // Return the updated document
     );
@@ -134,6 +148,7 @@ export const deleteMediaForIndividualUsers = async (req, res) => {
 
     // Update user document to remove the specific video resume entry
     user.videoResume.splice(videoResumeIndex, 1);
+    user.videoResumePack.currentNumberOfVideoResumes -= 1;
     await user.save();
 
     res.status(200).json({ message: 'Video resume deleted successfully', user });
