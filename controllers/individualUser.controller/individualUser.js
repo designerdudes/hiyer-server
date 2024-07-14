@@ -1472,22 +1472,26 @@ export const getUserDetailsFromToken = async (req, res) => {
         path: 'recommendedJobs',
         populate: [
           // { path: 'job', model: 'JobAds',select:'_id' }, // Populate job details
-          { path: 'recommendedTo', model: 'User', select: 'name email  profilePicture',
+          {
+            path: 'recommendedTo', model: 'User', select: 'name email  profilePicture',
             populate: {
               path: 'profilePicture',
               model: 'Image'
-            } }, // Populate user who recommended
+            }
+          }, // Populate user who recommended
         ]
       })
       .populate({
         path: 'receivedRecommendations',
         populate: [
           // { path: 'job', model: 'JobAds',select:'_id' }, // Populate job details
-          { path: 'recommendedBy', model: 'User', select: 'name email profile  profilePicture',
+          {
+            path: 'recommendedBy', model: 'User', select: 'name email profile  profilePicture',
             populate: {
               path: 'profilePicture',
               model: 'Image'
-            } }, // Populate user who recommended
+            }
+          }, // Populate user who recommended
         ]
       });
 
@@ -1731,7 +1735,8 @@ export const getCurrentUserAppliedJobPostings = async (req, res) => {
             appliedDate: applicant.appliedDate,
             applicationHistory: applicant.applicationHistory,
             evaluationRounds: applicant.evaluationRounds,
-            resumeVideo: applicant.resumeVideo
+            resumeVideo: applicant.resumeVideo,
+            jobAdDeadline: applicant.jobAdDeadline
           };
         } else {
           return {
@@ -1811,7 +1816,8 @@ export const getCurrentUserSavedJobPostings = async (req, res) => {
             appliedDate: applicant.appliedDate,
             applicationHistory: applicant.applicationHistory,
             evaluationRounds: applicant.evaluationRounds,
-            resumeVideo: applicant.resumeVideo
+            resumeVideo: applicant.resumeVideo,
+            jobAdDeadline: applicant.jobAdDeadline
           };
         } else {
           return {
@@ -2297,11 +2303,11 @@ export const addRecommendation = async (req, res) => {
     }
 
     //  Check if the recommending user has an active subscription
-     const subscription = recommendingUser.subscription;
-     const today = new Date();
-     if (!subscription || subscription.status !== 'active' || new Date(subscription.endDate) < today) {
-       return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
-     }
+    const subscription = recommendingUser.subscription;
+    const today = new Date();
+    if (!subscription || subscription.status !== 'active' || new Date(subscription.endDate) < today) {
+      return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
+    }
 
 
 
@@ -2341,7 +2347,7 @@ export const addRecommendation = async (req, res) => {
 
 export const updateRecommendation = async (req, res) => {
   try {
-    const { recommendationId } = req.params; 
+    const { recommendationId } = req.params;
     const { isRecommended } = req.body;
 
     // Validate inputs
@@ -2414,14 +2420,14 @@ export const getRecommendedJobs = async (req, res) => {
       .populate({
         path: 'recommendedJobs',
         populate: [
-          { 
-            path: 'job', 
-            model: 'JobAds', 
-           select:'_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt',
+          {
+            path: 'job',
+            model: 'JobAds',
+            select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt',
           }, // Populate job details and applicants' user info
-          { 
-            path: 'recommendedTo', 
-            model: 'User', 
+          {
+            path: 'recommendedTo',
+            model: 'User',
             select: 'name email profilePicture',
             populate: {
               path: 'profilePicture',
@@ -2439,7 +2445,7 @@ export const getRecommendedJobs = async (req, res) => {
     // Extract recommended jobs with detailed job, recommendedBy, and media information
     const detailedRecommendedJobs = await Promise.all(user.recommendedJobs.map(async (recommendation) => {
       const job = recommendation.job.toObject();
-      
+
       // Populate mediaRef based on mediaType
       if (job.media?.mediaType === 'Video') {
         await JobAds.populate(job, {
@@ -2456,8 +2462,8 @@ export const getRecommendedJobs = async (req, res) => {
         if (applicant.user) {
           return {
             ...applicant,
-            user: applicant.user._id.toString() === userId 
-              ? applicant.user 
+            user: applicant.user._id.toString() === userId
+              ? applicant.user
               : { _id: applicant.user._id }
           };
         }
@@ -2492,14 +2498,14 @@ export const getReceivedRecommendations = async (req, res) => {
       .populate({
         path: 'receivedRecommendations',
         populate: [
-          { 
-            path: 'job', 
-            model: 'JobAds', 
-           select:'_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt',
+          {
+            path: 'job',
+            model: 'JobAds',
+            select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt',
           }, // Populate job details and applicants' user info
-          { 
-            path: 'recommendedBy', 
-            model: 'User', 
+          {
+            path: 'recommendedBy',
+            model: 'User',
             select: 'name email profile profilePicture',
             populate: {
               path: 'profilePicture',
@@ -2517,7 +2523,7 @@ export const getReceivedRecommendations = async (req, res) => {
     // Extract recommended jobs with detailed job, recommendedBy, and media information
     const detailedReceivedRecommendedJobs = await Promise.all(user.receivedRecommendations.map(async (recommendation) => {
       const job = recommendation.job.toObject();
-      
+
       // Populate mediaRef based on mediaType
       if (job.media?.mediaType === 'Video') {
         await JobAds.populate(job, {
@@ -2534,8 +2540,8 @@ export const getReceivedRecommendations = async (req, res) => {
         if (applicant.user) {
           return {
             ...applicant,
-            user: applicant.user._id.toString() === userId 
-              ? applicant.user 
+            user: applicant.user._id.toString() === userId
+              ? applicant.user
               : { _id: applicant.user._id }
           };
         }
@@ -2556,7 +2562,7 @@ export const getReceivedRecommendations = async (req, res) => {
     console.error('Error fetching recommended jobs:', error);
     res.status(500).json({ success: false, message: 'Error fetching recommended jobs' });
   }
-}; 
+};
 
 export const getAllIndividualUsersForRecommendation = async (req, res) => {
   try {
