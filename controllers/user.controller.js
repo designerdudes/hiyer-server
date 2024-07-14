@@ -13,6 +13,7 @@ import { mobileVerificationSuccess } from "../config/sendSms.js";
 import IndividualUser from "../models/individualUser.model/individualUser.model.js";
 import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
 import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
+import { sendOtpEmail , sendVerificationSuccessEmail } from "../config/zohoMail.js";
 
 
 export const sendEmailOTPforverification = async (req, res) => {
@@ -32,7 +33,7 @@ export const sendEmailOTPforverification = async (req, res) => {
     await otp.save();
 
     const userName = validEmailUser ? validEmailUser.name.first : "User";
-    await emailVerificationEmail(email, OTP, userName);
+    await sendOtpEmail(email, userName,OTP)
 
     return {
       ok: true,
@@ -159,7 +160,10 @@ const verifyOtpCore = async (email, mobileNo, otp) => {
 
     if (email) {
       await UserOTP.deleteMany({ [field]: value });
-      await verificationSuccessFunction(value);
+      // await verificationSuccessFunction(value);
+    const userName = validUser ? validUser.name.first : "User";
+
+      await sendVerificationSuccessEmail(email,userName)
     }
 
     return { ok: true, msg: "Verification successful", token: token, statusCode: 200, provider };
