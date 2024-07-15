@@ -15,11 +15,11 @@ let client = new SendMailClient({ url, token });
  * @param {string} subject - The email subject
  * @param {string} body - The email body content in HTML format
  */
-export  const sendEmail = async (toAddress, toName, subject, body) => {
+export const sendEmail = async (toAddress, toName, subject, body) => {
   const emailDetails = {
     from: {
       address: "noreply@hiyer.in",
-      name: "noreply"
+      name: "Hiyer"
     },
     to: [
       {
@@ -30,7 +30,7 @@ export  const sendEmail = async (toAddress, toName, subject, body) => {
       }
     ],
     subject: subject,
-    htmlbody:  `<div><b>${body}</b></div>`
+    htmlbody: `<div><b>${body}</b></div>`
   };
 
   try {
@@ -47,23 +47,23 @@ export  const sendEmail = async (toAddress, toName, subject, body) => {
  * @param {string} toName - The recipient's name
  * @param {string} otp - The OTP to be sent
  */
-export  const sendOtpEmail = async (toAddress, toName, otp) => {
-    const subject = "One-Time-Password for your Email Verification";
-    const body = `Thank you for choosing Hiyer. Use the following OTP to complete your Sign Up procedures. OTP is valid for 5 minutes: ${otp}.`;
-  
-    await sendEmail(toAddress, toName, subject, body);
-  };
-  
-  
- /**
- * Sends a verification success email using ZeptoMail
- * @param {string} toAddress - The recipient's email address
- * @param {string} toName - The recipient's name
- */
- export  const sendVerificationSuccessEmail = async (toAddress, toName) => {
-    const subject = "Email Verification Successful";
-    const body = `Congratulations ${toName}! Your email verification has been successfully completed.`;
-  
-    await sendEmail(toAddress, toName, subject, body);
-  };
+export const sendOtpEmail = async (toAddress, toName, otp) => {
+  const subject = "One-Time-Password for your Email Verification";
+  const body = `Thank you for choosing Hiyer. Use the following OTP to complete your Sign Up procedures. OTP is valid for 5 minutes: ${otp}.`;
+
+  await sendEmail(toAddress, toName, subject, body);
+};
+
+
+/**
+* Sends a verification success email using ZeptoMail
+* @param {string} toAddress - The recipient's email address
+* @param {string} toName - The recipient's name
+*/
+export const sendVerificationSuccessEmail = async (toAddress, toName) => {
+  const subject = "Email Verification Successful";
+  const body = `Congratulations ${toName}! Your email verification has been successfully completed.`;
+
+  await sendEmail(toAddress, toName, subject, body);
+};
 
