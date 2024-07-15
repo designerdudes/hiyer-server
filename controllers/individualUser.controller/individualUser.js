@@ -1226,6 +1226,12 @@ export const applyJobAds = async (req, res) => {
       return res.status(404).json({ error: 'Job application not found' });
     }
 
+    // Check if the user already exists in the applicants array
+    const applicantExists = jobAds.applicants.some(applicant => applicant.user.toString() === userId);
+    if (applicantExists) {
+      return res.status(400).json({ error: 'User has already applied for this job' });
+    }
+
     jobAds.applicants.push(newApplicant);
     await jobAds.save();
 
@@ -1239,6 +1245,7 @@ export const applyJobAds = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while adding the applicant' });
   }
 };
+
 
 export const withdrawJobApplicant = async (req, res) => {
   try {
