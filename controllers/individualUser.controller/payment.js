@@ -191,28 +191,28 @@ export const handlevideoResumePack = async (req, res) => {
       payment_id: razorpay_payment_id,
       razorpay_signature,
       user_id: userId,
-      entity: paymentDetails.entity,
-      amount: paymentDetails.amount,
-      currency: paymentDetails.currency,
-      status: paymentDetails.status,
+      entity: paymentDetails.entity || "",
+      amount: paymentDetails.amount || "",
+      currency: paymentDetails.currency || "",
+      status: paymentDetails.status || "",
       razorpay_order_id,
       method: paymentDetails.method || paymentMethod,
-      captured: paymentDetails.captured,
-      card_id: paymentDetails.card_id,
-      bank: paymentDetails.bank,
-      wallet: paymentDetails.wallet,
-      vpa: paymentDetails.vpa,
-      fee: paymentDetails.fee,
-      tax: paymentDetails.tax,
-      error_code: paymentDetails.error_code,
-      error_description: paymentDetails.error_description,
+      captured: paymentDetails.captured || "",
+      card_id: paymentDetails.card_id || "",
+      bank: paymentDetails.bank || "",
+      wallet: paymentDetails.wallet || "",
+      vpa: paymentDetails.vpa || "",
+      fee: paymentDetails.fee || "",
+      tax: paymentDetails.tax || "",
+      error_code: paymentDetails.error_code || "",
+      error_description: paymentDetails.error_description || "",
       acquirer_data: {
-        rrn: paymentDetails.acquirer_data.rrn,
-        upi_transaction_id: paymentDetails.acquirer_data.upi_transaction_id,
+        rrn: paymentDetails.acquirer_data ? paymentDetails.acquirer_data.rrn : "",
+        upi_transaction_id: paymentDetails.acquirer_data ? paymentDetails.acquirer_data.upi_transaction_id : "",
       },
-      created_at: paymentDetails.created_at,
+      created_at: paymentDetails.created_at || "",
       upi: {
-        vpa: paymentDetails.upi.vpa,
+        vpa: paymentDetails.upi ? paymentDetails.upi.vpa : "",
       },
     });
 
@@ -237,5 +237,6 @@ export const handlevideoResumePack = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while processing payment' });
   }
 };
+
 
  
