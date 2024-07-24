@@ -185,6 +185,7 @@ export const handlevideoResumePack = async (req, res) => {
     if (!paymentDetails) {
       return res.status(400).json({ message: 'Invalid payment details' });
     }
+    console.log("paymentDetails", paymentDetails)
 
     // Save the payment details
     const transaction = new Transaction({
@@ -212,7 +213,7 @@ export const handlevideoResumePack = async (req, res) => {
       },
       created_at: paymentDetails.created_at,
       upi: {
-        vpa: paymentDetails.upi.vpa,
+        vpa: paymentDetails?.upi?.vpa || '',
       },
     });
 
@@ -238,4 +239,3 @@ export const handlevideoResumePack = async (req, res) => {
   }
 };
 
- 
