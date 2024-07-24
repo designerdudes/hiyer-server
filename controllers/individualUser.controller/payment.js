@@ -2,7 +2,7 @@ import Transaction from "../../models/transacation.js";
 import Razorpay from 'razorpay';
 import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
-
+import crypto from 'crypto'
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_SECRET,
@@ -41,51 +41,40 @@ export const createOrUpdateOrderRazorpay = async (req, res) => {
 
 
 
-
 export const verifyPayment = async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
-  console.log("id==", body)
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
 
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_APT_SECRET)
-    .update(body.toString())
-    .digest("hex");
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_SECRET)
+      .update(body.toString())
+      .digest("hex");
 
-  const isAuthentic = expectedSignature === razorpay_signature;
+    const isAuthentic = expectedSignature === razorpay_signature;
 
+    if (isAuthentic) {
+      // await Payment.create({
+      //   razorpay_order_id,
+      //   razorpay_payment_id,
+      //   razorpay_signature,
+      // });
 
-  if (isAuthentic) {
-
-    console.log(Payment)
-
-
-
-    await Payment.create({
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
+      return res.status(200).json({
+        message: "Payment verification successful",
+      });
+    } else {
+      return res.status(400).json({
+        message: "Payment verification failed",
+      });
+    }
+  } catch (error) {
+    console.error("Error verifying payment:", error);
+    return res.status(500).json({
+      message: "An error occurred while verifying payment",
     });
-
-    //  return NextResponse.redirect(new URL('/paymentsuccess', req.url));
-
-  } else {
-    return NextResponse.json({
-      message: "fail"
-    }, {
-      status: 400,
-    })
-
   }
-
-
-  return NextResponse.json({
-    message: "success"
-  }, {
-    status: 200,
-  })
-
-}
+};
 
 
 
@@ -191,28 +180,28 @@ export const handlevideoResumePack = async (req, res) => {
       payment_id: razorpay_payment_id,
       razorpay_signature,
       user_id: userId,
-      entity: paymentDetails.entity,
-      amount: paymentDetails.amount,
-      currency: paymentDetails.currency,
-      status: paymentDetails.status,
+      entity: paymentDetails.entity || "",
+      amount: paymentDetails.amount || "",
+      currency: paymentDetails.currency || "",
+      status: paymentDetails.status || "",
       razorpay_order_id,
       method: paymentDetails.method || paymentMethod,
-      captured: paymentDetails.captured,
-      card_id: paymentDetails.card_id,
-      bank: paymentDetails.bank,
-      wallet: paymentDetails.wallet,
-      vpa: paymentDetails.vpa,
-      fee: paymentDetails.fee,
-      tax: paymentDetails.tax,
-      error_code: paymentDetails.error_code,
-      error_description: paymentDetails.error_description,
+      captured: paymentDetails.captured || "",
+      card_id: paymentDetails.card_id || "",
+      bank: paymentDetails.bank || "",
+      wallet: paymentDetails.wallet || "",
+      vpa: paymentDetails.vpa || "",
+      fee: paymentDetails.fee || "",
+      tax: paymentDetails.tax || "",
+      error_code: paymentDetails.error_code || "",
+      error_description: paymentDetails.error_description || "",
       acquirer_data: {
-        rrn: paymentDetails.acquirer_data.rrn,
-        upi_transaction_id: paymentDetails.acquirer_data.upi_transaction_id,
+        rrn: paymentDetails.acquirer_data ? paymentDetails.acquirer_data.rrn : "",
+        upi_transaction_id: paymentDetails.acquirer_data ? paymentDetails.acquirer_data.upi_transaction_id : "",
       },
-      created_at: paymentDetails.created_at,
+      created_at: paymentDetails.created_at || "",
       upi: {
-        vpa: paymentDetails.upi.vpa,
+        vpa: paymentDetails.upi ? paymentDetails.upi.vpa : "",
       },
     });
 
@@ -237,5 +226,6 @@ export const handlevideoResumePack = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while processing payment' });
   }
 };
+
 
  
