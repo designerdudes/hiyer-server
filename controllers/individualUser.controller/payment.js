@@ -202,7 +202,6 @@ export const handlevideoResumePack = async (req, res) => {
       },
       created_at: paymentDetails.created_at || "",
       upi: {
-        vpa: paymentDetails?.upi?.vpa || '',
         vpa: paymentDetails.upi ? paymentDetails.upi.vpa : "",
       },
     });
