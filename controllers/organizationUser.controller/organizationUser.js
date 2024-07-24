@@ -9,6 +9,7 @@ import Video from "../../models/video.model.js";
 import Image from "../../models/image.model.js";
 import JobAds from "../../models/organization.model/jobAds.model.js";
 import Recommendation from "../../models/individualUser.model/recommendation,model.js";
+import { populate } from "dotenv";
 
 
 
@@ -820,10 +821,10 @@ export const getOrganizationalUserDataFromToken = async (req, res) => {
           path: 'recommendedTo',
           model: 'User',
           select: 'name email  profilePicture',
-            populate: {
-              path: 'profilePicture',
-              model: 'Image'
-            }
+          populate: {
+            path: 'profilePicture',
+            model: 'Image'
+          }
         }]
       })
       .exec();
@@ -877,6 +878,11 @@ export const getSavedCandidates = async (req, res) => {
             path: 'postedBy',
             model: 'User',
             select: 'name profilePicture', // Select fields you want from User model
+
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            }
           },
           {
             path: 'thumbnailUrl',
@@ -1187,13 +1193,13 @@ export const getRecommendedJobs = async (req, res) => {
           path: 'recommendedTo',
           model: 'User',
           select: 'name email  profilePicture',
-            populate: {
-              path: 'profilePicture',
-              model: 'Image'
-            }
+          populate: {
+            path: 'profilePicture',
+            model: 'Image'
+          }
         }
       ]
-    }) ;
+    });
 
     // Function to populate media for job ads
     const populateMedia = async (jobAds) => {

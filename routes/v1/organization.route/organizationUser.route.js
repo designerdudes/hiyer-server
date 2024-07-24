@@ -96,7 +96,7 @@ router.put('/user/social-links', updateSocialLinks);
 router.delete('/user/social-links/:socialLinkKey', deleteSocialLink);
 
 
-router.get('/:orgid', getOrganizationalUserData);
+router.get('/data/:orgid', getOrganizationalUserData);
 
 
 router.post('/:userId/posted-jobAds', getOrganizationalUserPostedJobAds);
@@ -145,6 +145,6 @@ router.put('/recommendations/update', updateOrganizationRecommendation);
 router.delete('/recommendations/:recommendationId', deleteOrganizationRecommendation);
 
 // GET /api/recommendations/recommendedJobs
-router.get('/recommendations/recommendedJobs', getRecommendedJobs );
+router.get('/recommendations/recommendedJobs', getRecommendedJobs);
 
 export default router;
