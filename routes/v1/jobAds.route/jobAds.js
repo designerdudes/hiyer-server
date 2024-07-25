@@ -8,7 +8,10 @@ import {     addJobAds,
     getSimilarJobAdss,
     getSimilarJobAdssFromId,
     getJobAdsDetails,
-    getJobAdsDetailsForPoster} from '../../../controllers/organization.controller/jobAds.controller.js';
+    getJobAdsDetailsForPoster,
+    getApplicantsDetailsForPoster,
+    createJobAlert,
+    updateApplicantStatus} from '../../../controllers/organization.controller/jobAds.controller.js';
 // import { upload } from '../../../config/multer.js';
  
 import multer from 'multer';
@@ -18,7 +21,7 @@ const upload = multer({ dest: 'uploads/' }); // Set up multer with appropriate s
 const router = express.Router();
 
 router.post('/add', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]), addJobAds);
-
+router.post('/createJobAlert', createJobAlert);
 // Route to edit job application details
 router.put('/edit/:id', editJobAdsDetails);
 
@@ -45,5 +48,7 @@ router.get('/jobAds/:id', getJobAdsDetails);
 
 router.get('/org/jobAds/:id', getJobAdsDetailsForPoster);
 
+router.get('/applications/:jobId/:applicationId', getApplicantsDetailsForPoster);
 
+router.put('/update-applicant-status/:jobId/:userId', updateApplicantStatus);
 export default router;
