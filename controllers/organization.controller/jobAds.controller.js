@@ -9,6 +9,7 @@ import User from "../../models/user.model.js";
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import JobAlert from "../../models/organization.model/jobAlert.model.js";
 import { sendEmail } from "../../config/zohoMail.js";
+import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 
 export const notifyUsersOfNewJob = async (jobId, orgId) => {
   try {
@@ -1089,11 +1090,15 @@ export const getRejectedApplicants = (req, res) => {
   getJobAdssByApplicantStatus(req, res, 'rejected');
 };
 
-
 export const createJobAlert = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
     const { title, description, jobType, experienceLevel, organizationId } = req.body;
+
+    // Validate required fields
+    if (!title || !organizationId) {
+      return res.status(400).json({ error: 'Title and organization ID are required' });
+    }
 
     // Create new Job Alert
     const newJobAlert = new JobAlert({
@@ -1107,11 +1112,29 @@ export const createJobAlert = async (req, res) => {
 
     await newJobAlert.save();
 
+    // Update the individual user's job alerts
+    await IndividualUser.findByIdAndUpdate(
+      userId,
+      { $push: { jobAlerts: newJobAlert._id } },
+      { new: true }
+    );
+
+    // Update the organization's job alerts
+    await OrganizationalUser.findByIdAndUpdate(
+      organizationId,
+      { $push: { jobAlerts: newJobAlert._id } },
+      { new: true }
+    );
+
     // Find the organization and send an email notification
-    const organization = await OrganizationalUser.findById(organizationId);
-    if (organization) {
+    const organization = await OrganizationalUser.findById(organizationId)
+    if (organization && organization.contact.email) {
+      // Populate user details
+      const user = await User.findById(userId).populate('profilePicture');
+
       const subject = "New Job Alert Created";
-      const body = `A new job alert has been created by ${userId}. Details: Title - ${title}, Description - ${description}, Job Type - ${jobType}, Experience Level - ${experienceLevel}`;
+      const body = `A new job alert has been created by ${user.name.first} ${user.name.last}. Details:\nTitle: ${title}\nDescription: ${description || 'N/A'}\nJob Type: ${jobType || 'N/A'}\nExperience Level: ${experienceLevel || 'N/A'}\n\nUser Details:\nName: ${user.name.first} ${user.name.last}\nPhone: ${user.phone.countryCode ? `${user.phone.countryCode} ${user.phone.number}` : 'N/A'}\nProfile Picture: ${user.profilePicture ? user.profilePicture.url : 'N/A'}`;
+
       await sendEmail(organization.contact.email, organization.name, subject, body);
     }
 
@@ -1121,6 +1144,3 @@ export const createJobAlert = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while creating the job alert' });
   }
 };
-
-
-
