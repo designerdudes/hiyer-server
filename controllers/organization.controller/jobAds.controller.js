@@ -625,8 +625,11 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
       select: 'name email companyLogo industry contact _id'
     })
     .populate({
-      path: 'applicants.user',  
-      select: 'name email profileImg'
+      path: 'applicants.user',
+      select: 'name email profilePicture',
+      populate: {
+        path: 'profilePicture',
+      }
     });
 
     if (!jobAds) {
