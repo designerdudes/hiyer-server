@@ -30,8 +30,7 @@ router.put('/edit/:id', editJobAdsDetails);
 
 // Route to delete a job application
 router.delete('/delete/:id', deleteJobAds);
-
-
+ 
 // Route to get all job jobAds
 router.get('/jobAds', getAllJobAdss);
 

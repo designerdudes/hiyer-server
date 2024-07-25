@@ -864,9 +864,10 @@ export const getOrganizationalUserDataFromToken = async (req, res) => {
 
 
 export const getSavedCandidates = async (req, res) => {
+
   try {
     const orgUserId = getUserIdFromToken(req); // Get organizational user ID from token
-
+    console.log(orgUserId)
     const organizationalUser = await OrganizationalUser.findById(orgUserId).populate({
       path: 'savedCandidates',
       select: '_id', // Select only the _id of each saved candidate

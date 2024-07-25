@@ -148,3 +148,4 @@ router.delete('/recommendations/:recommendationId', deleteOrganizationRecommenda
 router.get('/recommendations/recommendedJobs', getRecommendedJobs);
 
 export default router;
+getOrganizationalUserData
