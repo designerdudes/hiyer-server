@@ -264,7 +264,10 @@ const individualUserSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'Recommendation',
       default: [],
-    },
+    },jobAlerts: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'JobAlert',
+    }],
   },
   {
     timestamps: true,

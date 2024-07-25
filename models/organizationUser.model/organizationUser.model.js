@@ -110,6 +110,9 @@ const organizationalUserSchema = new mongoose.Schema(
     }] ,recommendedJobs: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Recommendation',
+    }],jobAlerts: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'JobAlert',
     }],
   },
   {
