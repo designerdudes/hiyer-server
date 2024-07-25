@@ -7,6 +7,45 @@ import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
 import { uploadImageController, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
 import User from "../../models/user.model.js";
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
+import JobAlert from "../../models/organization.model/jobAlert.model.js";
+import { sendEmail } from "../../config/zohoMail.js";
+
+export const notifyUsersOfNewJob = async (jobId, orgId) => {
+  try {
+    // Find the job details
+    const job = await JobAds.findById(jobId);
+    if (!job) return;
+
+    // Construct the query based on provided fields
+    const query = {
+      organizationId: orgId,
+      title: job.title
+    };
+
+    // Add optional fields to the query if they exist
+    if (job.jobType) {
+      query.jobType = job.jobType;
+    }
+    if (job.experienceLevel) {
+      query.experienceLevel = job.experienceLevel;
+    }
+
+    // Find all job alerts that match the new job
+    const jobAlerts = await JobAlert.find(query).populate('createdBy');
+
+    // Notify each user who created a matching job alert
+    for (const alert of jobAlerts) {
+      const user = await IndividualUser.findById(alert.createdBy._id);
+      if (user) {
+        const subject = "Job Alert Match";
+        const body = `A new job matching your alert has been created. Details: Title - ${job.title}, Description - ${job.description || 'No description provided'}, Job Type - ${job.jobType || 'No job type provided'}, Experience Level - ${job.experienceLevel || 'No experience level provided'}. Apply now!`;
+        await sendEmail(user.contact.email, user.name, subject, body);
+      }
+    }
+  } catch (error) {
+    console.error('Error notifying users about new job:', error);
+  }
+};
 
 
 export const addJobAds = async (req, res) => {
@@ -74,7 +113,8 @@ export const addJobAds = async (req, res) => {
       { $push: { postedJobAds: newJobAds._id } },
       { new: true }
     );
-
+  // Notify users of the new job
+  await notifyUsersOfNewJob(newJobAds._id,userId);
     res.status(201).json(newJobAds);
   } catch (error) {
     console.error('Error adding job application:', error);
@@ -300,6 +340,8 @@ export const editJobAdsDetails = async (req, res) => {
 // };
 
 // Delete Job Application
+
+
 export const deleteJobAds = async (req, res) => {
   try {
     const { id } = req.params; // Get job application ID from request parameters
@@ -620,17 +662,17 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
 
     // Find the job application and populate necessary fields
     const jobAds = await JobAds.findById(id)
-    .populate({
-      path: 'postedBy',
-      select: 'name email companyLogo industry contact _id'
-    })
-    .populate({
-      path: 'applicants.user',
-      select: 'name email profilePicture',
-      populate: {
-        path: 'profilePicture',
-      }
-    });
+      .populate({
+        path: 'postedBy',
+        select: 'name email companyLogo industry contact _id'
+      })
+      .populate({
+        path: 'applicants.user',
+        select: 'name email profilePicture',
+        populate: {
+          path: 'profilePicture',
+        }
+      });
 
     if (!jobAds) {
       return res.status(404).json({ error: 'Job application not found' });
@@ -686,6 +728,81 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
   }
 };
 
+
+export const getApplicantsDetailsForPoster = async (req, res) => {
+  const userId = getUserIdFromToken(req); // Assumes a function to extract userId from token
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    let effectiveUserId = userId;
+
+    if (user.profile.profileType === 'OrganizationMember') {
+      const organizationMember = await OrganizationMember.findById(user.profile.profileRef);
+      if (organizationMember) {
+        effectiveUserId = organizationMember.organization;
+      }
+    }
+
+    const { jobId, applicationId } = req.params;
+
+    // Find the job ad and populate necessary fields
+    const jobAds = await JobAds.findById(jobId).populate({
+      path: 'postedBy',
+      select: 'name email companyLogo industry contact _id'
+    });
+
+    if (!jobAds) {
+      return res.status(404).json({ error: 'Job ad not found' });
+    }
+
+    // Filter the applicants array to get the specific application by applicationId
+    const applicant = jobAds.applicants.find(app => String(app._id) === applicationId);
+
+    if (!applicant) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+
+    // Check if the user is the one who posted the job
+    const isPoster = String(jobAds.postedBy._id) === String(effectiveUserId);
+
+    // Populate the user and profilePicture for the applicant
+    const populatedApplicant = await mongoose.model('User').populate(applicant, {
+      path: 'user',
+      select: 'name email profilePicture',
+      populate: {
+        path: 'profilePicture',
+      }
+    });
+
+    // Populate media for the applicant's resume video
+    if (populatedApplicant.resumeVideo) {
+      const mediaType = populatedApplicant.resumeVideo.mediaType;
+      const mediaModel = mediaType === 'Video' ? 'Video' : 'Image';
+
+      populatedApplicant.resumeVideo.mediaRef = await mongoose
+        .model(mediaModel)
+        .findById(populatedApplicant.resumeVideo.mediaRef)
+        .populate('thumbnailUrl'); // Adjust this based on your actual Video or Image schema
+    }
+
+
+    res.status(200).json({
+      application: populatedApplicant,
+      jobdetails: {
+        title: jobAds.title,
+        description: jobAds.description,
+        deadline: jobAds.jobAdDeadline,
+        postedBy: jobAds.postedBy,
+      }
+    });
+  } catch (error) {
+    console.error('Error getting job application details for poster:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job application details' });
+  }
+};
 // Controller to get all job jobAds with pagination, filtering, and sorting
 export const getAllJobAdss = async (req, res) => {
   try {
@@ -973,7 +1090,37 @@ export const getRejectedApplicants = (req, res) => {
 };
 
 
+export const createJobAlert = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { title, description, jobType, experienceLevel, organizationId } = req.body;
 
+    // Create new Job Alert
+    const newJobAlert = new JobAlert({
+      createdBy: userId,
+      organizationId,
+      title,
+      description,
+      jobType,
+      experienceLevel
+    });
+
+    await newJobAlert.save();
+
+    // Find the organization and send an email notification
+    const organization = await OrganizationalUser.findById(organizationId);
+    if (organization) {
+      const subject = "New Job Alert Created";
+      const body = `A new job alert has been created by ${userId}. Details: Title - ${title}, Description - ${description}, Job Type - ${jobType}, Experience Level - ${experienceLevel}`;
+      await sendEmail(organization.contact.email, organization.name, subject, body);
+    }
+
+    res.status(201).json(newJobAlert);
+  } catch (error) {
+    console.error('Error creating job alert:', error);
+    res.status(500).json({ error: 'An error occurred while creating the job alert' });
+  }
+};
 
 
 
