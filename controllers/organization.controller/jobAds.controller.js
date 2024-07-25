@@ -619,9 +619,14 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
     const { id } = req.params;
 
     // Find the job application and populate necessary fields
-    const jobAds = await JobAds.findById(id).populate({
+    const jobAds = await JobAds.findById(id)
+    .populate({
       path: 'postedBy',
       select: 'name email companyLogo industry contact _id'
+    })
+    .populate({
+      path: 'applicants.user',  
+      select: 'name email profileImg'
     });
 
     if (!jobAds) {
@@ -642,17 +647,26 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
         model: 'Image'
       });
     }
-
+    console.log(jobAds.applicants)
     // Check if the user is the one who posted the job
     const isPoster = String(jobAds.postedBy._id) === String(effectiveUserId);
 
-    // Filter applicants to show full details if the user is the poster, else show only user info
-    const applicants = jobAds.applicants.map(applicant => {
-      if (isPoster) {
-        return applicant;
+    // Populate media for each applicant
+    const applicants = await Promise.all(jobAds.applicants.map(async (applicant) => {
+      let populatedApplicant = applicant.toObject();
+
+      if (populatedApplicant.resumeVideo) {
+        const mediaType = populatedApplicant.resumeVideo.mediaType;
+        const mediaModel = mediaType === 'Video' ? 'Video' : 'Image'; // Choose model based on mediaType
+
+        populatedApplicant.resumeVideo = await mongoose.model(mediaModel).findById(populatedApplicant.resumeVideo.mediaRef).populate('thumbnailUrl');
       }
-      return { user: applicant.user };
-    });
+
+      return {
+        ...populatedApplicant,
+        user: isPoster ? populatedApplicant.user : { user: populatedApplicant.user }
+      };
+    }));
 
     const applicantsCount = jobAds.applicants.length;
 
