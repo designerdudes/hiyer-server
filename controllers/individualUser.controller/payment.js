@@ -169,6 +169,7 @@ export const handlevideoResumePack = async (req, res) => {
     if (!paymentDetails) {
       return res.status(400).json({ message: 'Invalid payment details' });
     }
+    console.log("paymentDetails", paymentDetails)
 
     // Save the payment details
     const transaction = new Transaction({
@@ -222,6 +223,7 @@ export const handlevideoResumePack = async (req, res) => {
   }
 };
 
+ 
 export const createRazorpayPlan = async (req, res) => {
   try {
     const { period, interval, name, amount, currency, description, notes } = req.body;
@@ -281,6 +283,7 @@ export const createRazorpayPlan = async (req, res) => {
   }
 };
 
+ 
 
 export const getAllPlans = async (req, res) => {
   try {
@@ -436,3 +439,4 @@ export const createSubscriptionTransaction = async (req, res) => {
     });
   }
 };
+ 
