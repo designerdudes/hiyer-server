@@ -113,7 +113,11 @@ const organizationalUserSchema = new mongoose.Schema(
     }],jobAlerts: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobAlert',
-    }],
+    }],subscription: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SubscriptionTransaction', 
+      default: null  
+    },
   },
   {
     timestamps: true,
