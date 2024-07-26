@@ -3,11 +3,13 @@ import Razorpay from 'razorpay';
 import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 import crypto from 'crypto'
+import Plan from "../../models/plan.model.js";
+
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_SECRET,
 });
-// Add or update an order
 
 export const createOrUpdateOrderRazorpay = async (req, res) => {
   try {
@@ -35,11 +37,6 @@ export const createOrUpdateOrderRazorpay = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-
-
-
-
-
 
 export const verifyPayment = async (req, res) => {
   try {
@@ -75,10 +72,6 @@ export const verifyPayment = async (req, res) => {
     });
   }
 };
-
-
-
-
 
 // Controller to handle joining fee payment
 export const handleJoiningFeePayment = async (req, res) => {
@@ -154,7 +147,6 @@ export const handleJoiningFeePayment = async (req, res) => {
   }
 };
 
-
 export const handlevideoResumePack = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req); // Assuming a function to get user ID from token
@@ -228,4 +220,60 @@ export const handlevideoResumePack = async (req, res) => {
   }
 };
 
+
+
+export const createRazorpayPlan = async (req, res) => {
+  try {
+    const { period, interval, name, amount, currency, description, notes } = req.body;
+
+    if (!period || !interval || !name || !amount || !currency) {
+      return res.status(400).json({ error: 'Period, interval, name, amount, and currency are required' });
+    }
+
+    const razorpayPlan = await razorpay.plans.create({
+      period,
+      interval,
+      item: {
+        name,
+        amount,
+        currency,
+        description
+      },
+      notes
+    });
+
+    const newPlan = new Plan({
+      razorpayPlanId: razorpayPlan.id,
+      period: razorpayPlan.period,
+      interval: razorpayPlan.interval,
+      item: {
+        id: razorpayPlan.item.id,
+        active: razorpayPlan.item.active,
+        name: razorpayPlan.item.name,
+        description: razorpayPlan.item.description,
+        amount: razorpayPlan.item.amount,
+        currency: razorpayPlan.item.currency,
+        unit_amount: razorpayPlan.item.unit_amount,
+        unit: razorpayPlan.item.unit,
+        tax_inclusive: razorpayPlan.item.tax_inclusive,
+        hsn_code: razorpayPlan.item.hsn_code,
+        sac_code: razorpayPlan.item.sac_code,
+        tax_rate: razorpayPlan.item.tax_rate,
+        tax_id: razorpayPlan.item.tax_id,
+        tax_group_id: razorpayPlan.item.tax_group_id,
+        created_at: razorpayPlan.item.created_at,
+        updated_at: razorpayPlan.item.updated_at
+      },
+      notes: razorpayPlan.notes,
+      created_at: razorpayPlan.created_at
+    });
+
+    await newPlan.save();
+
+    res.status(201).json(newPlan);
+  } catch (error) {
+    console.error('Error creating Razorpay plan:', error);
+    res.status(500).json({ error: 'An error occurred while creating the Razorpay plan' });
+  }
+};
 

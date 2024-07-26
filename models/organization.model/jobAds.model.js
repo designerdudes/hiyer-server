@@ -94,7 +94,20 @@ const mediaSchema = new mongoose.Schema({
       type: Boolean,
       default: false,
     },
-    salary: String,
+    salary: {
+      min: {
+        type: Number,
+        required: true,
+      },
+      max: {
+        type: Number,
+        required: true,
+      },
+      currency: {
+        type: String,
+        default: 'INR',  
+      }
+    },
     jobAdDeadline: Date,
     media: mediaSchema,
     location: String,
