@@ -4,6 +4,9 @@ import { getUserIdFromToken } from "../../utils/getUserIdFromToken.js";
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 import crypto from 'crypto'
 import Plan from "../../models/plan.model.js";
+import SubscriptionTransaction from "../../models/subscriptionTransaction.model.js";
+import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
+import mongoose from "mongoose";
 
 
 const razorpay = new Razorpay({
@@ -220,8 +223,7 @@ export const handlevideoResumePack = async (req, res) => {
   }
 };
 
-
-
+ 
 export const createRazorpayPlan = async (req, res) => {
   try {
     const { period, interval, name, amount, currency, description, notes } = req.body;
@@ -270,10 +272,171 @@ export const createRazorpayPlan = async (req, res) => {
 
     await newPlan.save();
 
-    res.status(201).json(newPlan);
+    // Send a response with both the Razorpay plan and the newly created Plan
+    res.status(201).json({
+      razorpayPlan,
+      newPlan
+    });
   } catch (error) {
     console.error('Error creating Razorpay plan:', error);
     res.status(500).json({ error: 'An error occurred while creating the Razorpay plan' });
   }
 };
 
+ 
+
+export const getAllPlans = async (req, res) => {
+  try {
+    const plans = await Plan.find({});
+    res.status(200).json(plans);
+  } catch (error) {
+    console.error('Error fetching all plans:', error);
+    res.status(500).json({ error: 'An error occurred while fetching all plans' });
+  }
+};
+
+export const getPlanById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const plan = await Plan.findOne({ id });
+
+    if (!plan) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    res.status(200).json(plan);
+  } catch (error) {
+    console.error('Error fetching plan by ID:', error);
+    res.status(500).json({ error: 'An error occurred while fetching the plan' });
+  }
+};
+  
+
+export const createSubscription = async (req, res) => {
+  try {
+    const { quantity, total_count, notes } = req.body;  
+    const user_id = getUserIdFromToken(req);
+
+    // 1. Fetch the plan data from the database
+    const plan = await Plan.findById(req.params.planId);
+    if (!plan) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    // 2. Calculate a valid start time for the subscription (e.g., 5 minutes in the future)
+    const futureStartTime = Math.floor((Date.now() + 5 * 60 * 1000) / 1000); // 5 minutes from now
+
+    // 3. Create the subscription using Razorpay
+    const subscriptionData = {
+      plan_id: plan.razorpayPlanId,
+      customer_notify: 1,
+      quantity: quantity || 1,
+      total_count: total_count || 6,
+      start_at: futureStartTime, // Use the future timestamp
+      notes
+    };
+
+    const subscription = await razorpay.subscriptions.create(subscriptionData);
+
+  
+
+    res.status(201).json(subscription);
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+
+export const createSubscriptionTransaction = async (req, res) => {
+  const user_id = getUserIdFromToken(req);
+
+  try {
+    const {
+      razorpay_plan_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      subscription_id,
+      customer_id,
+      razorpay_subscription_id,
+    } = req.body;
+
+    // Fetch subscription and payment details from Razorpay
+    const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+    const subscriptionDetails = await razorpay.subscriptions.fetch(razorpay_subscription_id);
+
+    // Calculate amount in rupees (convert paise to rupees)
+    const amount = paymentDetails ? paymentDetails.amount / 100 : subscriptionDetails.amount / 100;
+
+    // Create and save the subscription transaction
+    const subscriptionTransaction = new SubscriptionTransaction({
+      subscription_id: subscriptionDetails.id,
+      user_id: user_id,
+      entity: subscriptionDetails.entity,
+      plan_id: subscriptionDetails.plan_id,
+      status: subscriptionDetails.status,
+      current_start: new Date(subscriptionDetails.current_start * 1000),
+      current_end: new Date(subscriptionDetails.current_end * 1000),
+      ended_at: subscriptionDetails.ended_at ? new Date(subscriptionDetails.ended_at * 1000) : null,
+      quantity: subscriptionDetails.quantity,
+      notes: subscriptionDetails.notes,
+      charge_at: new Date(subscriptionDetails.charge_at * 1000),
+      start_at: new Date(subscriptionDetails.start_at * 1000),
+      end_at: new Date(subscriptionDetails.end_at * 1000),
+      total_count: subscriptionDetails.total_count,
+      paid_count: subscriptionDetails.paid_count,
+      customer_notify: subscriptionDetails.customer_notify,
+      expire_by: new Date(subscriptionDetails.expire_by * 1000),
+      short_url: subscriptionDetails.short_url,
+      has_scheduled_changes: subscriptionDetails.has_scheduled_changes,
+      change_scheduled_at: subscriptionDetails.change_scheduled_at ? new Date(subscriptionDetails.change_scheduled_at * 1000) : null,
+      source: subscriptionDetails.source,
+      offer_id: subscriptionDetails.offer_id,
+      remaining_count: subscriptionDetails.remaining_count,
+      payment_id: paymentDetails ? paymentDetails.id : null,
+      razorpay_signature: paymentDetails ? paymentDetails.signature : null,
+      amount: amount, // Ensure this is a valid number
+      currency: paymentDetails ? paymentDetails.currency : subscriptionDetails.currency,
+      razorpay_order_id: paymentDetails ? paymentDetails.order_id : null,
+      method: paymentDetails ? paymentDetails.method : null, // Ensure 'method' field is included
+      captured: paymentDetails ? paymentDetails.captured : false,
+      card_id: paymentDetails ? paymentDetails.card_id : null,
+      bank: paymentDetails ? paymentDetails.bank : null,
+      wallet: paymentDetails ? paymentDetails.wallet : null,
+      vpa: paymentDetails ? paymentDetails.vpa : null,
+      fee: paymentDetails ? paymentDetails.fee / 100 : null, // Convert paise to rupees
+      tax: paymentDetails ? paymentDetails.tax / 100 : null, // Convert paise to rupees
+      error_code: paymentDetails ? paymentDetails.error_code : null,
+      error_description: paymentDetails ? paymentDetails.error_description : null,
+      acquirer_data: {
+        rrn: paymentDetails ? paymentDetails.acquirer_data.rrn : null,
+        upi_transaction_id: paymentDetails ? paymentDetails.acquirer_data.upi_transaction_id : null
+      }
+    });
+
+    // Save subscription transaction to database
+    await subscriptionTransaction.save();
+
+    // Update OrganizationalUser with the subscription transaction ID
+    await OrganizationalUser.findByIdAndUpdate(user_id, {
+      subscription: subscriptionTransaction._id
+    });
+
+    // Send response
+    res.status(201).json({
+      success: true,
+      message: 'Subscription transaction created successfully',
+      data: subscriptionTransaction
+    });
+
+  } catch (error) {
+    console.error('Error creating subscription transaction:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating subscription transaction',
+      error: error.message
+    });
+  }
+};
+ 
