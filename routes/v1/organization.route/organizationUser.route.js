@@ -145,7 +145,7 @@ router.put('/recommendations/update', updateOrganizationRecommendation);
 router.delete('/recommendations/:recommendationId', deleteOrganizationRecommendation);
 
 // GET /api/recommendations/recommendedJobs
-router.get('/recommendations/recommendedJobs', getRecommendedJobs );
+router.get('/recommendations/recommendedJobs', getRecommendedJobs);
 
 export default router;
 getOrganizationalUserData
