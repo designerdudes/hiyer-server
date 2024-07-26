@@ -1,3 +1,4 @@
+import path from 'path';
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 import jwt from 'jsonwebtoken';
 import mongoose from "mongoose";
@@ -7,6 +8,8 @@ import JobAds from "../../models/organization.model/jobAds.model.js";
 import { deleteMedia, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
 import Recommendation from "../../models/individualUser.model/recommendation,model.js";
+import { uploadImage } from '../../config/cloudinary/cloudinary.config.js';
+import Image from '../../models/image.model.js';
 
 // Helper function to extract user ID from token
 const getUserIdFromToken = (req) => {
@@ -1094,20 +1097,84 @@ export const addOrUpdateVideoDetails = async (req, res) => {
 };
 
 
+// export const addIntroVideo = async (req, res) => {
+//   try {
+//     const userId = getUserIdFromToken(req); // Assuming you have a function to get userId
+//     const { videoTitle, videoDescription } = req.body;
+//     const { video, image } = req.files;
+
+//     let mediaResult = {};
+//     if (req.files && req.files.video) {
+//       mediaResult = await uploadMedia(req); // Assuming uploadMedia returns video_id
+//     } else {
+//       return res.status(400).json({ error: "Video file is required" });
+//     }
+
+//     let newImage;
+//     if (image && image.length > 0) {
+//       const imagePath = path.resolve(image[0].path);
+//       console.log('Uploading image file:', imagePath);
+//       const uploadResult1 = await uploadImage(imagePath, userId);
+
+//       newImage = new Image({
+//         imageUrl: uploadResult1.imageUrl,
+//         transformations: [{ quality: 'auto' }],
+//         postedBy: userId,
+//       });
+
+//       await newImage.save();
+//     }
+
+//     const newIntroVideo = {
+//       videoRef: mediaResult.video_id,
+//       thumbnailUrl: newImage ? newImage._id : null, // Set thumbnail if image uploaded
+//       videoTitle,
+//       videoDescription,
+//     };
+
+//     const updatedUser = await IndividualUser.findByIdAndUpdate(
+//       userId,
+//       { $set: { introVideo: newIntroVideo } },
+//       { new: true }
+//     );
+
+//     res.status(200).json(updatedUser);
+//   } catch (error) {
+//     console.error('Error adding intro video:', error);
+//     res.status(500).json({ error: 'An error occurred while adding intro video' });
+//   }
+// };
 export const addIntroVideo = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req); // Assuming you have a function to get userId
     const { videoTitle, videoDescription } = req.body;
+    const { video, image } = req.files;
 
-    let mediaResult = {};
-    if (req.files && req.files.video) {
-      mediaResult = await uploadMedia(req); // Assuming uploadMedia returns video_id
-    } else {
+    if (!video || video.length === 0) {
       return res.status(400).json({ error: "Video file is required" });
+    }
+
+    // Upload video
+    const mediaResult = await uploadMedia(req); // Assuming uploadMedia returns video_id
+
+    let newImage;
+    if (image && image.length > 0) {
+      const imagePath = path.resolve(image[0].path);
+      console.log('Uploading image file:', imagePath);
+      const uploadResult1 = await uploadImage(imagePath, userId);
+
+      newImage = new Image({
+        imageUrl: uploadResult1.imageUrl,
+        transformations: [{ quality: 'auto' }],
+        postedBy: userId,
+      });
+
+      await newImage.save();
     }
 
     const newIntroVideo = {
       videoRef: mediaResult.video_id,
+      thumbnailUrl: newImage ? newImage._id : null, // Set thumbnail if image uploaded
       videoTitle,
       videoDescription,
     };
@@ -1124,7 +1191,6 @@ export const addIntroVideo = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while adding intro video' });
   }
 };
-
 
 
 export const updateIntroVideo = async (req, res) => {
