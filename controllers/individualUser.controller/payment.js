@@ -166,6 +166,7 @@ export const handlevideoResumePack = async (req, res) => {
     if (!paymentDetails) {
       return res.status(400).json({ message: 'Invalid payment details' });
     }
+    console.log("paymentDetails", paymentDetails)
 
     // Save the payment details
     const transaction = new Transaction({
@@ -218,6 +219,7 @@ export const handlevideoResumePack = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while processing payment' });
   }
 };
+
 
 
 export const createRazorpayPlan = async (req, res) => {
@@ -274,3 +276,4 @@ export const createRazorpayPlan = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while creating the Razorpay plan' });
   }
 };
+
