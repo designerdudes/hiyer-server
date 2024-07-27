@@ -13,7 +13,7 @@ import { mobileVerificationSuccess } from "../config/sendSms.js";
 import IndividualUser from "../models/individualUser.model/individualUser.model.js";
 import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
 import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
-import { sendOtpEmail , sendVerificationSuccessEmail } from "../config/zohoMail.js";
+import { sendOtpEmail, sendVerificationSuccessEmail } from "../config/zohoMail.js";
 
 
 export const sendEmailOTPforverification = async (req, res) => {
@@ -33,7 +33,7 @@ export const sendEmailOTPforverification = async (req, res) => {
     await otp.save();
 
     const userName = validEmailUser ? validEmailUser.name.first : "User";
-    await sendOtpEmail(email, userName,OTP)
+    await sendOtpEmail(email, userName, OTP)
 
     return {
       ok: true,
@@ -65,7 +65,7 @@ export const sendOTPforMobileverification = async (req, res) => {
     //   });
     // }
 
-    const url = `https://2factor.in/API/V1/7d3208f4-0209-11ef-8cbb-0200cd936042/SMS/${mobileNumber}/AUTOGEN/OTP_Template2`;
+    const url = `https://2factor.in/API/V1/1fb18834-4c08-11ef-8b60-0200cd936042/SMS/${mobileNumber}/AUTOGEN/OTP_Template2`;
 
     const response = await axios.get(url, { maxBodyLength: Infinity });
 
@@ -161,9 +161,9 @@ const verifyOtpCore = async (email, mobileNo, otp) => {
     if (email) {
       await UserOTP.deleteMany({ [field]: value });
       // await verificationSuccessFunction(value);
-    const userName = validUser ? validUser.name.first : "User";
+      const userName = validUser ? validUser.name.first : "User";
 
-      await sendVerificationSuccessEmail(email,userName)
+      await sendVerificationSuccessEmail(email, userName)
     }
 
     return { ok: true, msg: "Verification successful", token: token, statusCode: 200, provider };
