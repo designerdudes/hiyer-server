@@ -855,7 +855,20 @@ export const getApplicantsDetailsForPoster = async (req, res) => {
 // Controller to get all job jobAds with pagination, filtering, and sorting
 export const getAllJobAdss = async (req, res) => {
   try {
-    let { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
+    let {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      minSalary,
+      maxSalary,
+      currency,
+      ...filters
+    } = req.query;
+
+    // Convert pagination and sorting values to numbers
+    page = parseInt(page, 10);
+    limit = parseInt(limit, 10);
 
     // Build query based on filters
     let query = {};
@@ -887,6 +900,17 @@ export const getAllJobAdss = async (req, res) => {
       query.title = { $regex: new RegExp(filters.title.replace(/\s+/g, '\\s*'), 'i') };
     }
 
+    // Add salary filters if provided
+    if (minSalary || maxSalary) {
+      query['salary.min'] = minSalary ? { $gte: Number(minSalary) } : { $gte: 0 };
+      query['salary.max'] = maxSalary ? { $lte: Number(maxSalary) } : { $lte: Infinity };
+    }
+    
+    // Add currency filter if provided
+    if (currency) {
+      query['salary.currency'] = currency;
+    }
+
     // Count total documents that match the filters
     const totalJobAdss = await JobAds.countDocuments(query);
 
@@ -894,16 +918,16 @@ export const getAllJobAdss = async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    // Retrieve paginated job jobAds based on filters and sorting
+    // Retrieve paginated job ads based on filters and sorting
     const jobAdss = await JobAds.find(query)
-      .select('_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt')
+      .select('_id title description jobType remoteWork jobAdDeadline media location postedBy applicants createdAt')
       .populate({
         path: 'postedBy',
         select: 'name email companyLogo industry contact'
       })
       .sort(sortOptions)
       .skip((page - 1) * limit)
-      .limit(Number(limit))
+      .limit(limit)
       .lean();
 
     // Populate media details and calculate applicants count for each job application
@@ -934,22 +958,24 @@ export const getAllJobAdss = async (req, res) => {
       };
     }));
 
-    // Calculate total pages based on total job jobAds and limit
+    // Calculate total pages based on total job ads and limit
     const totalPages = Math.ceil(totalJobAdss / limit);
 
-    // Send response with pagination info and detailed job jobAds
+    // Send response with pagination info and detailed job ads
     res.status(200).json({
-      page: Number(page),
-      limit: Number(limit),
+      page,
+      limit,
       totalPages,
       totalJobAdss,
       jobAdss: detailedJobAdss
     });
   } catch (error) {
-    console.error('Error getting all job jobAds:', error);
-    res.status(500).json({ error: 'An error occurred while fetching job jobAds' });
+    console.error('Error getting all job ads:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job ads' });
   }
 };
+
+
 
 
 
