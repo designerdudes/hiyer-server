@@ -94,6 +94,10 @@ const organizationMemberSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "OrganizationalUser",
             required: true,
+          },subscription: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'SubscriptionTransaction', 
+            default: null  
           },
         // hobbies: [String],
     },

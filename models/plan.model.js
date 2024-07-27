@@ -50,6 +50,11 @@ const PlanSchema = new mongoose.Schema({
   created_at: {
     type: Number,
     required: true
+  },
+  user_type: {
+    type: String,
+    enum: ['individualUser', 'organization'],
+    required: true
   }
 }, {
   timestamps: true

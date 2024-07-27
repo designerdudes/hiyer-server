@@ -298,7 +298,8 @@ export const getAllPlans = async (req, res) => {
 export const getPlanById = async (req, res) => {
   try {
     const { id } = req.params;
-    const plan = await Plan.findOne({ id });
+    const plan = await Plan.findOne({ _id: id });
+
 
     if (!plan) {
       return res.status(404).json({ error: 'Plan not found' });
@@ -310,11 +311,36 @@ export const getPlanById = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while fetching the plan' });
   }
 };
-  
+
+
+export const getPlansByUserType = async (req, res) => {
+  try {
+    const { user_type } = req.params;
+
+    // Validate user_type
+    if (!['individualUser', 'organization'].includes(user_type)) {
+      return res.status(400).json({ error: 'Invalid user type' });
+    }
+
+    // Fetch all plans for the given user type
+    const plans = await Plan.find({ user_type });
+
+    if (plans.length === 0) {
+      return res.status(404).json({ message: 'No plans found for the specified user type' });
+    }
+
+    res.status(200).json(plans);
+  } catch (error) {
+    console.error('Error fetching plans by user type:', error);
+    res.status(500).json({ error: 'An error occurred while fetching plans' });
+  }
+};
+
+
 
 export const createSubscription = async (req, res) => {
   try {
-    const { quantity, total_count, notes } = req.body;  
+    const { quantity, total_count, notes, user_type } = req.body;
     const user_id = getUserIdFromToken(req);
 
     // 1. Fetch the plan data from the database
@@ -333,12 +359,13 @@ export const createSubscription = async (req, res) => {
       quantity: quantity || 1,
       total_count: total_count || 6,
       start_at: futureStartTime, // Use the future timestamp
-      notes
+      notes,
+      user_type
     };
 
     const subscription = await razorpay.subscriptions.create(subscriptionData);
 
-  
+
 
     res.status(201).json(subscription);
   } catch (error) {
@@ -349,7 +376,7 @@ export const createSubscription = async (req, res) => {
 
 
 
-export const createSubscriptionTransaction = async (req, res) => {
+export const createSubscriptionTransactionForOrg = async (req, res) => {
   const user_id = getUserIdFromToken(req);
 
   try {
@@ -439,4 +466,235 @@ export const createSubscriptionTransaction = async (req, res) => {
     });
   }
 };
+ 
+
+export const cancelSubscriptionForOrg = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const user_id = getUserIdFromToken(req);
+
+    const subscriptionTransaction = await SubscriptionTransaction.findOne({ _id: subscriptionId });
+
+    if (!subscriptionTransaction) {
+      return res.status(404).json({ error: 'Subscription transaction not found' });
+    }
+
+    await razorpay.subscriptions.cancel(subscriptionTransaction.subscription_id);
+   
+    await OrganizationalUser.findByIdAndUpdate(user_id, { subscription: null });
+
+    subscriptionTransaction.status = 'cancelled';
+    await subscriptionTransaction.save();
+    res.status(200).json({ message: 'Subscription successfully canceled' });
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    res.status(500).json({ error: 'An error occurred while canceling the subscription' });
+  }
+};
+
+export const createSubscriptionTransactionForUser = async (req, res) => {
+  const user_id = getUserIdFromToken(req);
+
+  try {
+    const {
+      razorpay_plan_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      subscription_id,
+      customer_id,
+      razorpay_subscription_id,
+    } = req.body;
+
+    // Fetch subscription and payment details from Razorpay
+    const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+    const subscriptionDetails = await razorpay.subscriptions.fetch(razorpay_subscription_id);
+
+    // Calculate amount in rupees (convert paise to rupees)
+    const amount = paymentDetails ? paymentDetails.amount / 100 : subscriptionDetails.amount / 100;
+
+    // Create and save the subscription transaction
+    const subscriptionTransaction = new SubscriptionTransaction({
+      subscription_id: subscriptionDetails.id,
+      user_id: user_id,
+      entity: subscriptionDetails.entity,
+      plan_id: subscriptionDetails.plan_id,
+      status: subscriptionDetails.status,
+      current_start: new Date(subscriptionDetails.current_start * 1000),
+      current_end: new Date(subscriptionDetails.current_end * 1000),
+      ended_at: subscriptionDetails.ended_at ? new Date(subscriptionDetails.ended_at * 1000) : null,
+      quantity: subscriptionDetails.quantity,
+      notes: subscriptionDetails.notes,
+      charge_at: new Date(subscriptionDetails.charge_at * 1000),
+      start_at: new Date(subscriptionDetails.start_at * 1000),
+      end_at: new Date(subscriptionDetails.end_at * 1000),
+      total_count: subscriptionDetails.total_count,
+      paid_count: subscriptionDetails.paid_count,
+      customer_notify: subscriptionDetails.customer_notify,
+      expire_by: new Date(subscriptionDetails.expire_by * 1000),
+      short_url: subscriptionDetails.short_url,
+      has_scheduled_changes: subscriptionDetails.has_scheduled_changes,
+      change_scheduled_at: subscriptionDetails.change_scheduled_at ? new Date(subscriptionDetails.change_scheduled_at * 1000) : null,
+      source: subscriptionDetails.source,
+      offer_id: subscriptionDetails.offer_id,
+      remaining_count: subscriptionDetails.remaining_count,
+      payment_id: paymentDetails ? paymentDetails.id : null,
+      razorpay_signature: paymentDetails ? paymentDetails.signature : null,
+      amount: amount, // Ensure this is a valid number
+      currency: paymentDetails ? paymentDetails.currency : subscriptionDetails.currency,
+      razorpay_order_id: paymentDetails ? paymentDetails.order_id : null,
+      method: paymentDetails ? paymentDetails.method : null, // Ensure 'method' field is included
+      captured: paymentDetails ? paymentDetails.captured : false,
+      card_id: paymentDetails ? paymentDetails.card_id : null,
+      bank: paymentDetails ? paymentDetails.bank : null,
+      wallet: paymentDetails ? paymentDetails.wallet : null,
+      vpa: paymentDetails ? paymentDetails.vpa : null,
+      fee: paymentDetails ? paymentDetails.fee / 100 : null, // Convert paise to rupees
+      tax: paymentDetails ? paymentDetails.tax / 100 : null, // Convert paise to rupees
+      error_code: paymentDetails ? paymentDetails.error_code : null,
+      error_description: paymentDetails ? paymentDetails.error_description : null,
+      acquirer_data: {
+        rrn: paymentDetails ? paymentDetails.acquirer_data.rrn : null,
+        upi_transaction_id: paymentDetails ? paymentDetails.acquirer_data.upi_transaction_id : null
+      }
+    });
+
+    // Save subscription transaction to database
+    await subscriptionTransaction.save();
+
+    // Update OrganizationalUser with the subscription transaction ID
+    await IndividualUser.findByIdAndUpdate(user_id, {
+      subscription: subscriptionTransaction._id
+    });
+
+    // Send response
+    res.status(201).json({
+      success: true,
+      message: 'Subscription transaction created successfully',
+      data: subscriptionTransaction
+    });
+
+  } catch (error) {
+    console.error('Error creating subscription transaction:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating subscription transaction',
+      error: error.message
+    });
+  }
+};
+
+export const cancelSubscriptionForUser = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const user_id = getUserIdFromToken(req);
+
+    const subscriptionTransaction = await SubscriptionTransaction.findOne({ _id: subscriptionId });
+
+    if (!subscriptionTransaction) {
+      return res.status(404).json({ error: 'Subscription transaction not found' });
+    }
+
+    await razorpay.subscriptions.cancel(subscriptionTransaction.subscription_id);
+
+    await IndividualUser.findByIdAndUpdate(user_id, { subscription: null });
+
+    subscriptionTransaction.status = 'cancelled';
+    await subscriptionTransaction.save();
+    res.status(200).json({ message: 'Subscription successfully canceled' });
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    res.status(500).json({ error: 'An error occurred while canceling the subscription' });
+  }
+};
+
+
+export const pauseSubscription = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const user_id = getUserIdFromToken(req);
+
+    // Fetch the subscription transaction
+    const subscriptionTransaction = await SubscriptionTransaction.findOne({ _id: subscriptionId });
+
+    if (!subscriptionTransaction) {
+      return res.status(404).json({ error: 'Subscription transaction not found' });
+    }
+
+    // Pause the subscription using Razorpay
+    const result = await razorpay.subscriptions.pause(subscriptionTransaction.subscription_id);
+
+    // Optionally update the subscription transaction status in the database
+    subscriptionTransaction.status = 'paused'; // Update status as needed
+    await subscriptionTransaction.save();
+
+    res.status(200).json({
+      message: 'Subscription successfully paused',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error pausing subscription:', error);
+    res.status(500).json({ error: 'An error occurred while pausing the subscription' });
+  }
+};
+
+export const resumeSubscription = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const user_id = getUserIdFromToken(req);
+
+    // Fetch the subscription transaction
+    const subscriptionTransaction = await SubscriptionTransaction.findOne({ _id: subscriptionId });
+
+    if (!subscriptionTransaction) {
+      return res.status(404).json({ error: 'Subscription transaction not found' });
+    }
+
+    // Resume the subscription using Razorpay
+    const result = await razorpay.subscriptions.resume(subscriptionTransaction.subscription_id, { resume_at: 'now' });
+
+    // Optionally update the subscription transaction status in the database
+    subscriptionTransaction.status = 'active'; // Update status as needed
+    await subscriptionTransaction.save();
+
+    res.status(200).json({
+      message: 'Subscription successfully resumed',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error resuming subscription:', error);
+    res.status(500).json({ error: 'An error occurred while resuming the subscription' });
+  }
+};
+
+export const getSubscriptionTransactionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch the subscription transaction and populate the user details
+    const subscriptionTransaction = await SubscriptionTransaction.findById(id)
+    // .populate({
+    //   path: 'user_id',
+    //   select: 'name email profilePicture', // Populate the fields you need
+    //   model: User
+    // });
+
+    if (!subscriptionTransaction) {
+      return res.status(404).json({ error: 'Subscription transaction not found' });
+    }
+
+    // Fetch subscription details from Razorpay
+    const subscriptionDetails = await razorpay.subscriptions.fetch(subscriptionTransaction.subscription_id);
+
+    // Respond with both subscription transaction and Razorpay subscription details
+    res.status(200).json({
+      subscriptionTransaction,
+      subscriptionDetails
+    });
+  } catch (error) {
+    console.error('Error fetching subscription transaction by ID:', error);
+    res.status(500).json({ error: 'An error occurred while fetching the subscription transaction' });
+  }
+};
+
+
  
