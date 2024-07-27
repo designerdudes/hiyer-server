@@ -97,11 +97,11 @@ const jobAdSchema = new mongoose.Schema({
   salary: {
     min: {
       type: Number,
-      required: true,
+      
     },
     max: {
       type: Number,
-      required: true,
+      
     },
     currency: {
       type: String,
