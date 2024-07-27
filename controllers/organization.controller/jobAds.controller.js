@@ -36,11 +36,16 @@ export const notifyUsersOfNewJob = async (jobId, orgId) => {
 
     // Notify each user who created a matching job alert
     for (const alert of jobAlerts) {
-      const user = await IndividualUser.findById(alert.createdBy._id);
+      const user = await User.findById(alert.createdBy._id);
       if (user) {
+        // Construct the user's full name, including first, middle, and last names
+        const fullName = [user.name.first, user.name.middle, user.name.last]
+          .filter(namePart => namePart) // Filter out any undefined or empty parts
+          .join(' '); // Join the parts with a space
+
         const subject = "Job Alert Match";
         const body = `A new job matching your alert has been created. Details: Title - ${job.title}, Description - ${job.description || 'No description provided'}, Job Type - ${job.jobType || 'No job type provided'}, Experience Level - ${job.experienceLevel || 'No experience level provided'}. Apply now!`;
-        await sendEmail(user.contact.email, user.name, subject, body);
+        await sendEmail(user.email.id, fullName, subject, body);
       }
     }
   } catch (error) {
@@ -68,6 +73,32 @@ export const addJobAds = async (req, res) => {
       tags,
     } = req.body;
 
+
+    // Parse and format the salary object
+    let parsedSalary = { min: 0, max: 0, currency: 'INR' };
+    if (typeof salary === 'string') {
+      try {
+        parsedSalary = JSON.parse(salary);
+      } catch (error) {
+        console.error('Error parsing salary JSON:', error);
+      }
+    } else if (typeof salary === 'object') {
+      parsedSalary = salary;
+    }
+
+    // Ensure salary fields have appropriate values
+    const formattedSalary = {
+      min: parsedSalary.min || 0,
+      max: parsedSalary.max || 0,
+      currency: parsedSalary.currency || 'INR',
+    };
+
+    // Optional: Ensure min and max are numbers and handle default values
+    if (typeof formattedSalary.min !== 'number') formattedSalary.min = 0;
+    if (typeof formattedSalary.max !== 'number') formattedSalary.max = 0;
+
+
+
     let mediaResult = {};
     if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
       mediaResult = await uploadMedia(req);
@@ -89,7 +120,7 @@ export const addJobAds = async (req, res) => {
       jobType,
       experienceLevel,
       remoteWork,
-      salary,
+      salary: formattedSalary,
       jobAdDeadline,
       location,
       skills: JSON.parse(skills),
@@ -117,6 +148,7 @@ export const addJobAds = async (req, res) => {
   // Notify users of the new job
   await notifyUsersOfNewJob(newJobAds._id,userId);
     res.status(201).json(newJobAds);
+
   } catch (error) {
     console.error('Error adding job application:', error);
     res.status(500).json({ error: 'An error occurred while adding the job application' });
@@ -375,6 +407,22 @@ export const deleteJobAds = async (req, res) => {
     await OrganizationalUser.updateMany(
       { postedJobAds: id },
       { $pull: { postedJobAds: id } }
+    );
+
+     // Remove job application reference from IndividualUser model
+     await IndividualUser.updateMany(
+      { 
+        $or: [
+          { 'jobposting.applied': id },
+          { 'jobposting.saved': id }
+        ]
+      },
+      {
+        $pull: {
+          'jobposting.applied': id,
+          'jobposting.saved': id
+        }
+      }
     );
 
     res.status(200).json({ message: "Job application deleted successfully" });
