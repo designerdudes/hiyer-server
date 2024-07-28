@@ -13,7 +13,9 @@ import { mobileVerificationSuccess } from "../config/sendSms.js";
 import IndividualUser from "../models/individualUser.model/individualUser.model.js";
 import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
 import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
+ 
 import { sendOtpEmail, sendVerificationSuccessEmail, sendWelcomeOrgEmail, sendWelcomeUserEmail } from "../config/zohoMail.js";
+ 
 
 
 const extractNameFromEmail = (email) => {
@@ -46,8 +48,10 @@ export const sendEmailOTPforverification = async (req, res) => {
 
     await otp.save();
 
+ 
     const userName = validEmailUser ? validEmailUser.name.first : extractNameFromEmail(email);
     await sendOtpEmail(email, userName, OTP);
+ 
 
     res.status(200).json({
       ok: true,
@@ -80,7 +84,7 @@ export const sendOTPforMobileverification = async (req, res) => {
     //   });
     // }
 
-    const url = `https://2factor.in/API/V1/7d3208f4-0209-11ef-8cbb-0200cd936042/SMS/${mobileNumber}/AUTOGEN/OTP_Template2`;
+    const url = `https://2factor.in/API/V1/1fb18834-4c08-11ef-8b60-0200cd936042/SMS/${mobileNumber}/AUTOGEN/OTP_Template2`;
 
     const response = await axios.get(url, { maxBodyLength: Infinity });
 
