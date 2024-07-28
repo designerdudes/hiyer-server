@@ -84,7 +84,8 @@ const {
   ZEPTO_MAIL_TEMPLATE_NEW_APPLICATION,
   ZEPTO_MAIL_TEMPLATE_NEW_RECOMMENDATION_FROM_USER,
   ZEPTO_MAIL_TEMPLATE_NEW_RECOMMENDATION_FROM_ORG,
-  ZEPTO_MAIL_TEMPLATE_INVOICE
+  ZEPTO_MAIL_TEMPLATE_INVOICE,
+  ZOHO_MAIL_TEMPLATE_STATUS_UPDATE
 } = process.env;
 
 // Initialize the SendMailClient with the URL and token
@@ -312,6 +313,27 @@ export const sendNewRecommendationFromOrgEmail = async (toUser, job, fromUser) =
   };
 
   await sendEmailWithTemplate(toUser.email.id, name, subject, templateKey, mergeInfo);
+};
+
+export const sendApplicantStatusUpdateEmail = async (user, jobAds, applicantStatus) => {
+  const applicantName = `${user.name.first} ${user.name.last}` || extractNameFromEmail(user.email.id);
+  const statusNotes = `Your application status has been updated to ${applicantStatus}.`;
+
+  const subject = `Application Status Update for ${jobAds.title}`;
+  const templateKey = ZOHO_MAIL_TEMPLATE_STATUS_UPDATE;
+  const mergeInfo = {
+    applicantName,
+    applicantId:user._id,
+    jobTitle:jobAds.title,
+    jobId:jobAds._id,
+    applicantStatus,
+    statusNotes,
+    companyName: jobAds.postedBy.name,
+    companyId: jobAds.postedBy._id
+
+  };
+
+  await sendEmailWithTemplate(user.email.id, applicantName, subject, templateKey, mergeInfo);
 };
 
 
