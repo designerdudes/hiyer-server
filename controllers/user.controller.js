@@ -13,40 +13,59 @@ import { mobileVerificationSuccess } from "../config/sendSms.js";
 import IndividualUser from "../models/individualUser.model/individualUser.model.js";
 import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
 import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
-import { sendOtpEmail, sendVerificationSuccessEmail } from "../config/zohoMail.js";
+ 
+import { sendOtpEmail, sendVerificationSuccessEmail, sendWelcomeOrgEmail, sendWelcomeUserEmail } from "../config/zohoMail.js";
+ 
 
 
+const extractNameFromEmail = (email) => {
+  const namePart = email.split('@')[0];
+  return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+};
+
+// Controller function to handle sending OTP for email verification
 export const sendEmailOTPforverification = async (req, res) => {
   try {
     const { email } = req.body;
     const validEmailUser = await User.findOne({ "email.id": email });
-    let OTP = Math.floor(Math.random() * 900000) + 100000;
+
+    if (!validEmailUser) {
+      return res.status(404).json({
+        ok: false,
+        msg: "User not found",
+      });
+    }
+
+    let OTP = Math.floor(Math.random() * 900000) + 100000; // Generate a random 6-digit OTP
     console.log("OTP is generated", OTP);
 
     let otp = new UserOTP({
       email: email,
       otp: OTP,
       createdAt: new Date(),
-      expireAt: new Date(Date.now() + 86400000), // Set expiration time correctly
+      expireAt: new Date(Date.now() + 86400000), // Set expiration time correctly (24 hours)
     });
 
     await otp.save();
 
-    const userName = validEmailUser ? validEmailUser.name.first : "User";
-    await sendOtpEmail(email, userName, OTP)
+ 
+    const userName = validEmailUser ? validEmailUser.name.first : extractNameFromEmail(email);
+    await sendOtpEmail(email, userName, OTP);
+ 
 
-    return {
+    res.status(200).json({
       ok: true,
-      msg: validEmailUser ? "Email sent to existing user" : "Email sent to new user",
-    };
+      msg: "Email sent to existing user",
+    });
   } catch (error) {
     console.error("Error in sending OTP for verification:", error);
-    return {
+    res.status(500).json({
       ok: false,
-      msg: error.message,
-    };
+      msg: "Failed to send OTP. Please try again later.",
+    });
   }
 };
+
 
 
 
@@ -100,7 +119,7 @@ const verifyOtpCore = async (email, mobileNo, otp) => {
     if (email) {
       field = "email";
       value = email;
-      verificationSuccessFunction = emailVerificationSuccess;
+      verificationSuccessFunction = sendVerificationSuccessEmail;
       provider = "email";
     } else {
       field = "mobileNumber";
@@ -334,6 +353,14 @@ export const registerUser = async (req, res) => {
       savedUser.phone.verified = true;
     }
 
+    if (profileType === 'IndividualUser') {
+      await sendWelcomeUserEmail(email, userData.name.first)
+    } else if (profileType === 'OrganizationalUser') {
+      await sendWelcomeOrgEmail(email, userData.name.first)
+    }
+
+    
+    
     // Respond with success message, status, and user data
     res.status(200).json({
       msg: "User registered successfully",
@@ -392,7 +419,7 @@ export const login = async (req, res) => {
     const { email, mobileNo, countryCode } = req.body;
 
     if (!email && !mobileNo) {
-      return res.status(400).send({
+      return res.status(400).json({
         msg: "Email or mobile number is required",
         ok: false,
       });
@@ -411,46 +438,42 @@ export const login = async (req, res) => {
     const user = await User.findOne(query);
 
     if (!user) {
-      return res.status(404).send({
+      return res.status(404).json({
         msg: "User not found",
         ok: false,
       });
     }
 
     if (user.socialLogin.isSocialLogin) {
-      return res.status(200).send({
+      return res.status(200).json({
         msg: "Login with social link",
         ok: true,
       });
     }
 
     // Generate OTP and send for verification
-    let otpResult;
     if (email) {
-      otpResult = await sendEmailOTPforverification(req, res);
+      await sendEmailOTPforverification(req, res);
     } else {
-      // otpResult = await sendMobileOTPforVerification(req, res);
+      // await sendMobileOTPforVerification(req, res);
     }
 
-    if (!otpResult.ok) {
-      return res.status(500).send({
-        msg: "Failed to send OTP",
-        ok: false,
-      });
-    } else {
-      return res.status(200).send({
-        msg: "OTP sent successfully",
-        ok: true,
-      });
-    }
+    res.status(200).json({
+      msg: "OTP sent successfully",
+      ok: true,
+    });
+
   } catch (error) {
     console.error('Error in login:', error);
-    res.status(500).send({
-      msg: "Internal Server Error",
-      ok: false,
-    });
+    if (!res.headersSent) {  // Check if headers are already sent
+      res.status(500).json({
+        msg: "Internal Server Error",
+        ok: false,
+      });
+    }
   }
 };
+
 
 export const organisationLogin = async (req, res) => {
   try {

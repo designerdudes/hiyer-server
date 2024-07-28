@@ -1,22 +1,120 @@
+// // Import SendMailClient from zeptomail
+// import { SendMailClient } from "zeptomail";
+
+// // Set the URL and token for the ZeptoMail API
+// const url = process.env.ZOHO_URL
+// const token = process.env.ZOHO_TOKEN
+
+// // Initialize the SendMailClient with the URL and token
+// let client = new SendMailClient({ url, token });
+
+// /**
+//  * Sends an email using ZeptoMail
+//  * @param {string} toAddress - The recipient's email address
+//  * @param {string} toName - The recipient's name
+//  * @param {string} subject - The email subject
+//  * @param {string} body - The email body content in HTML format
+//  */
+// export  const sendEmail = async (toAddress, toName, subject, body) => {
+//   const emailDetails = {
+//     from: {
+//       address: "noreply@hiyer.in",
+//       name: "noreply"
+//     },
+//     to: [
+//       {
+//         email_address: {
+//           address: toAddress,
+//           name: toName ? toName : "user"
+//         }
+//       }
+//     ],
+//     subject: subject,
+//     htmlbody:  `<div><b>${body}</b></div>`
+//   };
+
+//   try {
+//     const resp = await client.sendMail(emailDetails);
+//     console.log("Email sent successfully:", resp);
+//   } catch (error) {
+//     console.error("Error sending email:", error);
+//   }
+// };
+
+// /**
+//  * Sends an OTP email using ZeptoMail
+//  * @param {string} toAddress - The recipient's email address
+//  * @param {string} toName - The recipient's name
+//  * @param {string} otp - The OTP to be sent
+//  */
+// export  const sendOtpEmail = async (toAddress, toName, otp) => {
+//     const subject = "One-Time-Password for your Email Verification";
+//     const body = `Thank you for choosing Hiyer. Use the following OTP to complete your Sign Up procedures. OTP is valid for 5 minutes: ${otp}.`;
+  
+//     await sendEmail(toAddress, toName, subject, body);
+//   };
+  
+  
+//  /**
+//  * Sends a verification success email using ZeptoMail
+//  * @param {string} toAddress - The recipient's email address
+//  * @param {string} toName - The recipient's name
+//  */
+//  export  const sendVerificationSuccessEmail = async (toAddress, toName) => {
+//     const subject = "Email Verification Successful";
+//     const body = `Congratulations ${toName}! Your email verification has been successfully completed.`;
+  
+//     await sendEmail(toAddress, toName, subject, body);
+//   };
+
 // Import SendMailClient from zeptomail
 import { SendMailClient } from "zeptomail";
 
 // Set the URL and token for the ZeptoMail API
-const url = process.env.ZOHO_URL
-const token = process.env.ZOHO_TOKEN
+const url = process.env.ZOHO_URL;
+const token = process.env.ZOHO_TOKEN;
+
+const {
+  ZEPTO_MAIL_TEMPLATE_OTP,
+  ZEPTO_MAIL_TEMPLATE_VERIFICATION_SUCCESS,
+  ZEPTO_MAIL_TEMPLATE_WELCOME_ORG,
+  ZEPTO_MAIL_TEMPLATE_WELCOME_USER,
+  ZEPTO_MAIL_TEMPLATE_NEW_JOB_ALERT,
+  ZEPTO_MAIL_TEMPLATE_NEW_JOB_ALERT_BY_USER,
+  ZEPTO_MAIL_TEMPLATE_NEW_APPLICATION,
+  ZEPTO_MAIL_TEMPLATE_NEW_RECOMMENDATION_FROM_USER,
+  ZEPTO_MAIL_TEMPLATE_NEW_RECOMMENDATION_FROM_ORG,
+  ZEPTO_MAIL_TEMPLATE_INVOICE,
+  ZOHO_MAIL_TEMPLATE_STATUS_UPDATE
+} = process.env;
 
 // Initialize the SendMailClient with the URL and token
 let client = new SendMailClient({ url, token });
 
 /**
- * Sends an email using ZeptoMail
- * @param {string} toAddress - The recipient's email address
- * @param {string} toName - The recipient's name
- * @param {string} subject - The email subject
- * @param {string} body - The email body content in HTML format
+ * Extracts the name from an email address.
+ * @param {string} email - The email address to extract the name from.
+ * @returns {string} - The name extracted from the email address.
  */
-export const sendEmail = async (toAddress, toName, subject, body) => {
+const extractNameFromEmail = (email) => {
+  const namePart = email.split('@')[0];
+  return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+};
+
+/**
+ * Sends an email using ZeptoMail with a specified template and merge info.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} [toName] - The recipient's name. If not provided, defaults to the name extracted from the email.
+ * @param {string} subject - The email subject.
+ * @param {string} templateKey - The key of the email template to use.
+ * @param {object} mergeInfo - The merge info to populate the template.
+ */
+ 
+export const sendEmailWithTemplate = async (toAddress, toName, subject, templateKey, mergeInfo = {}) => {
+  const name = toName || extractNameFromEmail(toAddress);
+ 
   const emailDetails = {
+    mail_template_key: templateKey,
     from: {
       address: "noreply@hiyer.in",
       name: "Hiyer"
@@ -25,353 +123,14 @@ export const sendEmail = async (toAddress, toName, subject, body) => {
       {
         email_address: {
           address: toAddress,
-          name: toName ? toName : "user"
+          name: name
         }
       }
     ],
     subject: subject,
-    // htmlbody: `<div><b>${body}</b></div>`
-    htmlbody: ` <html>
-    <head>
-        <style>
-            // body {
-            //     font-family: Arial, sans-serif;
-            //     background-color: #f4f4f4;
-            // }
-            // .container {
-            //     max-width: 600px;
-            //     margin: 0 auto;
-            //     padding: 20px;
-            // }
-            // .btn {
-            //     display: inline-block;
-            //     padding: 10px 20px;
-            //     background-color: #007BFF;
-            //     color: #fff;
-            //     text-decoration: none;
-            //     border-radius: 5px;
-            // }
-            // .img{
-            //     width: 200px;
-            //     height: 300px;
-            // }
-        </style>
-        </head>
-        <body>
-        <table class="m_-5049272237331082851table--wrapper" align="center" cellpadding="0" cellspacing="0" border="0"
-        width="700">
-        <tbody>
-            <tr>
-                <td align="center" bgcolor="#2E3190" valign="top" style="
-                
-              background-color: #2E3190
-            ">
-                    <div>
-                        <table align="center" border="0" cellpadding="0" cellspacing="0" style="width: 600px"
-                            class="m_-5049272237331082851table--content">
-                            <tbody>
-                                <tr>
-                                    <td align="center" valign="top" style="padding: 30px"
-                                        class="m_-5049272237331082851logo">
-                                        <table align="center" cellpadding="0" cellspacing="0" border="0" width="100%">
-                                            <tbody>
-                                                <tr>
-                                                    <td class="m_-5049272237331082851newLine">
-                                                        <a href="https://www.hiyer.in/
-                                                            target="_blank" style="display: flex;flex-wrap: wrap; text-align: center;align-items: center;gap: 16px;width: fit-content;margin: 0 auto;
-                                                            text-decoration: none;"
-                                                            data-saferedirecturl="https://www.hiyer.in/">
-                                                            <img alt="Aplus Logo"
-                                                                src="https://firebasestorage.googleapis.com/v0/b/aplus-laundry-storage.appspot.com/o/apluslaundry%2FSymbolWhite.svg?alt=media&token=0cd389ea-c6af-481d-b4f8-274a5ea8f1ba"
-                                                                 width="70" style="
-                                    display: block;
-                                    font-family: Helvetica, Arial, sans-serif;
-                                    color: #ffffff;
-                                    font-size: 16px; 
-                                  " border="0" class="CToWUd" data-bit="iit" /> <p style="
-                                    font-family: Helvetica, Arial, sans-serif;
-                                    height: fit-content;
-                                    color: #ffffff;
-                                    font-size: 20px; 
-                                    font-weight: 900;
-                                    
-                                  " >Hiyer</p> 
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </td>
-            </tr>
-      
-      
-            <tr>
-                
-                <td align="center"
-                    bgcolor="#F6F6F6" valign="top" style="
-            
-            ">
-            
-                    <div>
-                        <table align="center" border="0" cellpadding="0" cellspacing="0" style="width: 600px;margin: -1000px 0"
-                            class="m_-5049272237331082851table--content">
-                            <tbody>
-                                <tr>
-                                    <td bgcolor="#fff" align="left" valign="top"
-                                        class="m_-5049272237331082851table--content--details"
-                                        style="border-radius: 4px; padding: 40px; margin: 0 auto" >
-                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                                            <tbody>
-        ${body}                                                
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="center" class="m_-5049272237331082851table--footer" valign="middle"
-                                        style="padding-top: 50px">
-                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                                            <tbody>
-                                                <tr>
-                                                    <td style="padding-bottom: 40px">
-                                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                                                            <tbody>
-                                                                <tr>
-                                                                    <td align="left" style="padding-bottom: 24px">
-                                                                        <a href="https://www.hiyer.in/"
-                                                                            target="_blank"
-                                                                            data-saferedirecturl="https://www.hiyer.in/" style="text-decoration: none;"> <p>Hiyer</p> </a>
-                                                                    </td>
-                                                                    <td align="right" style="padding-bottom: 24px">
-                                                                        <table style="
-                                          list-style: none;
-                                          margin: 0;
-                                          overflow: hidden;
-                                          padding: 0;
-                                        ">
-                                                                            <tbody>
-                                                                                <tr> 
-                                                                                    <td style="padding-right: 16px">
-                                                                                        <a href="https://www.facebook.com/6300207721@Aplus6300"
-                                                                                            target="_blank"
-                                                                                            data-saferedirecturl="https://www.facebook.com/6300207721@Aplus6300"><img
-                                                                                                alt="Hiyer on Facebook"
-                                                                                                src="https://ci3.googleusercontent.com/meips/ADKq_NYoQfU8D-y84Pfi-wn5hQchI2BFlacfLRNmvd3Wk2YjV2CqlKOxps5cm5j1_j-sHImKKggl1jK0C3OonhJ8IbTgUqRLvnE_deI4OTAUJQKlVTQvfywjY5HNS8g=s0-d-e1-ft#https://cdn.getsimpl.com/images/email/transactions/simpl-facebook.png"
-                                                                                                width="17"
-                                                                                                class="CToWUd"
-                                                                                                data-bit="iit" /></a>
-                                                                                    </td>
-                                                                                    <td style="padding-right: 16px">
-                                                                                        <a href="https://www.instagram.com/hiyer.in/"
-                                                                                            target="_blank"
-                                                                                            data-saferedirecturl="https://www.instagram.com/hiyer.in/"><img
-                                                                                                alt="Hiyer on Instagram"
-                                                                                                src="https://ci3.googleusercontent.com/meips/ADKq_NZX0lknWQLRiBxtRLXhagocpcWiQcO5I2DUJD1qZ44GM9G20BdF8adSRxlVyzEfF6M6W6ZIlS5TFRlYd2tBYSTSjfZrcSCzZ_ys0m6rjesIGdxLANFgjSXaPZQJ=s0-d-e1-ft#https://cdn.getsimpl.com/images/email/transactions/simpl-instagram.png"
-                                                                                                width="17"
-                                                                                                class="CToWUd"
-                                                                                                data-bit="iit" /></a>
-                                                                                    </td>
-                                                                                   
-                                                                                </tr>
-                                                                            </tbody>
-                                                                        </table>
-                                                                    </td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                        <hr style="background: #888; border: 0; height: 1px" />
-                                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                                                            <tbody>
-                                                                <tr>
-                                                                    <td align="left" valign="top" style="
-                                        padding-bottom: 24px;
-                                        padding-top: 24px;
-                                      ">
-                                                                        <table style="
-                                          list-style: none;
-                                          margin: 0;
-                                          padding: 0;
-                                          font-family: Source Sans Pro,
-                                            Helvetica, Arial, sans-serif;
-                                          font-size: 16px;
-                                          font-weight: 600;
-                                          line-height: 20px;
-                                        ">
-                                                                            <tbody>
-                                                                                <tr>
-                                                                                    <td class="m_-5049272237331082851siteLink"
-                                                                                        style="
-                                                font-size: 16px;
-                                                font-weight: normal;
-                                                line-height: 18px;
-                                                padding-right: 16px;
-                                              ">
-                                                                                        <a href="https://www.hiyer.in/"
-                                                                                            style="
-                                                  color: #888 !important;
-                                                  display: block;
-                                                  text-decoration: none;
-                                                  text-transform: uppercase;
-                                                " target="_blank" data-saferedirecturl="https://www.hiyer.in/">View
-                                                                                            Dashboard</a>
-                                                                                    </td>
-                                                                                    <td class="m_-5049272237331082851siteLink"
-                                                                                        style="
-                                                font-size: 16px;
-                                                font-weight: normal;
-                                                line-height: 18px;
-                                                padding-right: 16px;
-                                              ">
-                                                                                        <a href="https://www.hiyer.in/refund-&-returns"
-                                                                                            style="
-                                                  color: #888 !important;
-                                                  display: block;
-                                                  text-decoration: none;
-                                                  text-transform: uppercase;
-                                                " target="_blank" data-saferedirecturl="https://www.hiyer.in/refund-&-returns">
-                                                Refunds & Returns</a>
-                                                                                    </td>
-                                                                                    <td class="m_-5049272237331082851siteLink"
-                                                                                        style="
-                                                font-size: 16px;
-                                                font-weight: normal;
-                                                line-height: 18px;
-                                                padding-right: 16px;
-                                              ">
-                                                                                        <a href="https://www.hiyer.in/terms-and-conditions"
-                                                                                            style="
-                                                  color: #888 !important;
-                                                  display: block;
-                                                  text-decoration: none;
-                                                  text-transform: uppercase;
-                                                " target="_blank" data-saferedirecturl="https://www.hiyer.in/terms-and-conditions">Terms
-                                                                                            & Conditions</a>
-                                                                                    </td>
-                                                                                    <td class="m_-5049272237331082851siteLink"
-                                                                                        style="
-                                                font-size: 16px;
-                                                font-weight: normal;
-                                                line-height: 18px;
-                                              ">
-                                                                                        <a href="https://www.hiyer.in/privacy-policy"
-                                                                                            style="
-                                                  color: #888 !important;
-                                                  display: block;
-                                                  text-decoration: none;
-                                                  text-transform: uppercase;
-                                                " target="_blank" data-saferedirecturl="https://www.hiyer.in/privacy-policy">Privacy
-                                                                                            Policy</a>
-                                                                                    </td>
-                                                                                </tr>
-                                                                            </tbody>
-                                                                        </table>
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td align="left" valign="top"
-                                                                        style="padding-bottom: 24px">
-                                                                        <table style="
-                                          list-style: none;
-                                          margin: 0;
-                                          overflow: hidden;
-                                        ">
-                                                                            <tbody>
-                                                                                <tr>
-                                                                                    <td valign="top" style="
-                                                height: 24px;
-                                                padding: 0;
-                                                padding-right: 12px;
-                                              ">
-                                                                                        <h3 style="
-                                                  margin: 0;
-                                                  padding: 0;
-                                                  color: #888;
-                                                  font-family: Source Sans Pro,
-                                                    Helvetica, Arial, sans-serif;
-                                                  font-size: 14px;
-                                                  font-weight: normal;
-                                                  line-height: 18px;
-                                                ">
-                                                                                            Get the app:
-                                                                                        </h3>
-                                                                                    </td>
-                                                                                   
-                                                                                </tr>
-                                                                            </tbody>
-                                                                        </table>
-                                                                    </td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                        <p style="
-      margin: 0;
-      padding: 8px 0 16px;
-      font-family: Source Sans Pro, Helvetica, Arial, sans-serif;
-      font-size: 12px;
-      font-weight: normal;
-      line-height: 16px;
-      color: #888;
-      width: 80%;
-      ">
-      © Hiyer 2024. 1-1211/12, Main Road, Revenue Ward No. 1, Near Universal Shop, Kurnool Road, Chimakurthy, Andhra Pradesh-523226
-      </p>
-      
-      <p style="
-      margin: 0;
-      padding: 8px 0 16px;
-      font-family: Source Sans Pro, Helvetica, Arial, sans-serif;
-      font-size: 12px;
-      font-weight: normal;
-      line-height: 16px;
-      color: #888;
-      width: 80%;
-      ">
-      Developed and maintained by DesignerDudes Pvt. Ltd.
-      </p>
-      
-      <p style="
-      margin: 0;
-      padding: 8px 0 16px;
-      font-family: Source Sans Pro, Helvetica, Arial, sans-serif;
-      font-size: 12px;
-      font-weight: normal;
-      line-height: 16px;
-      color: #888;
-      ">
-      For any queries, reach out to us at
-      <a href="https://www.hiyer.in/contactUs" style="color: #444;" title="Link: hiyer.in/contactUs" target="_blank">
-      hiyer.in/contactUs
-      </a>
-      </p>
-      
-      
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div align="center" bgcolor="#2E3190" valign="top" style="
-                
-            background-color: #2E3190;width:100%;padding: 20px 0;
-          "></div>
-                </td>
-            </tr>
-        </tbody>
-      </table>
-    
-        
-    </body>
-    </html>
-    `,
+ 
+    merge_info: mergeInfo
+ 
   };
 
   try {
@@ -381,30 +140,223 @@ export const sendEmail = async (toAddress, toName, subject, body) => {
     console.error("Error sending email:", error);
   }
 };
-
 /**
- * Sends an OTP email using ZeptoMail
- * @param {string} toAddress - The recipient's email address
- * @param {string} toName - The recipient's name
- * @param {string} otp - The OTP to be sent
+ * Sends an OTP email using ZeptoMail.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} userName - The recipient's name.
+ * @param {string} otp - The OTP to be sent.
  */
-export const sendOtpEmail = async (toAddress, toName, otp) => {
-  const subject = "One-Time-Password for your Email Verification";
-  const body = `Thank you for choosing Hiyer. Use the following OTP to complete your Sign Up procedures. OTP is valid for 5 minutes: ${otp}.`;
+export const sendOtpEmail = async (toAddress, userName, otp) => {
+  const name = userName || extractNameFromEmail(toAddress);
+  const subject = "Your One Time Password for Login";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_OTP;  
+  const mergeInfo = { OTP: otp, userName: name };
+  await sendEmailWithTemplate(toAddress, name, subject, templateKey, mergeInfo);
+};
 
-  await sendEmail(toAddress, toName, subject, body);
+/**
+ * Sends a verification success email using ZeptoMail.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} userName - The recipient's name.
+ */
+ 
+export const sendVerificationSuccessEmail = async (toAddress, userName) => {
+  const name = userName || extractNameFromEmail(toAddress);
+  const subject = "Your Account is Verified!";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_VERIFICATION_SUCCESS; 
+  const mergeInfo = { userName: name };
+  await sendEmailWithTemplate(toAddress, userName, subject, templateKey, mergeInfo);
+};
+
+/**
+ * Sends a welcome email to an organization using ZeptoMail.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} userName - The recipient's name.
+ */
+export const sendWelcomeOrgEmail = async (toAddress, userName) => {
+  const name = userName || extractNameFromEmail(toAddress);
+  const subject = "Welcome to Hiyer!";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_WELCOME_ORG; 
+  const mergeInfo = { userName: name };
+  await sendEmailWithTemplate(toAddress, userName, subject, templateKey, mergeInfo);
+};
+
+/**
+ * Sends a welcome email to a user using ZeptoMail.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} userName - The recipient's name.
+ */
+export const sendWelcomeUserEmail = async (toAddress, userName) => {
+  const name = userName || extractNameFromEmail(toAddress);
+  const subject = "Welcome to Hiyer!";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_WELCOME_USER; 
+  const mergeInfo = { userName: name };
+  await sendEmailWithTemplate(toAddress, userName, subject, templateKey, mergeInfo);
+};
+
+/**
+ * Sends a new job alert email using ZeptoMail.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} userName - The recipient's name.
+ */
+export const sendNewJobAlertEmail = async (toAddress, userName, job,orgId) => {
+  const name = userName || extractNameFromEmail(toAddress);
+  const subject = "New Job Alert";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_NEW_JOB_ALERT;
+  const mergeInfo = {
+    orgId,
+    jobId:job._id,
+    userName: name,
+    jobTitle: job.title,
+    jobDescription: job.description || 'No description provided',
+    jobType: job.jobType || 'No job type provided',
+    experienceLevel: job.experienceLevel || 'No experience level provided'
+  };
+
+  await sendEmailWithTemplate(toAddress, name, subject, templateKey, mergeInfo);
+};
+
+/**
+ * Sends a custom email using ZeptoMail with job and user details.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} organizationName - The organization's name.
+ * @param {object} user - The user object containing name, phone, and profile picture.
+ * @param {object} job - The job object containing title, description, job type, and experience level.
+ */
+export const sendNewJobAlertByUserEmail = async (toAddress, organizationName, user, job) => {
+  const subject = "New Job Alert by User";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_NEW_JOB_ALERT_BY_USER;  
+  const mergeInfo = {
+    organizationName:organizationName,
+    userId:user._id,
+    userName: `${user.name.first} ${user.name.last}`,
+    jobTitle: job.title,
+    jobDescription: job.description || 'N/A',
+    jobType: job.jobType || 'N/A',
+    experienceLevel: job.experienceLevel || 'N/A',
+    userFullName: `${user.name.first} ${user.name.last}`,
+    userPhone: user.phone.countryCode ? `${user.phone.countryCode} ${user.phone.number}` : 'N/A',
+    userProfilePicture: user.profilePicture ? user.profilePicture.url : 'N/A'
+  };
+
+  await sendEmailWithTemplate(toAddress, organizationName, subject, templateKey, mergeInfo);
 };
 
 
 /**
-* Sends a verification success email using ZeptoMail
-* @param {string} toAddress - The recipient's email address
-* @param {string} toName - The recipient's name
-*/
-export const sendVerificationSuccessEmail = async (toAddress, toName) => {
-  const subject = "Email Verification Successful";
-  const body = `Congratulations ${toName}! Your email verification has been successfully completed.`;
+ * Sends a notification email about a new job application.
+ * @param {object} jobAds - The job ad details, including title and postedBy information.
+ * @param {object} user - The user object containing name, email, and profile picture.
+ */
+export const sendNewApplicationEmail = async (jobAds, user) => {
+  const { title, postedBy } = jobAds;
+  const { email, name, profilePicture } = user;
 
-  await sendEmail(toAddress, toName, subject, body);
+  const organizationName = postedBy.name ;
+  const applicantName = `${user.name.first} ${user.name.last}` || extractNameFromEmail(email.id);
+  const toAddress = postedBy.contact.email ;
+
+  const subject = `New Application for ${jobAds.title}`;
+  const templateKey = ZEPTO_MAIL_TEMPLATE_NEW_APPLICATION; 
+  const mergeInfo = {
+    userId: user._id,
+    userPic: user.profilePicture?.imageUrl || 'N/A',
+    userName: applicantName,
+    jobTitle: jobAds.title,
+    jobId: jobAds._id,
+    organizationName: organizationName,
+    userEmail: email.id
+  }; 
+
+  await sendEmailWithTemplate( jobAds.postedBy.contact.email,organizationName, subject, templateKey, mergeInfo);
 };
 
+/**
+ * Sends a new job recommendation email from a user using ZeptoMail.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} userName - The recipient's name.
+ */
+export const sendNewRecommendationFromUserEmail = async (toUser,job ,fromUser) => {
+  const name = `${toUser.name.first} ${toUser.name.last}` || extractNameFromEmail(toUser.email.id);
+  const name2 = `${fromUser.name.first} ${fromUser.name.last}` || extractNameFromEmail(fromUser.email.id);
+
+
+  const subject = "New Job Recommendation from User";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_NEW_RECOMMENDATION_FROM_USER; 
+  const mergeInfo = { 
+    userName: name,
+    jobTitle: job.title,
+    jobId: job._id,
+    userName2: name2,
+    userId: fromUser._id,
+    userprofilepic: fromUser.profilePicture.imageUrl,
+
+
+  };
+  await sendEmailWithTemplate(toUser.email.id, name, subject, templateKey, mergeInfo);
+ 
+
+};
+
+/**
+ * Sends a new job recommendation email from an organization using ZeptoMail.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} userName - The recipient's name.
+ */
+export const sendNewRecommendationFromOrgEmail = async (toUser, job, fromUser) => {
+  const name = `${toUser.name.first} ${toUser.name.last}` || extractNameFromEmail(toUser.email.id);
+  const subject = "New Job Recommendation from Company";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_NEW_RECOMMENDATION_FROM_ORG; 
+  const mergeInfo = { 
+    userName: name,
+    jobTitle: job.title,
+    jobId: job._id,
+    companyName: fromUser.name,
+    companyId: fromUser._id,
+    companyLogo: fromUser.logo,
+
+
+  };
+
+  await sendEmailWithTemplate(toUser.email.id, name, subject, templateKey, mergeInfo);
+};
+
+export const sendApplicantStatusUpdateEmail = async (user, jobAds, applicantStatus) => {
+  const applicantName = `${user.name.first} ${user.name.last}` || extractNameFromEmail(user.email.id);
+  const statusNotes = `Your application status has been updated to ${applicantStatus}.`;
+
+  const subject = `Application Status Update for ${jobAds.title}`;
+  const templateKey = ZOHO_MAIL_TEMPLATE_STATUS_UPDATE;
+  const mergeInfo = {
+    applicantName,
+    applicantId:user._id,
+    jobTitle:jobAds.title,
+    jobId:jobAds._id,
+    applicantStatus,
+    statusNotes,
+    companyName: jobAds.postedBy.name,
+    companyId: jobAds.postedBy._id
+
+  };
+
+  await sendEmailWithTemplate(user.email.id, applicantName, subject, templateKey, mergeInfo);
+};
+
+
+/**
+ * Sends an invoice email using ZeptoMail.
+ * @param {string} toAddress - The recipient's email address.
+ * @param {string} userName - The recipient's name.
+ */
+export const sendInvoiceEmail = async (toAddress, userName) => {
+  const name = userName || extractNameFromEmail(toAddress);
+  const subject = "Order Confirmation";
+  const templateKey = ZEPTO_MAIL_TEMPLATE_INVOICE; 
+  const mergeInfo = { userName: name };
+  await sendEmailWithTemplate(toAddress, userName, subject, templateKey, mergeInfo);
+};
+ 
+
+export const sendEmail = async (toAddress, userName) => { 
+};
+ 

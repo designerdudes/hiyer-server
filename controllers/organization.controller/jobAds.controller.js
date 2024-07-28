@@ -8,7 +8,7 @@ import { uploadImageController, uploadMedia } from "../mediaControl.controller/m
 import User from "../../models/user.model.js";
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import JobAlert from "../../models/organization.model/jobAlert.model.js";
-import { sendEmail } from "../../config/zohoMail.js";
+import {  sendApplicantStatusUpdateEmail, sendNewJobAlertByUserEmail, sendNewJobAlertEmail } from "../../config/zohoMail.js";
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 
 export const notifyUsersOfNewJob = async (jobId, orgId) => {
@@ -43,9 +43,10 @@ export const notifyUsersOfNewJob = async (jobId, orgId) => {
           .filter(namePart => namePart) // Filter out any undefined or empty parts
           .join(' '); // Join the parts with a space
 
-        const subject = "Job Alert Match";
-        const body = `A new job matching your alert has been created. Details: Title - ${job.title}, Description - ${job.description || 'No description provided'}, Job Type - ${job.jobType || 'No job type provided'}, Experience Level - ${job.experienceLevel || 'No experience level provided'}. Apply now!`;
-        await sendEmail(user.email.id, fullName, subject, body);
+        // const subject = "Job Alert Match";
+        // const body = `A new job matching your alert has been created. Details: Title - ${job.title}, Description - ${job.description || 'No description provided'}, Job Type - ${job.jobType || 'No job type provided'}, Experience Level - ${job.experienceLevel || 'No experience level provided'}. Apply now!`;
+        // await sendEmail(user.email.id, fullName, subject, body);
+        await sendNewJobAlertEmail(user.email.id,fullName,job,orgId)
       }
     }
   } catch (error) {
@@ -447,7 +448,7 @@ export const updateApplicantStatus = async (req, res) => {
     }
 
     // Find the job application by ID
-    const jobAds = await JobAds.findById(jobId);
+    const jobAds = await JobAds.findById(jobId).populate('postedBy');
     if (!jobAds) {
       return res.status(404).json({ error: 'Job application not found' });
     }
@@ -459,17 +460,19 @@ export const updateApplicantStatus = async (req, res) => {
     }
 
     // Update the applicant status
-    applicant.applicantStatus = applicantStatus;
-    applicant.applicationHistory.push({
-      status: applicantStatus,
-      updatedAt: new Date(),
-      notes: `Status updated to ${applicantStatus}`,
-    });
+    // applicant.applicantStatus = applicantStatus;
+    // applicant.applicationHistory.push({
+    //   status: applicantStatus,
+    //   updatedAt: new Date(),
+    //   notes: `Status updated to ${applicantStatus}`,
+    // });
 
     // Save the changes to the job application
-    await jobAds.save();
+    // await jobAds.save();
+    const user = await User.findById(userId);
 
-    res.status(200).json({ message: 'Applicant status updated successfully', applicant });
+    await sendApplicantStatusUpdateEmail(user, jobAds, applicantStatus);
+    res.status(200).json({ message: 'Applicant status updated successfully', applicant,user, jobAds, applicantStatus });
   } catch (error) {
     console.error('Error updating applicant status:', error);
     res.status(500).json({ error: 'An error occurred while updating the applicant status' });
@@ -1199,17 +1202,30 @@ export const createJobAlert = async (req, res) => {
       { $push: { jobAlerts: newJobAlert._id } },
       { new: true }
     );
-
+    const job = {
+      title,
+      description,
+      jobType,
+      experienceLevel
+    };
     // Find the organization and send an email notification
     const organization = await OrganizationalUser.findById(organizationId)
     if (organization && organization.contact.email) {
       // Populate user details
       const user = await User.findById(userId).populate('profilePicture');
+      const orgUser = await User.findById(organizationId).populate('profilePicture');
 
-      const subject = "New Job Alert Created";
-      const body = `A new job alert has been created by ${user.name.first} ${user.name.last}. Details:\nTitle: ${title}\nDescription: ${description || 'N/A'}\nJob Type: ${jobType || 'N/A'}\nExperience Level: ${experienceLevel || 'N/A'}\n\nUser Details:\nName: ${user.name.first} ${user.name.last}\nPhone: ${user.phone.countryCode ? `${user.phone.countryCode} ${user.phone.number}` : 'N/A'}\nProfile Picture: ${user.profilePicture ? user.profilePicture.url : 'N/A'}`;
 
-      await sendEmail(organization.contact.email, organization.name, subject, body);
+      // const subject = "New Job Alert Created";
+      // const body = `A new job alert has been created by ${user.name.first} ${user.name.last}. Details:\nTitle: ${title}\nDescription: ${description || 'N/A'}\nJob Type: ${jobType || 'N/A'}\nExperience Level: ${experienceLevel || 'N/A'}\n\nUser Details:\nName: ${user.name.first} ${user.name.last}\nPhone: ${user.phone.countryCode ? `${user.phone.countryCode} ${user.phone.number}` : 'N/A'}\nProfile Picture: ${user.profilePicture ? user.profilePicture.url : 'N/A'}`;
+
+      // await sendEmail(organization.contact.email, organization.name, subject, body);
+
+      const fullName = [orgUser.name.first, orgUser.name.middle, orgUser.name.last]
+      .filter(namePart => namePart) // Filter out any undefined or empty parts
+      .join(' '); // Join the parts with a space
+
+      await sendNewJobAlertByUserEmail(organization.contact.email, organization.name,user,job)
     }
 
     res.status(201).json(newJobAlert);
