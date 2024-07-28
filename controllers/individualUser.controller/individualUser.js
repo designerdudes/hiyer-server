@@ -7,6 +7,7 @@ import JobAds from "../../models/organization.model/jobAds.model.js";
 import { deleteMedia, uploadMedia } from "../mediaControl.controller/mediaUpload.js";
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
 import Recommendation from "../../models/individualUser.model/recommendation,model.js";
+import { sendNewApplicationEmail, sendNewRecommendationFromUserEmail } from "../../config/zohoMail.js";
 
 // Helper function to extract user ID from token
 const getUserIdFromToken = (req) => {
@@ -1221,7 +1222,9 @@ export const applyJobAds = async (req, res) => {
       coverLetter,
     };
 
-    const jobAds = await JobAds.findById(jobId);
+    const jobAds = await JobAds.findById(jobId).populate('postedBy');
+    const user = await User.findById(userId).populate('profilePicture');
+
     if (!jobAds) {
       return res.status(404).json({ error: 'Job application not found' });
     }
@@ -1238,7 +1241,8 @@ export const applyJobAds = async (req, res) => {
     await IndividualUser.findByIdAndUpdate(userId, {
       $push: { "jobposting.applied": jobAds._id },
     });
-
+    sendNewApplicationEmail(jobAds,user)
+ 
     res.status(201).json(jobAds);
   } catch (error) {
     console.error('Error adding applicant:', error);
@@ -2306,7 +2310,7 @@ export const addRecommendation = async (req, res) => {
     //  Check if the recommending user has an active subscription
      const subscription = recommendingUser.subscription;
      const today = new Date();
-     if (!subscription || subscription.status !== 'active' || new Date(subscription.endDate) < today) {
+     if (!subscription  ) {
        return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
      }
 
@@ -2337,9 +2341,14 @@ export const addRecommendation = async (req, res) => {
 
     // Update recommendedToUser's receivedRecommendations array
     recommendedToUser.receivedRecommendations.push(recommendation._id);
-    await recommendedToUser.save();
 
-    res.status(200).json({ success: true, message: 'Job recommended successfully' });
+    const fromUser = await User.findById(fromUserId).populate('profilePicture');
+    
+    const toUser = await User.findById(toUserId);
+
+    await recommendedToUser.save();
+ await sendNewRecommendationFromUserEmail(toUser,job ,fromUser)
+    res.status(200).json({ success: true, message: 'Job recommended successfully' ,toUser,job ,fromUser});
   } catch (error) {
     console.error('Error recommending job:', error);
     res.status(500).json({ success: false, message: 'Error recommending job' });
