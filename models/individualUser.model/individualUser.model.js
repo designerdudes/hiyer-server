@@ -214,7 +214,11 @@ const individualUserSchema = new mongoose.Schema(
     //   type: Boolean, 
     //   default: false,
     // },
-    subscription: subscriptionSchema,
+    subscription: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SubscriptionTransaction', 
+      default: null  
+    },
     jobposting: {
       applied: {
         type: [mongoose.Schema.Types.ObjectId],
