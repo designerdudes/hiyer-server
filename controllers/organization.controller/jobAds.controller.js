@@ -8,7 +8,7 @@ import { uploadImageController, uploadMedia } from "../mediaControl.controller/m
 import User from "../../models/user.model.js";
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import JobAlert from "../../models/organization.model/jobAlert.model.js";
-import {  sendNewJobAlertByUserEmail, sendNewJobAlertEmail } from "../../config/zohoMail.js";
+import {  sendApplicantStatusUpdateEmail, sendNewJobAlertByUserEmail, sendNewJobAlertEmail } from "../../config/zohoMail.js";
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 
 export const notifyUsersOfNewJob = async (jobId, orgId) => {
@@ -448,7 +448,7 @@ export const updateApplicantStatus = async (req, res) => {
     }
 
     // Find the job application by ID
-    const jobAds = await JobAds.findById(jobId);
+    const jobAds = await JobAds.findById(jobId).populate('postedBy');
     if (!jobAds) {
       return res.status(404).json({ error: 'Job application not found' });
     }
@@ -460,17 +460,19 @@ export const updateApplicantStatus = async (req, res) => {
     }
 
     // Update the applicant status
-    applicant.applicantStatus = applicantStatus;
-    applicant.applicationHistory.push({
-      status: applicantStatus,
-      updatedAt: new Date(),
-      notes: `Status updated to ${applicantStatus}`,
-    });
+    // applicant.applicantStatus = applicantStatus;
+    // applicant.applicationHistory.push({
+    //   status: applicantStatus,
+    //   updatedAt: new Date(),
+    //   notes: `Status updated to ${applicantStatus}`,
+    // });
 
     // Save the changes to the job application
-    await jobAds.save();
+    // await jobAds.save();
+    const user = await User.findById(userId);
 
-    res.status(200).json({ message: 'Applicant status updated successfully', applicant });
+    await sendApplicantStatusUpdateEmail(user, jobAds, applicantStatus);
+    res.status(200).json({ message: 'Applicant status updated successfully', applicant,user, jobAds, applicantStatus });
   } catch (error) {
     console.error('Error updating applicant status:', error);
     res.status(500).json({ error: 'An error occurred while updating the applicant status' });
