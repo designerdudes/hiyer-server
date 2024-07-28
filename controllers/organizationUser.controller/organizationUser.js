@@ -9,6 +9,7 @@ import Video from "../../models/video.model.js";
 import Image from "../../models/image.model.js";
 import JobAds from "../../models/organization.model/jobAds.model.js";
 import Recommendation from "../../models/individualUser.model/recommendation,model.js";
+import { sendNewRecommendationFromOrgEmail } from "../../config/zohoMail.js";
 
 
 
@@ -1026,23 +1027,18 @@ export const addOrganizationRecommendation = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Check if the job exists
+    // Fetch job and ensure it exists
     const job = await JobAds.findById(jobId);
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
 
-    // Check if the recommending user is an organizational user
-    let fromUser;
-
-    // Check if the recommending user is an OrganizationalUser
-    fromUser = await OrganizationalUser.findById(fromUserId);
-
-    // If not found, check if the recommending user is an OrganizationMember
+    // Fetch recommending user
+    let fromUser = await OrganizationalUser.findById(fromUserId);
     if (!fromUser) {
       const organizationMember = await OrganizationMember.findById(fromUserId);
       if (organizationMember) {
-        fromUser = organizationMember.organization; // Assigning the organization ID to fromUser
+        fromUser = await OrganizationalUser.findById(organizationMember.organization);
       }
     }
 
@@ -1051,13 +1047,11 @@ export const addOrganizationRecommendation = async (req, res) => {
     }
 
     // Create the recommendation
-    const recommendation = new Recommendation({
+    const recommendation = await Recommendation.create({
       job: jobId,
       recommendedTo: toUserId,
       recommendedBy: fromUserId,
     });
-
-    await recommendation.save();
 
     // Update recommending user's recommendedJobs array
     fromUser.recommendedJobs.push(recommendation._id);
@@ -1071,12 +1065,18 @@ export const addOrganizationRecommendation = async (req, res) => {
     toUser.receivedRecommendations.push(recommendation._id);
     await toUser.save();
 
+    // Fetch the user's details for email notification
+    const user = await User.findById(toUserId);
+    await sendNewRecommendationFromOrgEmail(user, job, fromUser);
+
     res.status(200).json({ success: true, message: 'Job recommended successfully' });
   } catch (error) {
     console.error('Error recommending job:', error);
     res.status(500).json({ success: false, message: 'Error recommending job' });
   }
 };
+
+
 // Controller to update recommendation by an organizational user
 export const updateOrganizationRecommendation = async (req, res) => {
   try {
