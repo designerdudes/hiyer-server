@@ -85,7 +85,8 @@ const {
   ZEPTO_MAIL_TEMPLATE_NEW_RECOMMENDATION_FROM_USER,
   ZEPTO_MAIL_TEMPLATE_NEW_RECOMMENDATION_FROM_ORG,
   ZEPTO_MAIL_TEMPLATE_INVOICE,
-  ZOHO_MAIL_TEMPLATE_STATUS_UPDATE
+  ZOHO_MAIL_TEMPLATE_STATUS_UPDATE,
+  ZOHO_MAIL_TEMPLATE_NEW_JOB_AD_NOTIFICATION
 } = process.env;
 
 // Initialize the SendMailClient with the URL and token
@@ -359,4 +360,24 @@ export const sendInvoiceEmail = async (toAddress, userName) => {
 
 export const sendEmail = async (toAddress, userName) => { 
 };
+
+export const sendEmailAdNotification = async (email, jobDetails) => {
+  const subject = "New Job Opportunity Available!";
+  const templateKey =   ZOHO_MAIL_TEMPLATE_NEW_JOB_AD_NOTIFICATION; 
+  
+  const mergeInfo = {
+    jobTitle: jobDetails.jobTitle,
+    jobId: jobDetails.jobId,
+    orgId: jobDetails.orgId,
+    orgName: jobDetails.orgName,
+    orgLogo: jobDetails.orgLogo,
+    firstName: jobDetails.firstName || '',
+    lastName: jobDetails.lastName || '',
+    profilePictureUrl: jobDetails.profilePictureUrl || '',
+  };
+
+  await sendEmailWithTemplate(email, subject, templateKey, mergeInfo);
+};
+
+ 
  

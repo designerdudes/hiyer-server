@@ -1306,8 +1306,8 @@ export const applyJobAds = async (req, res) => {
     await IndividualUser.findByIdAndUpdate(userId, {
       $push: { "jobposting.applied": jobAds._id },
     });
-    sendNewApplicationEmail(jobAds,user)
- 
+    sendNewApplicationEmail(jobAds, user)
+
     res.status(201).json(jobAds);
   } catch (error) {
     console.error('Error adding applicant:', error);
@@ -2380,11 +2380,11 @@ export const addRecommendation = async (req, res) => {
 
     //  Check if the recommending user has an active subscription
  
-     const subscription = recommendingUser.subscription;
-     const today = new Date();
-     if (!subscription  ) {
-       return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
-     }
+    const subscription = recommendingUser.subscription;
+    const today = new Date();
+    if (!subscription) {
+      return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
+    }
  
 
 
@@ -2416,12 +2416,12 @@ export const addRecommendation = async (req, res) => {
     recommendedToUser.receivedRecommendations.push(recommendation._id);
 
     const fromUser = await User.findById(fromUserId).populate('profilePicture');
-    
+
     const toUser = await User.findById(toUserId);
 
     await recommendedToUser.save();
- await sendNewRecommendationFromUserEmail(toUser,job ,fromUser)
-    res.status(200).json({ success: true, message: 'Job recommended successfully' ,toUser,job ,fromUser});
+    await sendNewRecommendationFromUserEmail(toUser, job, fromUser)
+    res.status(200).json({ success: true, message: 'Job recommended successfully', toUser, job, fromUser });
   } catch (error) {
     console.error('Error recommending job:', error);
     res.status(500).json({ success: false, message: 'Error recommending job' });

@@ -429,10 +429,7 @@ export const login = async (req, res) => {
     if (email) {
       query = { "email.id": email.toLowerCase().trim() };
     } else {
-      query = {
-        "phone.countryCode": countryCode,
-        "phone.number": mobileNo.trim(),
-      };
+      query = { "phone.number": mobileNo };  
     }
 
     const user = await User.findOne(query);
@@ -451,21 +448,31 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate OTP and send for verification
+    // Send OTP for verification
     if (email) {
       await sendEmailOTPforverification(req, res);
     } else {
-      // await sendMobileOTPforVerification(req, res);
+      const url = `https://2factor.in/API/V1/7d3208f4-0209-11ef-8cbb-0200cd936042/SMS/${mobileNo}/AUTOGEN/OTP_Template2`;
+
+      const response = await axios.get(url, { maxBodyLength: Infinity });
+
+      if (response.data.Status !== 'Success') {
+        return res.status(400).json({
+          msg: 'Failed to send OTP',
+          ok: false,
+          data: response.data,
+        });
+      }
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       msg: "OTP sent successfully",
       ok: true,
     });
 
   } catch (error) {
     console.error('Error in login:', error);
-    if (!res.headersSent) {  // Check if headers are already sent
+    if (!res.headersSent) {
       res.status(500).json({
         msg: "Internal Server Error",
         ok: false,
