@@ -140,14 +140,46 @@ export const addJobAds = async (req, res) => {
     const newJobAds = new JobAds(nonEmptyFields);
     await newJobAds.save();
 
-    // Update the organizational user's posted jobAds
-    await OrganizationalUser.findByIdAndUpdate(
-      userId,
-      { $push: { postedJobAds: newJobAds._id } },
-      { new: true }
-    );
-  // Notify users of the new job
-  await notifyUsersOfNewJob(newJobAds._id,userId);
+   // Update the organizational user's posted jobAds
+   const organization = await OrganizationalUser.findByIdAndUpdate(
+    userId,
+    { $push: { postedJobAds: newJobAds._id } },
+    { new: true }
+  );
+
+  // Get candidate followers' information
+const candidateFollowerIds = organization.candidateFollowers;
+const candidateFollowers = await User.find(
+  { _id: { $in: candidateFollowerIds } },
+  'email.id name.first name.last profilePicture'
+).populate('profilePicture', 'imageUrl');
+
+const followerEmails = candidateFollowers.map(follower => ({
+  email: follower.email.id,
+  firstName: follower.name.first || '',
+  lastName: follower.name.last || '',
+  profilePictureUrl: follower.profilePicture ? follower.profilePicture.imageUrl : null
+}));
+
+// Notify users of the new job
+await notifyUsersOfNewJob(newJobAds._id, userId);
+
+// Send email notification to candidate followers
+for (const follower of followerEmails) {
+  const { email, firstName, lastName, profilePictureUrl } = follower;
+  await sendEmailNotification(email, {
+    jobTitle: newJobAds.title, 
+    jobId: newJobAds._id,
+    orgId:organization._id,
+    orgName:organization.name,
+    orgLogo:organization.companyLogo,
+    firstName,
+    lastName,
+    profilePictureUrl
+  });
+}
+
+
     res.status(201).json(newJobAds);
 
   } catch (error) {
