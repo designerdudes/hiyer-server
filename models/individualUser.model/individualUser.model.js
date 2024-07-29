@@ -142,31 +142,31 @@ const projectSchema = new mongoose.Schema({
 });
 
 // Schema for Subscription
-const subscriptionSchema = new mongoose.Schema({
-  transactionId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Transaction',
-    required: true,
-  },
-  plan: {
-    type: String,
-    enum: ['basic', 'premium', 'enterprise'],
-    required: true,
-  },
-  startDate: {
-    type: Date,
-    required: true,
-  },
-  endDate: {
-    type: Date,
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'cancelled'],
-    required: true,
-  },
-});
+// const subscriptionSchema = new mongoose.Schema({
+//   transactionId: {
+//     type: mongoose.Schema.Types.ObjectId,
+//     ref: 'Transaction',
+//     required: true,
+//   },
+//   plan: {
+//     type: String,
+//     enum: ['basic', 'premium', 'enterprise'],
+//     required: true,
+//   },
+//   startDate: {
+//     type: Date,
+//     required: true,
+//   },
+//   endDate: {
+//     type: Date,
+//     required: true,
+//   },
+//   status: {
+//     type: String,
+//     enum: ['active', 'inactive', 'cancelled'],
+//     required: true,
+//   },
+// });
 
 const videoResumePackSchema = new mongoose.Schema({
   transactionIds: [{
