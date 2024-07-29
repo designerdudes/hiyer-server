@@ -372,6 +372,9 @@ export const verifyotp = async (req, res) => {
       res.cookie("accessToken", result.token, { httpOnly: true });
     }
 
+    const query = email ? { "email.id": email } : { "phone.number": mobileNo };
+    await User.findOneAndUpdate(query, { lastLoggedIn: new Date() });
+
     return res.status(result.statusCode).send({
       msg: result.msg,
       ok: true,

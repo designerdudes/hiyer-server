@@ -1511,13 +1511,14 @@ export const getUserDetailsFromToken = async (req, res) => {
     const userId = getUserIdFromToken(req);
 
     // Find the user by ID and select specific fields
-    const user = await User.findById(userId).select('email phone name profilePicture profile').populate('profilePicture');
+    const user = await User.findById(userId).select('email phone name profilePicture profile lastLoggedIn').populate('profilePicture');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Find the individual user profile using profileRef
     const individualUser = await IndividualUser.findById(user.profile.profileRef)
+
       .populate({
         path: 'jobposting.applied',
         select: '_id ',
@@ -1566,7 +1567,8 @@ export const getUserDetailsFromToken = async (req, res) => {
             }
           }, // Populate user who recommended
         ]
-      });
+      })
+
 
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });

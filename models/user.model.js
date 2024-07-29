@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    email:{
-      id:{
+    email: {
+      id: {
         type: String,
         required: true,
         unique: true,
@@ -14,11 +14,12 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
-    },profilePicture:{
+    },
+    profilePicture: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Image",
     },
-    phone:{
+    phone: {
       countryCode: {
         type: String,
         minlength: 2,
@@ -59,6 +60,10 @@ const userSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         refPath: 'profile.profileType',
       },
+    },
+    lastLoggedIn: {
+      type: Date,
+
     },
   },
   {

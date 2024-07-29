@@ -145,8 +145,8 @@ export const addJobAds = async (req, res) => {
       { $push: { postedJobAds: newJobAds._id } },
       { new: true }
     );
-  // Notify users of the new job
-  await notifyUsersOfNewJob(newJobAds._id,userId);
+    // Notify users of the new job
+    await notifyUsersOfNewJob(newJobAds._id, userId);
     res.status(201).json(newJobAds);
 
   } catch (error) {
@@ -409,9 +409,9 @@ export const deleteJobAds = async (req, res) => {
       { $pull: { postedJobAds: id } }
     );
 
-     // Remove job application reference from IndividualUser model
-     await IndividualUser.updateMany(
-      { 
+    // Remove job application reference from IndividualUser model
+    await IndividualUser.updateMany(
+      {
         $or: [
           { 'jobposting.applied': id },
           { 'jobposting.saved': id }
@@ -650,7 +650,7 @@ export const getJobAdsDetails = async (req, res) => {
     })
 
     if (!jobAds) {
-      return res.status(404).json({ error: 'Job application not found' });
+      return res.status(404).json({ error: 'Job Ad not found' });
     }
 
     const mediaType = jobAds.media?.mediaType;
@@ -717,10 +717,12 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
       })
       .populate({
         path: 'applicants.user',
-        select: 'name email profilePicture',
+        select: 'name email profilePicture lastLoggedIn profile',
         populate: {
           path: 'profilePicture',
+          model: 'Image'
         }
+
       });
 
     if (!jobAds) {
@@ -755,13 +757,15 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
 
         populatedApplicant.resumeVideo = await mongoose.model(mediaModel).findById(populatedApplicant.resumeVideo.mediaRef).populate('thumbnailUrl');
       }
+      // Check if user is populated and calculate the active field
+      if (populatedApplicant.user) {
+        const lastLoggedInDate = new Date(populatedApplicant.user.lastLoggedIn);
+        const isActive = (new Date() - lastLoggedInDate) < (2 * 24 * 60 * 60 * 1000); // 2 days in milliseconds
+        populatedApplicant.user.active = isActive;
+      }
 
-      return {
-        ...populatedApplicant,
-        user: isPoster ? populatedApplicant.user : { user: populatedApplicant.user }
-      };
+      return isPoster ? populatedApplicant : { user: populatedApplicant.user };
     }));
-
     const applicantsCount = jobAds.applicants.length;
 
     res.status(200).json({
@@ -905,7 +909,7 @@ export const getAllJobAdss = async (req, res) => {
       query['salary.min'] = minSalary ? { $gte: Number(minSalary) } : { $gte: 0 };
       query['salary.max'] = maxSalary ? { $lte: Number(maxSalary) } : { $lte: Infinity };
     }
-    
+
     // Add currency filter if provided
     if (currency) {
       query['salary.currency'] = currency;
