@@ -10,36 +10,42 @@ const razorpay = new Razorpay({
 });
 
 
-// CRON job to run every 6 days
-cron.schedule('* * * * * *', async () => {
-  // Your code to execute every second
-  console.log('This message will log every second');
 
-  // try {
-  //   // Find all active subscription transactions updated in the last 6 days
-  //   const subscriptions = await SubscriptionTransaction.find({
-  //     status: 'active',
-  //     updatedAt: { $gte: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) }, // Last 6 days
-  //   });
+// CRON job to run every day
+cron.schedule('0 0 * * *', async () => { 
 
-  //   for (const subscription of subscriptions) {
-  //     const subscription_id = subscription.subscription_id;
+  try {
+    // Find all active subscription transactions
+    const subscriptions = await SubscriptionTransaction.find({ status: 'active' });
 
-  //     try {
-  //       // Fetch the subscription from Razorpay
-  //       const result = await razorpay.subscriptions.fetch(subscription_id);
+    for (const subscription of subscriptions) {
+      const subscription_id = subscription.subscription_id;
 
-  //       if (result.status !== 'active') {
-  //         // If the status is not active, update SubscriptionTransaction status to 'cancelled'
-  //         subscription.status = 'cancelled';
-  //         await subscription.save();
-  //       }
-  //     } catch (error) {
-  //       console.error(`Error fetching subscription ${subscription_id}:`, error);
-  //       // Handle errors if needed
-  //     }
-  //   }
-  // } catch (error) {
-  //   console.error('Error in CRON job:', error);
-  // }
+      try {
+        // Fetch the subscription from Razorpay
+        const result = await razorpay.subscriptions.fetch(subscription_id);
+
+        if (result.status === 'active') {
+          // If the status is active, update the updatedAt field
+          subscription.updatedAt = new Date();
+          await subscription.save();
+        } else {
+          // If the status is not active, update SubscriptionTransaction status to 'cancelled'
+          subscription.status = 'cancelled';
+          await subscription.save();
+
+          // Set the corresponding IndividualUser's subscription field to null
+          await IndividualUser.updateOne(
+            { subscription: subscription._id },
+            { $set: { subscription: null } }
+          );
+        }
+      } catch (error) {
+        console.error(`Error fetching subscription ${subscription_id}:`, error);
+        // Handle errors if needed
+      }
+    }
+  } catch (error) {
+    console.error('Error in CRON job:', error);
+  }
 });
