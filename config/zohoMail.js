@@ -110,13 +110,15 @@ const extractNameFromEmail = (email) => {
  * @param {string} templateKey - The key of the email template to use.
  * @param {object} mergeInfo - The merge info to populate the template.
  */
+ 
 export const sendEmailWithTemplate = async (toAddress, toName, subject, templateKey, mergeInfo = {}) => {
   const name = toName || extractNameFromEmail(toAddress);
+ 
   const emailDetails = {
     mail_template_key: templateKey,
     from: {
       address: "noreply@hiyer.in",
-      name: "noreply"
+      name: "Hiyer"
     },
     to: [
       {
@@ -127,7 +129,9 @@ export const sendEmailWithTemplate = async (toAddress, toName, subject, template
       }
     ],
     subject: subject,
+ 
     merge_info: mergeInfo
+ 
   };
 
   try {
@@ -156,6 +160,7 @@ export const sendOtpEmail = async (toAddress, userName, otp) => {
  * @param {string} toAddress - The recipient's email address.
  * @param {string} userName - The recipient's name.
  */
+ 
 export const sendVerificationSuccessEmail = async (toAddress, userName) => {
   const name = userName || extractNameFromEmail(toAddress);
   const subject = "Your Account is Verified!";
@@ -290,6 +295,7 @@ export const sendNewRecommendationFromUserEmail = async (toUser,job ,fromUser) =
 
   };
   await sendEmailWithTemplate(toUser.email.id, name, subject, templateKey, mergeInfo);
+ 
 
 };
 

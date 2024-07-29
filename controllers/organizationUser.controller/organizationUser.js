@@ -8,8 +8,9 @@ import IndividualUser from "../../models/individualUser.model/individualUser.mod
 import Video from "../../models/video.model.js";
 import Image from "../../models/image.model.js";
 import JobAds from "../../models/organization.model/jobAds.model.js";
-import Recommendation from "../../models/individualUser.model/recommendation,model.js";
+import Recommendation from "../../models/individualUser.model/recommendation,model.js"; 
 import { sendNewRecommendationFromOrgEmail } from "../../config/zohoMail.js";
+ 
 
 
 
@@ -879,6 +880,11 @@ export const getSavedCandidates = async (req, res) => {
             path: 'postedBy',
             model: 'User',
             select: 'name profilePicture', // Select fields you want from User model
+
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            }
           },
           {
             path: 'thumbnailUrl',
