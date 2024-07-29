@@ -815,8 +815,6 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
       if (populatedApplicant.user) {
         const lastLoggedInDate = new Date(populatedApplicant.user.lastLoggedIn);
         const userData = await IndividualUser.findById(populatedApplicant.user._id, 'skills industry')
-
-        console.log(userData)
         const isActive = (new Date() - lastLoggedInDate) < (2 * 24 * 60 * 60 * 1000); // 2 days in milliseconds
         populatedApplicant.user.active = isActive;
         populatedApplicant.user.filterData = userData
