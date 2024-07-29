@@ -18,7 +18,7 @@ import passport from "passport";
 import session from "express-session";
 import {sendEmail} from "./config/zohoMail.js";
 import paymentRouter from "./routes/v1/individualUser.route/payment.js";
-
+import './utils/cronjob.js'
 dotenv.config();
 
 
