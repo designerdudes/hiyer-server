@@ -8,7 +8,7 @@ import { uploadImageController, uploadMedia } from "../mediaControl.controller/m
 import User from "../../models/user.model.js";
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import JobAlert from "../../models/organization.model/jobAlert.model.js";
-import {  sendApplicantStatusUpdateEmail, sendNewJobAlertByUserEmail, sendNewJobAlertEmail } from "../../config/zohoMail.js";
+import {  sendApplicantStatusUpdateEmail, sendEmailAdNotification, sendNewJobAlertByUserEmail, sendNewJobAlertEmail } from "../../config/zohoMail.js";
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 
 export const notifyUsersOfNewJob = async (jobId, orgId) => {
@@ -101,16 +101,18 @@ export const addJobAds = async (req, res) => {
     if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
       mediaResult = await uploadMedia(req);
     } else if (req.files && req.files.image) {
-      mediaResult = await uploadImageController(req, res);
+    console.log('mediaResult:',req.files ,'h', req.files.image);
+
+      mediaResult = await uploadImageController(req);
     }
 
-    console.log('mediaResult:', mediaResult);
+    // console.log('mediaResult:', mediaResult);
 
     const Media = {
       mediaType: req.files ? (req.files.video ? 'Video' : req.files.image ? 'Image' : '') : '',
       mediaRef: mediaResult?.video_id || mediaResult?.image_id || null
     };
-    console.log('Media:', Media);
+    // console.log('Media:', Media);
 
     const filteredFields = {
       title,
@@ -150,7 +152,7 @@ export const addJobAds = async (req, res) => {
       { _id: { $in: candidateFollowerIds } },
       'email.id name.first name.last profilePicture'
     ).populate('profilePicture', 'imageUrl');
-
+console.log(candidateFollowers)
     const followerEmails = candidateFollowers.map(follower => ({
       email: follower.email.id,
       firstName: follower.name.first || '',
@@ -160,11 +162,23 @@ export const addJobAds = async (req, res) => {
 
     // Notify users of the new job
     await notifyUsersOfNewJob(newJobAds._id, userId);
+    console.log(followerEmails)
 
     // Send email notification to candidate followers
     for (const follower of followerEmails) {
       const { email, firstName, lastName, profilePictureUrl } = follower;
-      await sendEmailNotification(email, {
+      console.log({
+        email,
+        jobTitle: newJobAds.title, 
+        jobId: newJobAds._id,
+        orgId: organization._id,
+        orgName: organization.name,
+        orgLogo: organization.companyLogo,
+        firstName,
+        lastName,
+        profilePictureUrl
+      })
+      await sendEmailAdNotification(email, {
         jobTitle: newJobAds.title, 
         jobId: newJobAds._id,
         orgId: organization._id,
