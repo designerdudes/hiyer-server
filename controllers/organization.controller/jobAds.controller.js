@@ -74,7 +74,6 @@ export const addJobAds = async (req, res) => {
       tags,
     } = req.body;
 
-
     // Parse and format the salary object
     let parsedSalary = { min: 0, max: 0, currency: 'INR' };
     if (typeof salary === 'string') {
@@ -97,8 +96,6 @@ export const addJobAds = async (req, res) => {
     // Optional: Ensure min and max are numbers and handle default values
     if (typeof formattedSalary.min !== 'number') formattedSalary.min = 0;
     if (typeof formattedSalary.max !== 'number') formattedSalary.max = 0;
-
-
 
     let mediaResult = {};
     if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
@@ -140,53 +137,57 @@ export const addJobAds = async (req, res) => {
     const newJobAds = new JobAds(nonEmptyFields);
     await newJobAds.save();
 
-   // Update the organizational user's posted jobAds
-   const organization = await OrganizationalUser.findByIdAndUpdate(
-    userId,
-    { $push: { postedJobAds: newJobAds._id } },
-    { new: true }
-  );
+    // Update the organizational user's posted jobAds
+    const organization = await OrganizationalUser.findByIdAndUpdate(
+      userId,
+      { $push: { postedJobAds: newJobAds._id } },
+      { new: true }
+    );
 
-  // Get candidate followers' information
-const candidateFollowerIds = organization.candidateFollowers;
-const candidateFollowers = await User.find(
-  { _id: { $in: candidateFollowerIds } },
-  'email.id name.first name.last profilePicture'
-).populate('profilePicture', 'imageUrl');
+    // Get candidate followers' information
+    const candidateFollowerIds = organization.candidateFollowers;
+    const candidateFollowers = await User.find(
+      { _id: { $in: candidateFollowerIds } },
+      'email.id name.first name.last profilePicture'
+    ).populate('profilePicture', 'imageUrl');
 
-const followerEmails = candidateFollowers.map(follower => ({
-  email: follower.email.id,
-  firstName: follower.name.first || '',
-  lastName: follower.name.last || '',
-  profilePictureUrl: follower.profilePicture ? follower.profilePicture.imageUrl : null
-}));
+    const followerEmails = candidateFollowers.map(follower => ({
+      email: follower.email.id,
+      firstName: follower.name.first || '',
+      lastName: follower.name.last || '',
+      profilePictureUrl: follower.profilePicture ? follower.profilePicture.imageUrl : null
+    }));
 
-// Notify users of the new job
-await notifyUsersOfNewJob(newJobAds._id, userId);
+    // Notify users of the new job
+    await notifyUsersOfNewJob(newJobAds._id, userId);
 
-// Send email notification to candidate followers
-for (const follower of followerEmails) {
-  const { email, firstName, lastName, profilePictureUrl } = follower;
-  await sendEmailNotification(email, {
-    jobTitle: newJobAds.title, 
-    jobId: newJobAds._id,
-    orgId:organization._id,
-    orgName:organization.name,
-    orgLogo:organization.companyLogo,
-    firstName,
-    lastName,
-    profilePictureUrl
-  });
-}
+    // Send email notification to candidate followers
+    for (const follower of followerEmails) {
+      const { email, firstName, lastName, profilePictureUrl } = follower;
+      await sendEmailNotification(email, {
+        jobTitle: newJobAds.title, 
+        jobId: newJobAds._id,
+        orgId: organization._id,
+        orgName: organization.name,
+        orgLogo: organization.companyLogo,
+        firstName,
+        lastName,
+        profilePictureUrl
+      });
+    }
 
-
+    // Send the response only once
     res.status(201).json(newJobAds);
 
   } catch (error) {
+    // Ensure no other response has been sent before sending this one
     console.error('Error adding job application:', error);
-    res.status(500).json({ error: 'An error occurred while adding the job application' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'An error occurred while adding the job application' });
+    }
   }
 };
+
 
 
 
