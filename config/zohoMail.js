@@ -364,13 +364,12 @@ export const sendEmailAdNotification = async (email, jobDetails) => {
     jobId: jobDetails.jobId,
     orgId: jobDetails.orgId,
     orgName: jobDetails.orgName,
-    orgLogo: jobDetails.orgLogo,
+    orgLogo: jobDetails.orgLogo|| '',
     firstName: jobDetails.firstName || '',
     lastName: jobDetails.lastName || '',
     profilePictureUrl: jobDetails.profilePictureUrl || '',
   };
-
-  await sendEmailWithTemplate(email, subject, templateKey, mergeInfo);
+  await sendEmailWithTemplate(email, jobDetails.firstName,subject, templateKey, mergeInfo);
 };
 
  
