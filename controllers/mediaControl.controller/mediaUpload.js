@@ -88,7 +88,7 @@ export const uploadMediaForIndividualUsers = async (req, res) => {
     await newVideo.save();
     console.log('newVideo', newVideo);
 
- 
+
     // Update IndividualUser with the new video reference
     const updatedUser = await IndividualUser.findByIdAndUpdate(
       userId,
@@ -174,35 +174,34 @@ export const uploadImageController = async (req, res) => {
   }
 
   const userId = decodedToken.id;
+  let newImage;
+  let uploadResult; // Declare uploadResult outside the if block
 
   try {
     // Check if an image is provided
-    if (!req.file || !req.file.image) {
+    if (!req.files || !req.files.image) {
       return res.status(400).json({ error: "Image is required" });
     }
+    if (req.files.image && req.files.image.length > 0) {
+      const imagePath = path.resolve(req.files.image[0].path);
+      uploadResult = await uploadImage(imagePath, userId); // Initialize uploadResult
 
-    const uploadResult = await uploadImage(req.file.image,userId);
+      newImage = new Image({
+        imageUrl: uploadResult.imageUrl,
+        transformations: [{ quality: 'auto' }],
+        postedBy: userId,
+      });
 
-    const newImage = new Image({
-      imageUrl: uploadResult.imageUrl,
-      transformations: [
-        { width: 800, height: 800, quality: 'auto' }
-      ],
-      postedBy: userId
-    });
+      await newImage.save();
+    }
 
-    await newImage.save();
-
-    // Respond with the download URL and image ID
-    res.status(200).json({
-      downloadUrl: uploadResult.imageUrl,
-      image_id: newImage._id
-    });
+    return { image_id: newImage._id, downloadUrl: uploadResult.imageUrl};
   } catch (error) {
     console.error('Error uploading image:', error);
-    res.status(500).json({ error: 'An error occurred while uploading the image' });
+    return res.status(500).json({ error: 'An error occurred while uploading the image' });
   }
 };
+
 
 export const uploadProfileImageController = async (req, res) => {
   const authorizationHeader = req.headers.authorization;
