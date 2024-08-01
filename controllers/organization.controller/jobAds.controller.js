@@ -1273,11 +1273,7 @@ export const createJobAlert = async (req, res) => {
       const orgUser = await User.findById(organizationId).populate('profilePicture');
 
 
-      // const subject = "New Job Alert Created";
-      // const body = `A new job alert has been created by ${user.name.first} ${user.name.last}. Details:\nTitle: ${title}\nDescription: ${description || 'N/A'}\nJob Type: ${jobType || 'N/A'}\nExperience Level: ${experienceLevel || 'N/A'}\n\nUser Details:\nName: ${user.name.first} ${user.name.last}\nPhone: ${user.phone.countryCode ? `${user.phone.countryCode} ${user.phone.number}` : 'N/A'}\nProfile Picture: ${user.profilePicture ? user.profilePicture.url : 'N/A'}`;
-
-      // await sendEmail(organization.contact.email, organization.name, subject, body);
-
+     
       const fullName = [orgUser.name.first, orgUser.name.middle, orgUser.name.last]
         .filter(namePart => namePart) // Filter out any undefined or empty parts
         .join(' '); // Join the parts with a space
@@ -1291,3 +1287,181 @@ export const createJobAlert = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while creating the job alert' });
   }
 };
+
+export const editJobAlert = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { id } = req.params;
+    const { title, description, jobType, experienceLevel, organizationId } = req.body;
+
+    // Validate required fields
+    if (!title || !organizationId) {
+      return res.status(400).json({ error: 'Title and organization ID are required' });
+    }
+
+    // Find the job alert to verify ownership
+    const jobAlert = await JobAlert.findById(id);
+
+    if (!jobAlert) {
+      return res.status(404).json({ error: 'Job alert not found' });
+    }
+
+    if (jobAlert.createdBy.toString() !== userId) {
+      return res.status(403).json({ error: 'You are not authorized to edit this job alert' });
+    }
+
+    // Find and update the job alert
+    const updatedJobAlert = await JobAlert.findByIdAndUpdate(
+      id,
+      { title, description, jobType, experienceLevel, organizationId },
+      { new: true }
+    );
+
+    res.status(200).json(updatedJobAlert);
+  } catch (error) {
+    console.error('Error editing job alert:', error);
+    res.status(500).json({ error: 'An error occurred while editing the job alert' });
+  }
+};
+
+
+export const deleteJobAlert = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { id } = req.params;
+
+    // Find the job alert to verify ownership
+    const jobAlert = await JobAlert.findById(id);
+
+    if (!jobAlert) {
+      return res.status(404).json({ error: 'Job alert not found' });
+    }
+
+    if (jobAlert.createdBy.toString() !== userId) {
+      return res.status(403).json({ error: 'You are not authorized to delete this job alert' });
+    }
+
+    // Find and delete the job alert
+    const deletedJobAlert = await JobAlert.findByIdAndDelete(id);
+
+    // Remove the job alert from the individual user's and organization's job alerts
+    await IndividualUser.findByIdAndUpdate(
+      deletedJobAlert.createdBy,
+      { $pull: { jobAlerts: deletedJobAlert._id } }
+    );
+
+    await OrganizationalUser.findByIdAndUpdate(
+      deletedJobAlert.organizationId,
+      { $pull: { jobAlerts: deletedJobAlert._id } }
+    );
+
+    res.status(200).json({ message: 'Job alert deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting job alert:', error);
+    res.status(500).json({ error: 'An error occurred while deleting the job alert' });
+  }
+};
+
+
+
+export const getAllJobAlerts = async (req, res) => {
+  try {
+    const createdBy = getUserIdFromToken(req);
+    const { jobType, experienceLevel } = req.query;
+
+    // Build the query object based on provided query parameters
+    let query = {};
+    if (createdBy) {
+      query.createdBy = createdBy;
+    }
+    if (jobType) {
+      query.jobType = jobType;
+    }
+    if (experienceLevel) {
+      query.experienceLevel = experienceLevel;
+    }
+
+    // Fetch job alerts based on the query with populated fields
+    const jobAlerts = await JobAlert.find(query)
+      .populate({
+        path: 'createdBy',
+        // select: 'name profilePicture',
+        populate: {
+          path: 'profilePicture',
+          model: 'Image'
+        }
+      })
+      .populate({
+        path: 'organizationId',
+        // select: 'name profilePicture',
+        populate: {
+          path: 'profilePicture',
+          model: 'Image'
+        }
+      });
+
+    res.status(200).json(jobAlerts);
+  } catch (error) {
+    console.error('Error fetching job alerts:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job alerts' });
+  }
+};
+
+
+export const getAllJobAlertsForOrganization = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const { jobType, experienceLevel } = req.query;
+
+    // Check if the userId belongs to an Organization or OrganizationMember
+    let organizationId;
+
+    // Check if userId is an OrganizationalUser
+    const organization = await OrganizationalUser.findById(userId);
+    if (organization) {
+      organizationId = organization._id;
+    } else {
+      // Check if userId is an OrganizationMember
+      const organizationMember = await OrganizationMember.findById(userId).populate('organization');
+      if (organizationMember) {
+        organizationId = organizationMember.organization._id;
+      } else {
+        return res.status(404).json({ error: 'Organization or Organization Member not found' });
+      }
+    }
+
+    // Build the query object based on provided query parameters
+    let query = { organizationId };
+    if (jobType) {
+      query.jobType = jobType;
+    }
+    if (experienceLevel) {
+      query.experienceLevel = experienceLevel;
+    }
+
+    // Fetch job alerts based on the query with populated fields
+    const jobAlerts = await JobAlert.find(query)
+      .populate({
+        path: 'createdBy',
+        // select: 'name profilePicture',
+        populate: {
+          path: 'profilePicture',
+          model: 'Image'
+        }
+      })
+      .populate({
+        path: 'organizationId',
+        // select: 'name profilePicture',
+        populate: {
+          path: 'profilePicture',
+          model: 'Image'
+        }
+      });
+
+    res.status(200).json(jobAlerts);
+  } catch (error) {
+    console.error('Error fetching job alerts:', error);
+    res.status(500).json({ error: 'An error occurred while fetching job alerts' });
+  }
+};
+
