@@ -1273,7 +1273,7 @@ export const createJobAlert = async (req, res) => {
       const orgUser = await User.findById(organizationId).populate('profilePicture');
 
 
-     
+
       const fullName = [orgUser.name.first, orgUser.name.middle, orgUser.name.last]
         .filter(namePart => namePart) // Filter out any undefined or empty parts
         .join(' '); // Join the parts with a space
