@@ -19,12 +19,12 @@ const mediaSchema = new mongoose.Schema({
   mediaType: {
     type: String,
     enum: ['Video', 'Image'],
-    required: true
+    // required: true
   },
   mediaRef: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'mediaType',
-    required: true
+    // required: true
   }
 }, {
   timestamps: true,
