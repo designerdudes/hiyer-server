@@ -30,7 +30,7 @@ import {
   deleteOrganizationRecommendation,
   getRecommendedJobs,
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
-import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedJobAds, getOrganizationalUserPostedJobAds, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants } from '../../../controllers/organization.controller/jobAds.controller.js';
+import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedJobAds, getOrganizationalUserPostedJobAds, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants, getAllJobAlertsForOrganization } from '../../../controllers/organization.controller/jobAds.controller.js';
 
 const router = express.Router();
 
@@ -146,6 +146,9 @@ router.delete('/recommendations/:recommendationId', deleteOrganizationRecommenda
 
 // GET /api/recommendations/recommendedJobs
 router.get('/recommendations/recommendedJobs', getRecommendedJobs );
+
+router.get('/job-alerts', getAllJobAlertsForOrganization); 
+
 
 export default router;
 getOrganizationalUserData
