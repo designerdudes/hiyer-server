@@ -1283,9 +1283,10 @@ export const applyJobAds = async (req, res) => {
 
     const newApplicant = {
       user: userId,
-      resumeVideo: media,
       coverLetter,
+      ...(media && { resumeVideo: media }),  
     };
+
 
     const jobAds = await JobAds.findById(jobId).populate('postedBy');
     const user = await User.findById(userId).populate('profilePicture');
