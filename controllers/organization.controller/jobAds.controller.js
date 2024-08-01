@@ -8,7 +8,7 @@ import { uploadImageController, uploadMedia } from "../mediaControl.controller/m
 import User from "../../models/user.model.js";
 import OrganizationMember from "../../models/organizationUser.model/organizationMember.model.js";
 import JobAlert from "../../models/organization.model/jobAlert.model.js";
-import {  sendApplicantStatusUpdateEmail, sendEmailAdNotification, sendNewJobAlertByUserEmail, sendNewJobAlertEmail } from "../../config/zohoMail.js";
+import { sendApplicantStatusUpdateEmail, sendEmailAdNotification, sendNewJobAlertByUserEmail, sendNewJobAlertEmail } from "../../config/zohoMail.js";
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
 
 export const notifyUsersOfNewJob = async (jobId, orgId) => {
@@ -46,7 +46,7 @@ export const notifyUsersOfNewJob = async (jobId, orgId) => {
         // const subject = "Job Alert Match";
         // const body = `A new job matching your alert has been created. Details: Title - ${job.title}, Description - ${job.description || 'No description provided'}, Job Type - ${job.jobType || 'No job type provided'}, Experience Level - ${job.experienceLevel || 'No experience level provided'}. Apply now!`;
         // await sendEmail(user.email.id, fullName, subject, body);
-        await sendNewJobAlertEmail(user.email.id,fullName,job,orgId)
+        await sendNewJobAlertEmail(user.email.id, fullName, job, orgId)
       }
     }
   } catch (error) {
@@ -101,7 +101,7 @@ export const addJobAds = async (req, res) => {
     if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
       mediaResult = await uploadMedia(req);
     } else if (req.files && req.files.image) {
-    console.log('mediaResult:',req.files ,'h', req.files.image);
+      console.log('mediaResult:', req.files, 'h', req.files.image);
 
       mediaResult = await uploadImageController(req);
     }
@@ -152,7 +152,7 @@ export const addJobAds = async (req, res) => {
       { _id: { $in: candidateFollowerIds } },
       'email.id name.first name.last profilePicture'
     ).populate('profilePicture', 'imageUrl');
-console.log(candidateFollowers)
+    console.log(candidateFollowers)
     const followerEmails = candidateFollowers.map(follower => ({
       email: follower.email.id,
       firstName: follower.name.first || '',
@@ -169,7 +169,7 @@ console.log(candidateFollowers)
       const { email, firstName, lastName, profilePictureUrl } = follower;
       console.log({
         email,
-        jobTitle: newJobAds.title, 
+        jobTitle: newJobAds.title,
         jobId: newJobAds._id,
         orgId: organization._id,
         orgName: organization.name,
@@ -179,7 +179,7 @@ console.log(candidateFollowers)
         profilePictureUrl
       })
       await sendEmailAdNotification(email, {
-        jobTitle: newJobAds.title, 
+        jobTitle: newJobAds.title,
         jobId: newJobAds._id,
         orgId: organization._id,
         orgName: organization.name,
@@ -457,9 +457,9 @@ export const deleteJobAds = async (req, res) => {
       { $pull: { postedJobAds: id } }
     );
 
-     // Remove job application reference from IndividualUser model
-     await IndividualUser.updateMany(
-      { 
+    // Remove job application reference from IndividualUser model
+    await IndividualUser.updateMany(
+      {
         $or: [
           { 'jobposting.applied': id },
           { 'jobposting.saved': id }
@@ -519,7 +519,7 @@ export const updateApplicantStatus = async (req, res) => {
     const user = await User.findById(userId);
 
     await sendApplicantStatusUpdateEmail(user, jobAds, applicantStatus);
-    res.status(200).json({ message: 'Applicant status updated successfully', applicant,user, jobAds, applicantStatus });
+    res.status(200).json({ message: 'Applicant status updated successfully', applicant, user, jobAds, applicantStatus });
   } catch (error) {
     console.error('Error updating applicant status:', error);
     res.status(500).json({ error: 'An error occurred while updating the applicant status' });
@@ -955,7 +955,7 @@ export const getAllJobAdss = async (req, res) => {
       query['salary.min'] = minSalary ? { $gte: Number(minSalary) } : { $gte: 0 };
       query['salary.max'] = maxSalary ? { $lte: Number(maxSalary) } : { $lte: Infinity };
     }
-    
+
     // Add currency filter if provided
     if (currency) {
       query['salary.currency'] = currency;
@@ -1263,12 +1263,12 @@ export const createJobAlert = async (req, res) => {
       const orgUser = await User.findById(organizationId).populate('profilePicture');
 
 
-     
-      const fullName = [orgUser.name.first, orgUser.name.middle, orgUser.name.last]
-      .filter(namePart => namePart) // Filter out any undefined or empty parts
-      .join(' '); // Join the parts with a space
 
-      await sendNewJobAlertByUserEmail(organization.contact.email, organization.name,user,job)
+      const fullName = [orgUser.name.first, orgUser.name.middle, orgUser.name.last]
+        .filter(namePart => namePart) // Filter out any undefined or empty parts
+        .join(' '); // Join the parts with a space
+
+      await sendNewJobAlertByUserEmail(organization.contact.email, organization.name, user, job)
     }
 
     res.status(201).json(newJobAlert);
