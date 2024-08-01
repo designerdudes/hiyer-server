@@ -13,9 +13,9 @@ import { mobileVerificationSuccess } from "../config/sendSms.js";
 import IndividualUser from "../models/individualUser.model/individualUser.model.js";
 import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
 import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
- 
+
 import { sendOtpEmail, sendVerificationSuccessEmail, sendWelcomeOrgEmail, sendWelcomeUserEmail } from "../config/zohoMail.js";
- 
+
 
 
 const extractNameFromEmail = (email) => {
@@ -48,10 +48,10 @@ export const sendEmailOTPforverification = async (req, res) => {
 
     await otp.save();
 
- 
+
     const userName = validEmailUser ? validEmailUser.name.first : extractNameFromEmail(email);
     await sendOtpEmail(email, userName, OTP);
- 
+
 
     res.status(200).json({
       ok: true,
@@ -269,8 +269,10 @@ export const registerUser = async (req, res) => {
       existingUser = await User.findOne({ "phone.number": mobileNo });
     }
 
+    let token = otpVerifyResponse.token;
+
     if (existingUser) {
-      return res.status(409).json({ msg: "Email or mobile number already exists", socialLogin });
+      return res.status(409).json({ msg: "Email or mobile number already exists", socialLogin, token });
     }
 
     // Prepare user data
@@ -338,7 +340,7 @@ export const registerUser = async (req, res) => {
     await newProfile.save();
 
     // Create a token if not provided by OTP verification
-    let token = otpVerifyResponse.token;
+
     if (!token) {
       const tokenPayload = {
         id: savedUser._id,
@@ -359,8 +361,8 @@ export const registerUser = async (req, res) => {
       await sendWelcomeOrgEmail(email, userData.name.first)
     }
 
-    
-    
+
+
     // Respond with success message, status, and user data
     res.status(200).json({
       msg: "User registered successfully",
@@ -432,7 +434,7 @@ export const login = async (req, res) => {
     if (email) {
       query = { "email.id": email.toLowerCase().trim() };
     } else {
-      query = { "phone.number": mobileNo };  
+      query = { "phone.number": mobileNo };
     }
 
     const user = await User.findOne(query);
