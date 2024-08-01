@@ -16,9 +16,11 @@ import { updateAllImageUrls, updateAllVideoUrls } from "./controllers/mediaContr
 import JobAds from "./models/organization.model/jobAds.model.js";
 import passport from "passport";
 import session from "express-session";
-import {sendEmail} from "./config/zohoMail.js";
+import { sendEmail } from "./config/zohoMail.js";
 import paymentRouter from "./routes/v1/individualUser.route/payment.js";
+ 
 import './utils/cronjob.js'
+ 
 dotenv.config();
 
 
@@ -26,10 +28,10 @@ dotenv.config();
 const connectWithRetry = () => {
   console.log('MongoDB connection with retry');
   return mongoose.connect(process.env.DB_URL).then(() => {
-      console.log('MongoDB is connected');
+    console.log('MongoDB is connected');
   }).catch((err) => {
-      console.error('MongoDB connection unsuccessful, retry after 5 seconds. ', err);
-      setTimeout(connectWithRetry, 5000);
+    console.error('MongoDB connection unsuccessful, retry after 5 seconds. ', err);
+    setTimeout(connectWithRetry, 5000);
   });
 };
 connectWithRetry();
@@ -62,8 +64,9 @@ app.use("/individualUser/v1", individualUserRoute);
 app.use("/organization/v1", organizationRoute);
 app.use("/organizationMember/v1", organizationMemberRoute);
 app.use("/jobAds/v1", jobAdsRoute);
-app.use("/payments/v1",paymentRouter)
+app.use("/payments/v1", paymentRouter)
 app.use("/media/v1", mediaControllRoute);
+// app.use("/transaction/v1", transactionRoute);
 
 
 app.use("/dropDown/v1", dropDownControllRoute);
@@ -88,7 +91,7 @@ app.put('/update-job-ads-keys', async (req, res) => {
       if (jobAd.applicationDeadline) jobAd.jobAdDeadline = jobAd.applicationDeadline;
       if (jobAd.applicationLink) jobAd.jobAdLink = jobAd.applicationLink;
       if (jobAd.applicationSource) jobAd.jobAdSource = jobAd.applicationSource;
-      
+
       // Update the embedded applicant schema keys if needed
       for (let applicant of jobAd.applicants) {
         if (applicant.companyReview) {
@@ -162,7 +165,7 @@ app.get('/auth/google/failure', (req, res) => {
 
 // Route for initiating Facebook authentication
 app.get('/auth/facebook', (req, res, next) => {
-  req.session.profileType = req.body.profileType;  
+  req.session.profileType = req.body.profileType;
   next();
 }, passport.authenticate('facebook', { scope: ['email'] }));
 
@@ -349,7 +352,7 @@ app.get('/auth/microsoft/failure', (req, res) => {
 });
 
 
- const sendDynamicEmail = async (req, res) => {
+const sendDynamicEmail = async (req, res) => {
   const { toAddress, toName, subject, body } = req.body;
 
   if (!toAddress || !toName || !subject || !body) {

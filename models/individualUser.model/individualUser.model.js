@@ -29,7 +29,7 @@ const educationSchema = new mongoose.Schema({
   },
   logoUrl: {
     type: String,
-  }, 
+  },
   institute: {
     type: String,
     required: true,
@@ -51,18 +51,18 @@ const experienceSchema = new mongoose.Schema({
   },
   logoUrl: {
     type: String,
-  }, 
+  },
   positions: {
     type: [
       {
         title: {
           type: String,
           required: true,
-        }, 
+        },
         description: {
           type: String,
           required: true,
-        }, 
+        },
         employmentType: {
           type: String,
           enum: ['full-time', 'part-time', 'contract', 'internship', 'freelance', 'volunteer', 'seasonal', 'apprenticeship'],
@@ -95,7 +95,7 @@ const skillSchema = new mongoose.Schema({
     required: true,
   }, logoUrl: {
     type: String,
-  }, 
+  },
 });
 
 // Schema for Certification
@@ -105,15 +105,16 @@ const certificationSchema = new mongoose.Schema({
     required: true,
   }, logoUrl: {
     type: String,
-  }, 
+  },
   issuer: String,
+  logoUrl: String,
   issueDate: Date,
   expirationDate: Date,
   url: String,
 });
 
 const projectSchema = new mongoose.Schema({
-  name: { 
+  name: {
     type: String,
     required: true,
   },
@@ -121,7 +122,7 @@ const projectSchema = new mongoose.Schema({
     type: String,
   }, logoUrl: {
     type: String,
-  },  
+  },
   startDate: {
     type: Date,
     required: true,
@@ -183,7 +184,7 @@ const videoResumePackSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-}, { _id: false }); 
+}, { _id: false });
 
 // Schema for Individual User
 const individualUserSchema = new mongoose.Schema(
@@ -230,7 +231,7 @@ const individualUserSchema = new mongoose.Schema(
         ref: "JobAds",
         default: [],
       },
-    }, 
+    },
     introVideo: {
       videoRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -238,7 +239,7 @@ const individualUserSchema = new mongoose.Schema(
       },
       videoTitle: String,
       videoDescription: String,
-    }, 
+    },
     videoResume: [
       {
         videoRef: {
