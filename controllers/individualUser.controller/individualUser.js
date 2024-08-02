@@ -9,7 +9,7 @@ import { deleteMedia, uploadMedia } from "../mediaControl.controller/mediaUpload
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
 import Recommendation from "../../models/individualUser.model/recommendation,model.js";
 import { sendNewApplicationEmail, sendNewRecommendationFromUserEmail } from "../../config/zohoMail.js";
- 
+
 
 // Helper function to extract user ID from token
 const getUserIdFromToken = (req) => {
@@ -1284,7 +1284,7 @@ export const applyJobAds = async (req, res) => {
     const newApplicant = {
       user: userId,
       coverLetter,
-      ...(media && { resumeVideo: media }),  
+      ...(media.mediaType && media.mediaRef && { resumeVideo: media }),
     };
 
 
@@ -2382,13 +2382,13 @@ export const addRecommendation = async (req, res) => {
     }
 
     //  Check if the recommending user has an active subscription
- 
+
     const subscription = recommendingUser.subscription;
     const today = new Date();
     if (!subscription) {
       return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
     }
- 
+
 
 
 
