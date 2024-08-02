@@ -84,7 +84,7 @@ export const sendOTPforMobileverification = async (req, res) => {
     //   });
     // }
 
-    const url = `https://2factor.in/API/V1/1fb18834-4c08-11ef-8b60-0200cd936042/SMS/${mobileNumber}/AUTOGEN/OTP_Template2`;
+    const url = `https://2factor.in/API/V1/1fb18834-4c08-11ef-8b60-0200cd936042/SMS/${mobileNumber}/AUTOGEN/Hiyer_OTP`;
 
     const response = await axios.get(url, { maxBodyLength: Infinity });
 
