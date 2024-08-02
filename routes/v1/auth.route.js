@@ -15,12 +15,9 @@ const router = express.Router();
 router.post("/send-email-otp", sendEmailOTPforverification);
 router.post("/send-mobile-otp", sendOTPforMobileverification);
 
-
 router.post("/organisation-login", organisationLogin);
 router.post("/verify-otp", verifyotp);
 router.post("/verify-mobile-otp", verifymobileotp);
-
-
 
 router.post("/register", registerUser);
 router.post("/login", login);

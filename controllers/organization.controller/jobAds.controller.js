@@ -10,6 +10,7 @@ import OrganizationMember from "../../models/organizationUser.model/organization
 import JobAlert from "../../models/organization.model/jobAlert.model.js";
 import { sendApplicantStatusUpdateEmail, sendEmailAdNotification, sendNewJobAlertByUserEmail, sendNewJobAlertEmail } from "../../config/zohoMail.js";
 import IndividualUser from "../../models/individualUser.model/individualUser.model.js";
+import path from "path";
 
 export const notifyUsersOfNewJob = async (jobId, orgId) => {
   try {
@@ -700,7 +701,7 @@ export const getJobAdsDetails = async (req, res) => {
     })
 
     if (!jobAds) {
-      return res.status(404).json({ error: 'Job application not found' });
+      return res.status(404).json({ error: 'Job Ad not found' });
     }
 
     const mediaType = jobAds.media?.mediaType;
@@ -767,11 +768,14 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
       })
       .populate({
         path: 'applicants.user',
-        select: 'name email profilePicture',
+        select: 'name email profilePicture lastLoggedIn',
         populate: {
           path: 'profilePicture',
+          model: 'Image'
         }
-      });
+
+      })
+
 
     if (!jobAds) {
       return res.status(404).json({ error: 'Job application not found' });
@@ -806,12 +810,18 @@ export const getJobAdsDetailsForPoster = async (req, res) => {
         populatedApplicant.resumeVideo = await mongoose.model(mediaModel).findById(populatedApplicant.resumeVideo.mediaRef).populate('thumbnailUrl');
       }
 
-      return {
-        ...populatedApplicant,
-        user: isPoster ? populatedApplicant.user : { user: populatedApplicant.user }
-      };
-    }));
 
+      // Check if user is populated and calculate the active field
+      if (populatedApplicant.user) {
+        const lastLoggedInDate = new Date(populatedApplicant.user.lastLoggedIn);
+        const userData = await IndividualUser.findById(populatedApplicant.user._id, 'skills industry')
+        const isActive = (new Date() - lastLoggedInDate) < (2 * 24 * 60 * 60 * 1000); // 2 days in milliseconds
+        populatedApplicant.user.active = isActive;
+        populatedApplicant.user.filterData = userData
+      }
+
+      return isPoster ? populatedApplicant : { user: populatedApplicant.user };
+    }));
     const applicantsCount = jobAds.applicants.length;
 
     res.status(200).json({

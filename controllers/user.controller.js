@@ -13,7 +13,9 @@ import { mobileVerificationSuccess } from "../config/sendSms.js";
 import IndividualUser from "../models/individualUser.model/individualUser.model.js";
 import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
 import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
+
 import { sendOtpEmail, sendVerificationSuccessEmail, sendWelcomeOrgEmail, sendWelcomeUserEmail } from "../config/zohoMail.js";
+
 
 
 const extractNameFromEmail = (email) => {
@@ -46,8 +48,10 @@ export const sendEmailOTPforverification = async (req, res) => {
 
     await otp.save();
 
+
     const userName = validEmailUser ? validEmailUser.name.first : extractNameFromEmail(email);
     await sendOtpEmail(email, userName, OTP);
+
 
     res.status(200).json({
       ok: true,
@@ -80,7 +84,7 @@ export const sendOTPforMobileverification = async (req, res) => {
     //   });
     // }
 
-    const url = `https://2factor.in/API/V1/7d3208f4-0209-11ef-8cbb-0200cd936042/SMS/${mobileNumber}/AUTOGEN/OTP_Template2`;
+    const url = `https://2factor.in/API/V1/1fb18834-4c08-11ef-8b60-0200cd936042/SMS/${mobileNumber}/AUTOGEN/Hiyer_OTP`;
 
     const response = await axios.get(url, { maxBodyLength: Infinity });
 
@@ -265,8 +269,10 @@ export const registerUser = async (req, res) => {
       existingUser = await User.findOne({ "phone.number": mobileNo });
     }
 
+    let token = otpVerifyResponse.token;
+
     if (existingUser) {
-      return res.status(409).json({ msg: "Email or mobile number already exists", socialLogin });
+      return res.status(409).json({ msg: "Email or mobile number already exists", socialLogin, token });
     }
 
     // Prepare user data
@@ -334,7 +340,7 @@ export const registerUser = async (req, res) => {
     await newProfile.save();
 
     // Create a token if not provided by OTP verification
-    let token = otpVerifyResponse.token;
+
     if (!token) {
       const tokenPayload = {
         id: savedUser._id,
@@ -394,6 +400,9 @@ export const verifyotp = async (req, res) => {
     if (result.token) {
       res.cookie("accessToken", result.token, { httpOnly: true });
     }
+
+    const query = email ? { "email.id": email } : { "phone.number": mobileNo };
+    await User.findOneAndUpdate(query, { lastLoggedIn: new Date() });
 
     return res.status(result.statusCode).send({
       msg: result.msg,
