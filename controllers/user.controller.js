@@ -29,12 +29,12 @@ export const sendEmailOTPforverification = async (req, res) => {
     const { email } = req.body;
     const validEmailUser = await User.findOne({ "email.id": email });
 
-    if (!validEmailUser) {
-      return res.status(404).json({
-        ok: false,
-        msg: "User not found",
-      });
-    }
+    // if (!validEmailUser) {
+    //   return res.status(404).json({
+    //     ok: false,
+    //     msg: "User not found",
+    //   });
+    // }
 
     let OTP = Math.floor(Math.random() * 900000) + 100000; // Generate a random 6-digit OTP
     console.log("OTP is generated", OTP);
@@ -55,7 +55,7 @@ export const sendEmailOTPforverification = async (req, res) => {
 
     res.status(200).json({
       ok: true,
-      msg: "Email sent to existing user",
+      msg: validEmailUser ? "Email sent to existing user" : "Email sent to new user",
     });
   } catch (error) {
     console.error("Error in sending OTP for verification:", error);

@@ -1276,17 +1276,17 @@ export const applyJobAds = async (req, res) => {
     // Convert id to ObjectId using 'new'
     const jobId = new mongoose.Types.ObjectId(id);
 
-    const media = {
-      mediaType,
-      mediaRef,
-    };
-
     const newApplicant = {
       user: userId,
-      coverLetter,
-      ...(media.mediaType && media.mediaRef && { resumeVideo: media }),
+      coverLetter, 
+      ...(mediaType && mediaRef && mediaRef.trim() !== '' && {
+        resumeVideo: {
+          mediaType,
+          mediaRef: mediaRef
+        },
+      }),
+ 
     };
-
 
     const jobAds = await JobAds.findById(jobId).populate('postedBy');
     const user = await User.findById(userId).populate('profilePicture');
@@ -1307,7 +1307,8 @@ export const applyJobAds = async (req, res) => {
     await IndividualUser.findByIdAndUpdate(userId, {
       $push: { "jobposting.applied": jobAds._id },
     });
-    sendNewApplicationEmail(jobAds, user)
+
+    sendNewApplicationEmail(jobAds, user);
 
     res.status(201).json(jobAds);
   } catch (error) {
