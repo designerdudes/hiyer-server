@@ -1,8 +1,8 @@
 import fs from 'fs';
 // import { v2 as cloudinary } from 'cloudinary';
-import ffmpeg from 'fluent-ffmpeg';
+ 
 import Video from '../../models/video.model.js'; // Import your Video model
-import Ffmpeg from 'fluent-ffmpeg';
+ 
 import getVideoDurationInSeconds from 'get-video-duration';
 import cloudinary from './config.js';
 
