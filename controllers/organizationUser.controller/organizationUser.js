@@ -8,9 +8,9 @@ import IndividualUser from "../../models/individualUser.model/individualUser.mod
 import Video from "../../models/video.model.js";
 import Image from "../../models/image.model.js";
 import JobAds from "../../models/organization.model/jobAds.model.js";
-import Recommendation from "../../models/individualUser.model/recommendation,model.js"; 
+import Recommendation from "../../models/individualUser.model/recommendation,model.js";
 import { sendNewRecommendationFromOrgEmail } from "../../config/zohoMail.js";
- 
+
 
 
 
@@ -967,29 +967,61 @@ export const getIndividualUsersWithIntroVideo = async (req, res) => {
     sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
     // Retrieve paginated individual users based on filters and sorting
-    let individualUsersQuery = IndividualUser.find(query)
-      .select('_id introVideo')
+    // let individualUsersQuery = IndividualUser.find(query)
+    //   .select('_id introVideo bio address industry intrestedCompanies education skills')
+    //   .sort(sortOptions)
+    //   .skip((page - 1) * limit)
+    //   .limit(Number(limit))
+    //   .lean()
+    let individualUsersQuery = User.find(query)
+      .select('profile name email profilePicture')
       .sort(sortOptions)
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .lean();
+      .lean()
+      .populate({
+        path: 'profile.profileRef',
+        model: 'IndividualUser',
+        select: '_id introVideo bio address industry intrestedCompanies education skills',
+        populate: [
+          {
+            path: 'introVideo.videoRef', model: 'Video',
+            populate: [
+              {
+                path: 'thumbnailUrl',
+                model: 'Image',
+              }
+            ]
+          },
+
+
+        ]
+      })
+      .populate({ path: 'profilePicture', model: 'Image' });
+
+
 
     // Populate introVideo field for each individualUser based on IndividualUser model
-    individualUsersQuery = individualUsersQuery.populate({
-      path: 'introVideo.videoRef',
-      model: 'Video',
-      populate: [
-        {
-          path: 'postedBy',
-          model: 'User',
-          select: 'name profilePicture  ', // Select fields you want from User model
-        },
-        {
-          path: 'thumbnailUrl',
-          model: 'Image',
-        },
-      ],
-    });
+    // individualUsersQuery = individualUsersQuery.populate({
+    //   path: 'introVideo.videoRef',
+    //   model: 'Video',
+    //   populate: [
+    //     {
+    //       path: 'postedBy',
+    //       model: 'User',
+    //       select: 'name email profilePicture  ', // Select fields you want from User model
+    //     },
+    //     {
+    //       path: 'thumbnailUrl',
+    //       model: 'Image',
+    //     },
+    //   ],
+    // }
+    // )
+
+
+
+
 
     // Execute the query
     const individualUsers = await individualUsersQuery.exec();
@@ -997,8 +1029,10 @@ export const getIndividualUsersWithIntroVideo = async (req, res) => {
     // Extract necessary fields from populated data
     const formattedUsers = individualUsers.map(user => ({
       _id: user._id,
-      introVideo: user.introVideo,
-      // Add other necessary fields if needed
+      name: user.name,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      ...user.profile.profileRef,
     }));
 
     // Calculate total pages based on total individual users and limit
