@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import OrganizationMember from '../../models/organizationUser.model/organizationMember.model.js';
 import { getUserIdFromToken } from '../../utils/getUserIdFromToken.js';
 import User from '../../models/user.model.js';
+import e from 'express';
 
 
 // Add or Update Organization Member Data
@@ -28,7 +29,10 @@ export const addOrUpdateOrganizationMember = async (req, res) => {
         return res.status(400).json({ message: "Organization ID is required to create a new organization member" });
       }
 
-      organizationMember = new OrganizationMember({ _id: userId, organization: req.body.organization });
+      organizationMember = new OrganizationMember({
+        _id: userId, name: req.body.name,
+        organization: req.body.organization
+      });
     }
 
     const memberData = req.body;
@@ -47,6 +51,46 @@ export const addOrUpdateOrganizationMember = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+//Get a specific organization member
+export const getOrganizationMember = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const organizationMember = await OrganizationMember.findById(userId || req.params.userId);
+
+    if (!organizationMember) {
+      return res.status(404).json({ message: "Organization member not found" });
+    }
+
+    res.status(200).json({ member: organizationMember });
+  }
+  catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get All Organization Members
+export const getOrganizationMembers = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const organizationMember = await OrganizationMember.findById(userId || req.params.userId)
+
+
+    if (!organizationMember) {
+      return res.status(404).json({ message: "Organization member not found" });
+    }
+
+    const organizationMembers = await OrganizationMember.find({ organization: organizationMember.organization });
+
+    res.status(200).json({ members: organizationMembers });
+  }
+  catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 
 
 // General Update Function
