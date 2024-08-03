@@ -1278,14 +1278,14 @@ export const applyJobAds = async (req, res) => {
 
     const newApplicant = {
       user: userId,
-      coverLetter, 
+      coverLetter,
       ...(mediaType && mediaRef && mediaRef.trim() !== '' && {
         resumeVideo: {
           mediaType,
           mediaRef: mediaRef
         },
       }),
- 
+
     };
 
     const jobAds = await JobAds.findById(jobId).populate('postedBy');
@@ -1578,6 +1578,11 @@ export const getUserDetailsFromToken = async (req, res) => {
     if (!individualUser) {
       return res.status(404).json({ message: 'Individual user profile not found' });
     }
+
+    //save last logged in
+    user.lastLoggedIn = new Date();
+    await user.save();
+
 
     // Send response with user and individual user profile details
     res.status(200).json({
