@@ -159,6 +159,29 @@ export const addTeamMember = async (req, res) => {
   }
 };
 
+// Get Team Members
+export const getTeamMembers = async (req, res) => {
+  try {
+    const organizationId = getUserIdFromToken(req); // Assuming the token contains the organization ID
+
+    // Find the organizational user by organization ID
+    const organizationalUser = await OrganizationalUser.findById(organizationId).populate({ path: 'teamMembers.userId' });
+
+    if (!organizationalUser) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+    res.status(200).json({
+      teamMembers: organizationalUser.teamMembers,
+    });
+  } catch (error) {
+    sendErrorResponse(res, error);
+  }
+};
+
+
+
+
 
 
 

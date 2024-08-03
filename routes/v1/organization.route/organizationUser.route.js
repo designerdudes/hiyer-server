@@ -29,6 +29,8 @@ import {
   updateOrganizationRecommendation,
   deleteOrganizationRecommendation,
   getRecommendedJobs,
+  getTeamMembers,
+  // getTeamMember,
 } from '../../../controllers/organizationUser.controller/organizationUser.js';
 import { getCurrentUserSelectedApplicants, getOrganizationalCurrentUserPostedJobAds, getOrganizationalUserPostedJobAds, getCurrentUserPendingApplicants, getCurrentUserRejectedApplicants, getCurrentUserShortlistedApplicants, getPendingApplicants, getShortlistedApplicants, getSelectedApplicants, getRejectedApplicants, getAllJobAlertsForOrganization } from '../../../controllers/organization.controller/jobAds.controller.js';
 
@@ -79,6 +81,12 @@ router.delete('/user/project/:id/url/:urlId', removeProjectURL);
 
 // Route for adding a team member
 router.post('/user/team-member', addTeamMember);
+
+// Route for getting a team member
+// router.get('/user/team-member/:teamMemberId', getTeamMember);
+
+//Route for getting all team members
+router.get('/user/team-members', getTeamMembers);
 
 // Route for updating a team member
 router.put('/user/team-member/:teamMemberId', updateTeamMember);
@@ -147,7 +155,7 @@ router.delete('/recommendations/:recommendationId', deleteOrganizationRecommenda
 // GET /api/recommendations/recommendedJobs
 router.get('/recommendations/recommendedJobs', getRecommendedJobs);
 
-router.get('/job-alerts', getAllJobAlertsForOrganization); 
+router.get('/job-alerts', getAllJobAlertsForOrganization);
 
 
 export default router;
