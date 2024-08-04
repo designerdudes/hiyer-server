@@ -508,15 +508,15 @@ export const updateApplicantStatus = async (req, res) => {
     }
 
     // Update the applicant status
-    // applicant.applicantStatus = applicantStatus;
-    // applicant.applicationHistory.push({
-    //   status: applicantStatus,
-    //   updatedAt: new Date(),
-    //   notes: `Status updated to ${applicantStatus}`,
-    // });
+    applicant.applicantStatus = applicantStatus;
+    applicant.applicationHistory.push({
+      status: applicantStatus,
+      updatedAt: new Date(),
+      notes: `Status updated to ${applicantStatus}`,
+    });
 
     // Save the changes to the job application
-    // await jobAds.save();
+    await jobAds.save();
     const user = await User.findById(userId);
 
     await sendApplicantStatusUpdateEmail(user, jobAds, applicantStatus);
