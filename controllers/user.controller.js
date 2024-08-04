@@ -28,6 +28,52 @@ export const sendEmailOTPforverification = async (req, res) => {
   try {
     const { email } = req.body;
     const validEmailUser = await User.findOne({ "email.id": email });
+    console.log('Valid Email User:', validEmailUser);
+    // if (!validEmailUser) {
+    //   return res.status(404).json({
+    //     ok: false,
+    //     msg: "User not found",
+    //   });
+    // }
+
+    const userName = validEmailUser ? validEmailUser.name.first : extractNameFromEmail(email);
+
+    console.log('User Name:', userName);
+    let OTP = Math.floor(Math.random() * 900000) + 100000; // Generate a random 6-digit OTP
+    console.log("OTP is generated", OTP);
+
+    let otp = new UserOTP({
+      email: email,
+      otp: OTP,
+      createdAt: new Date(),
+      expireAt: new Date(Date.now() + 86400000), // Set expiration time correctly (24 hours)
+    });
+
+    await otp.save();
+
+
+    await sendOtpEmail(email, userName, OTP);
+
+    res.status(200).json({
+      ok: true,
+      msg: validEmailUser ? "Email sent to existing user" : "Email sent to new user",
+    });
+
+
+
+  } catch (error) {
+    console.error("Error in sending OTP for verification:", error);
+    res.status(500).json({
+      ok: false,
+      msg: "Failed to send OTP. Please try again later.",
+    });
+  }
+};
+
+export const sendOrganisationEmailOTPforverification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const validEmailUser = await User.findOne({ "email.id": email });
 
     // if (!validEmailUser) {
     //   return res.status(404).json({
@@ -76,8 +122,6 @@ export const sendEmailOTPforverification = async (req, res) => {
     });
   }
 };
-
-
 
 
 export const sendOTPforMobileverification = async (req, res) => {
@@ -498,12 +542,115 @@ export const login = async (req, res) => {
 };
 
 
+// export const organisationLogin = async (req, res) => {
+//   try {
+//     const { email, mobileNo, countryCode } = req.body;
+
+//     if (!email && !mobileNo) {
+//       return res.status(400).send({
+//         msg: "Email or mobile number is required",
+//         ok: false,
+//       });
+//     }
+
+//     let query;
+//     if (email) {
+//       query = { "email.id": email.toLowerCase().trim() };
+//     } else {
+//       query = {
+//         "phone.countryCode": countryCode,
+//         "phone.number": mobileNo.trim(),
+//       };
+//     }
+
+//     const user = await User.findOne(query);
+
+//     if (!user) {
+//       return res.status(404).send({
+//         msg: "Organisation not found",
+//         ok: false,
+//       });
+//     }
+
+//     if (user?.socialLogin?.isSocialLogin) {
+//       return res.status(200).send({
+//         msg: "Login with social link",
+//         ok: true,
+//       });
+//     }
+
+//     //check if the user is an organization
+//     if (user?.profile?.profileType !== "OrganizationalUser") {
+//       return res.status(404).send({
+//         msg: "User is not an organization, please login as an individual user",
+//         ok: false,
+//       });
+
+//     }
+
+//     // Generate OTP and send for verification
+//     const validEmailUser = await User.findOne({ "email.id": email });
+//     const userName = validEmailUser ? validEmailUser?.name?.first : extractNameFromEmail(email);
+
+//     let OTP = Math.floor(Math.random() * 900000) + 100000; // Generate a random 6-digit OTP
+//     console.log("OTP is generated", OTP);
+
+//     let otp = new UserOTP({
+//       email: email,
+//       otp: OTP,
+//       createdAt: new Date(),
+//       expireAt: new Date(Date.now() + 86400000), // Set expiration time correctly (24 hours)
+//     });
+
+//     await otp.save();
+
+
+//     await sendOtpEmail(email, userName, OTP);
+
+//     res.status(200).json({
+//       ok: true,
+//       msg: validEmailUser ? "Email sent to existing user" : "Email sent to new user",
+//     });
+//     console.log('User Name:', userName);
+//     // let otpResult;
+
+//     // otpResult = await sendEmailOTPforverification(req, res);
+
+//     // console.log('OTP Result:', otpResult);
+//     return res.status(200).send({
+//       msg: "OTP sent successfully",
+//       ok: true,
+//     });
+
+//     // if (!otpResult.ok) {
+//     //   return res.status(500).send({
+//     //     msg: "Failed to send OTP",
+//     //     ok: false,
+//     //   });
+//     // } else {
+//     //   return res.status(200).send({
+//     //     msg: "OTP sent successfully",
+//     //     ok: true,
+//     //   });
+
+//     // }
+//   } catch (error) {
+//     console.error('Error in login:', error);
+//     res.status(500).send({
+//       msg: "Internal Server Error",
+//       ok: false,
+//     });
+//   }
+// };
+
+
+
 export const organisationLogin = async (req, res) => {
   try {
     const { email, mobileNo, countryCode } = req.body;
 
     if (!email && !mobileNo) {
-      return res.status(400).send({
+      return res.status(400).json({
         msg: "Email or mobile number is required",
         ok: false,
       });
@@ -522,59 +669,60 @@ export const organisationLogin = async (req, res) => {
     const user = await User.findOne(query);
 
     if (!user) {
-      return res.status(404).send({
+      return res.status(404).json({
         msg: "Organisation not found",
         ok: false,
       });
     }
 
-    if (user.socialLogin.isSocialLogin) {
-      return res.status(200).send({
+    if (user?.socialLogin?.isSocialLogin) {
+      return res.status(200).json({
         msg: "Login with social link",
         ok: true,
       });
     }
 
-    //check if the user is an organization
-    if (user.profile.profileType !== "OrganizationalUser") {
-      return res.status(404).send({
+    // Check if the user is an organization
+    if (user?.profile?.profileType !== "OrganizationalUser") {
+      return res.status(400).json({
         msg: "User is not an organization, please login as an individual user",
         ok: false,
       });
-
     }
 
     // Generate OTP and send for verification
-    let otpResult;
-    if (email) {
-      otpResult = await sendEmailOTPforverification(req, res);
-    } else {
-      // otpResult = await sendMobileOTPforVerification(req, res);
-    }
+    const validEmailUser = await User.findOne({ "email.id": email });
+    const userName = validEmailUser ? validEmailUser?.name?.first : extractNameFromEmail(email);
 
-    if (!otpResult.ok) {
-      return res.status(500).send({
-        msg: "Failed to send OTP",
-        ok: false,
-      });
-    } else {
-      return res.status(200).send({
-        msg: "OTP sent successfully",
-        ok: true,
-      });
+    let OTP = Math.floor(Math.random() * 900000) + 100000; // Generate a random 6-digit OTP
+    console.log("OTP is generated", OTP);
 
-    }
+    let otp = new UserOTP({
+      email: email,
+      otp: OTP,
+      createdAt: new Date(),
+      expireAt: new Date(Date.now() + 86400000), // Set expiration time correctly (24 hours)
+    });
+
+    await otp.save();
+
+    await sendOtpEmail(email, userName, OTP);
+
+    res.status(200).json({
+      ok: true,
+      msg: validEmailUser ? "Email sent to existing user" : "Email sent to new user",
+    });
+
+    console.log('User Name:', userName);
+
   } catch (error) {
     console.error('Error in login:', error);
-    res.status(500).send({
+    res.status(500).json({
       msg: "Internal Server Error",
       ok: false,
     });
   }
 };
-
-
-
 
 
 
