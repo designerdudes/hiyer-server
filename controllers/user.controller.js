@@ -72,9 +72,26 @@ export const sendEmailOTPforverification = async (req, res) => {
 
 export const sendOrganisationEmailOTPforverification = async (req, res) => {
   try {
-    const { email } = req.body;
-    const validEmailUser = await User.findOne({ "email.id": email });
+    const { email, mobileNo, countryCode } = req.body;
 
+
+
+    let query;
+
+    query = {
+      "email.id": email.toLowerCase().trim(),
+    };
+
+
+
+
+
+    const validEmailUser = await User.findOne(query);
+
+    const validMobileNumber = await User.findOne({ "phone.number": mobileNo });
+
+    console.log('Valid Email User:', validEmailUser);
+    console.log('Valid Mobile Number:', validMobileNumber);
     // if (!validEmailUser) {
     //   return res.status(404).json({
     //     ok: false,
@@ -84,7 +101,7 @@ export const sendOrganisationEmailOTPforverification = async (req, res) => {
 
     const userName = validEmailUser ? validEmailUser.name.first : extractNameFromEmail(email);
 
-    if (!validEmailUser) {
+    if (!validEmailUser && !validMobileNumber) {
 
       let OTP = Math.floor(Math.random() * 900000) + 100000; // Generate a random 6-digit OTP
       console.log("OTP is generated", OTP);
@@ -106,13 +123,21 @@ export const sendOrganisationEmailOTPforverification = async (req, res) => {
         msg: "Email sent to new user",
       });
     }
-    if (validEmailUser) {
+    if (validEmailUser && !validMobileNumber) {
 
       res.status(400).json({
         ok: true,
         msg: "User already exists, please login",
       });
     }
+
+    if (!validEmailUser && validMobileNumber) {
+      return res.status(400).json({
+        ok: false,
+        msg: "User with this mobile number already exists",
+      });
+    }
+
 
   } catch (error) {
     console.error("Error in sending OTP for verification:", error);
@@ -129,15 +154,15 @@ export const sendOTPforMobileverification = async (req, res) => {
     const { mobileNumber } = req.body;
     console.log('Request Body:', req.body);
 
-    // const validMobileNumberUser = await User.findOne({ mobileNumber });
-    // console.log('Valid Mobile Number User:', validMobileNumberUser);
+    const validMobileNumberUser = await User.findOne({ mobileNumber });
+    console.log('Valid Mobile Number User:', validMobileNumberUser);
 
-    // if (!validMobileNumberUser) {
-    //   return res.status(404).send({
-    //     ok: false,
-    //     msg: 'User with this mobile number not found',
-    //   });
-    // }
+    if (!validMobileNumberUser) {
+      return res.status(404).send({
+        ok: false,
+        msg: 'User with this mobile number not found',
+      });
+    }
 
     const url = `https://2factor.in/API/V1/1fb18834-4c08-11ef-8b60-0200cd936042/SMS/${mobileNumber}/AUTOGEN/HiyerOTP`;
 
