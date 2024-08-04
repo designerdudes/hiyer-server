@@ -324,7 +324,8 @@ export const registerUser = async (req, res) => {
       lastName,
       countryCode,
       otp,
-      profileType
+      profileType,
+      companyName,
     } = req.body;
 
     // Verify OTP
@@ -394,7 +395,7 @@ export const registerUser = async (req, res) => {
         profileModel = OrganizationalUser;
         profileData = {
           ...profileData,
-          name: userData.name.first, // Ensure the required name field is set
+          name: companyName || userData.name.first, // Ensure the required name field is set
           contact: {
             email: email, // Assuming email is just a string
             phone: `${countryCode}${mobileNo}`, // Format the phone as string
