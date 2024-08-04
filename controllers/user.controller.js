@@ -36,27 +36,38 @@ export const sendEmailOTPforverification = async (req, res) => {
     //   });
     // }
 
-    let OTP = Math.floor(Math.random() * 900000) + 100000; // Generate a random 6-digit OTP
-    console.log("OTP is generated", OTP);
-
-    let otp = new UserOTP({
-      email: email,
-      otp: OTP,
-      createdAt: new Date(),
-      expireAt: new Date(Date.now() + 86400000), // Set expiration time correctly (24 hours)
-    });
-
-    await otp.save();
-
-
     const userName = validEmailUser ? validEmailUser.name.first : extractNameFromEmail(email);
-    await sendOtpEmail(email, userName, OTP);
+
+    if (!validEmailUser) {
+
+      let OTP = Math.floor(Math.random() * 900000) + 100000; // Generate a random 6-digit OTP
+      console.log("OTP is generated", OTP);
+
+      let otp = new UserOTP({
+        email: email,
+        otp: OTP,
+        createdAt: new Date(),
+        expireAt: new Date(Date.now() + 86400000), // Set expiration time correctly (24 hours)
+      });
+
+      await otp.save();
 
 
-    res.status(200).json({
-      ok: true,
-      msg: validEmailUser ? "Email sent to existing user" : "Email sent to new user",
-    });
+      await sendOtpEmail(email, userName, OTP);
+
+      res.status(200).json({
+        ok: true,
+        msg: "Email sent to new user",
+      });
+    }
+    if (validEmailUser) {
+
+      res.status(400).json({
+        ok: true,
+        msg: "User already exists",
+      });
+    }
+
   } catch (error) {
     console.error("Error in sending OTP for verification:", error);
     res.status(500).json({
