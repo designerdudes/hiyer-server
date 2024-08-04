@@ -64,7 +64,7 @@ export const sendEmailOTPforverification = async (req, res) => {
 
       res.status(400).json({
         ok: true,
-        msg: "User already exists",
+        msg: "User already exists, try loggin in!",
       });
     }
 
