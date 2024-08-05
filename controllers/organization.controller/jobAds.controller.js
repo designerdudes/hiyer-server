@@ -99,12 +99,16 @@ export const addJobAds = async (req, res) => {
     if (typeof formattedSalary.max !== 'number') formattedSalary.max = 0;
 
     let mediaResult = {};
-    if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
-      mediaResult = await uploadMedia(req);
-    } else if (req.files && req.files.image) {
-      console.log('mediaResult:', req.files, 'h', req.files.image);
+    if (req.files && req.files.video && req.files.image) {
+      if ((req.files && req.files.video && req.files.image) || (req.files && req.files.video)) {
+        mediaResult = await uploadMedia(req);
+      } else if (req.files && req.files.image) {
+        console.log('mediaResult:', req.files, 'h', req.files.image);
 
-      mediaResult = await uploadImageController(req);
+        mediaResult = await uploadImageController(req);
+      }
+    } else {
+      mediaResult = null;
     }
 
     // console.log('mediaResult:', mediaResult);
@@ -127,7 +131,7 @@ export const addJobAds = async (req, res) => {
       skills: JSON.parse(skills),
       category,
       tags: JSON.parse(tags),
-      media: Media, // Assign the Media object here
+      media: mediaResult ? Media : null,
       postedBy: userId // Associate the application with the user who posted it
     };
 
