@@ -18,9 +18,9 @@ import passport from "passport";
 import session from "express-session";
 import { sendEmail } from "./config/zohoMail.js";
 import paymentRouter from "./routes/v1/individualUser.route/payment.js";
- 
+
 import './utils/cronjob.js'
- 
+
 dotenv.config();
 
 
@@ -48,14 +48,14 @@ app.use(session({
   secret: 'your-session-secret',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false }  // Set to true if using HTTPS
+  cookie: { secure: true }  // Set to true if using HTTPS
 }));
 
 // Initialize passport
 app.use(passport.initialize());
 app.use(passport.session());
 // Basic home route
- 
+
 app.get("/", (req, res) => {
   res.send("home");
 });

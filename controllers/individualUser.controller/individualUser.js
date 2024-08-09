@@ -2363,11 +2363,12 @@ export const getFollowingOrganizations = async (req, res) => {
 
 export const addRecommendation = async (req, res) => {
   try {
-    const { jobId, toUserId } = req.body;
+    const { jobId, toUserEmail } = req.body;
+
     const fromUserId = getUserIdFromToken(req)
 
     // Validate inputs
-    if (!jobId || !toUserId || !fromUserId) {
+    if (!jobId || !toUserEmail || !fromUserId) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
@@ -2382,18 +2383,21 @@ export const addRecommendation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const recommendedToUser = await IndividualUser.findById(toUserId);
+    const recommendedToUser = await User.findOne({ 'email.id': toUserEmail });
+    console.log(recommendedToUser)
+
+    // const recommendedToUser = await IndividualUser.findById(toUserId);
     if (!recommendedToUser) {
       return res.status(404).json({ success: false, message: 'User to recommend to not found' });
     }
 
     //  Check if the recommending user has an active subscription
 
-    const subscription = recommendingUser.subscription;
+    // const subscription = recommendingUser.subscription;
     const today = new Date();
-    if (!subscription) {
-      return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
-    }
+    // if (!subscription) {
+    //   return res.status(403).json({ success: false, message: 'User does not have an active subscription' });
+    // }
 
 
 
@@ -2401,7 +2405,7 @@ export const addRecommendation = async (req, res) => {
     // Check if a similar recommendation already exists
     const existingRecommendation = await Recommendation.findOne({
       job: jobId,
-      recommendedTo: toUserId,
+      recommendedTo: recommendedToUser._id,
       recommendedBy: fromUserId
     });
 
@@ -2411,7 +2415,7 @@ export const addRecommendation = async (req, res) => {
     // Create the recommendation
     const recommendation = new Recommendation({
       job: jobId,
-      recommendedTo: toUserId,
+      recommendedTo: recommendedToUser._id,
       recommendedBy: fromUserId,
     });
 
@@ -2422,15 +2426,15 @@ export const addRecommendation = async (req, res) => {
     await recommendingUser.save();
 
     // Update recommendedToUser's receivedRecommendations array
-    recommendedToUser.receivedRecommendations.push(recommendation._id);
+    recommendedToUser?.receivedRecommendations?.push(recommendation._id);
 
     const fromUser = await User.findById(fromUserId).populate('profilePicture');
 
-    const toUser = await User.findById(toUserId);
+    // const toUser = await User.findById(toUserId);
 
     await recommendedToUser.save();
-    await sendNewRecommendationFromUserEmail(toUser, job, fromUser)
-    res.status(200).json({ success: true, message: 'Job recommended successfully', toUser, job, fromUser });
+    await sendNewRecommendationFromUserEmail(recommendedToUser, job, fromUser)
+    res.status(200).json({ success: true, message: 'Job recommended successfully', recommendedToUser, job, fromUser });
   } catch (error) {
     console.error('Error recommending job:', error);
     res.status(500).json({ success: false, message: 'Error recommending job' });
