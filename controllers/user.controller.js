@@ -159,6 +159,63 @@ export const sendOTPforMobileverification = async (req, res) => {
     const validMobileNumberUser = await User.findOne({ 'phone.number': mobileNumber });
     console.log('Valid Mobile Number User:', validMobileNumberUser);
 
+    if (validMobileNumberUser?.profile?.profileType !== "IndividualUser") {
+      return res.status(400).json({
+        msg: "User is an organization, please login as an organization",
+        ok: false,
+      });
+    }
+
+    if (!validMobileNumberUser) {
+      return res.status(404).send({
+        ok: false,
+        msg: 'User with this mobile number not found',
+      });
+    }
+
+    const url = `https://2factor.in/API/V1/1fb18834-4c08-11ef-8b60-0200cd936042/SMS/${mobileNumber}/AUTOGEN/HiyerOTP`;
+
+    const response = await axios.get(url, { maxBodyLength: Infinity });
+
+    console.log('Response Data:', response.data);
+
+    if (response.data.Status === 'Success') {
+      return res.status(200).send({
+        ok: true,
+        msg: 'OTP sent successfully',
+        data: response.data,
+      });
+    } else {
+      return res.status(400).send({
+        ok: false,
+        msg: 'Failed to send OTP',
+        data: response.data,
+      });
+    }
+  } catch (error) {
+    console.error('Error in sendOTPforMobileVerification:', error);
+    return res.status(500).send({
+      msg: error.message,
+    });
+  }
+};
+export const sendOTPforOrgMobileverification = async (req, res) => {
+  try {
+    const { mobileNumber } = req.body;
+    console.log('Request Body:', req.body);
+
+
+
+    const validMobileNumberUser = await User.findOne({ 'phone.number': mobileNumber });
+    console.log('Valid Mobile Number User:', validMobileNumberUser);
+
+    if (validMobileNumberUser?.profile?.profileType !== "OrganizationalUser" || "OrganizationMember") {
+      return res.status(400).json({
+        msg: "User is an organization, please login as an organization",
+        ok: false,
+      });
+    }
+
     if (!validMobileNumberUser) {
       return res.status(404).send({
         ok: false,
