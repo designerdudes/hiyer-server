@@ -768,7 +768,7 @@ export const organisationLogin = async (req, res) => {
     }
 
     // Check if the user is an organization
-    if (user?.profile?.profileType !== "OrganizationalUser") {
+    if (user?.profile?.profileType !== "OrganizationalUser" || "OrganizationMember") {
       return res.status(400).json({
         msg: "User is not an organization, please login as an individual user",
         ok: false,
