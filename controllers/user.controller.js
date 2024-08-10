@@ -154,7 +154,9 @@ export const sendOTPforMobileverification = async (req, res) => {
     const { mobileNumber } = req.body;
     console.log('Request Body:', req.body);
 
-    const validMobileNumberUser = await User.findOne({ mobileNumber });
+
+
+    const validMobileNumberUser = await User.findOne({ 'phone.number': mobileNumber });
     console.log('Valid Mobile Number User:', validMobileNumberUser);
 
     if (!validMobileNumberUser) {
@@ -285,7 +287,7 @@ export const verifymobileotp = async (req, res) => {
       });
     }
 
-    const url = `https://2factor.in/API/V1/7d3208f4-0209-11ef-8cbb-0200cd936042/SMS/VERIFY3/${mobileNumber}/${otp}`;
+    const url = `https://2factor.in/API/V1/1fb18834-4c08-11ef-8b60-0200cd936042/SMS/VERIFY3/${mobileNumber}/${otp}`;
 
     const response = await axios.get(url, { maxBodyLength: Infinity });
 
