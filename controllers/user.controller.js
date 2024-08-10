@@ -159,9 +159,11 @@ export const sendOTPforMobileverification = async (req, res) => {
     const validMobileNumberUser = await User.findOne({ 'phone.number': mobileNumber });
     console.log('Valid Mobile Number User:', validMobileNumberUser);
 
+
+
     if (validMobileNumberUser?.profile?.profileType !== "IndividualUser") {
-      return res.status(400).json({
-        msg: "User is an organization, please login as an organization",
+      return res.status(404).json({
+        msg: "User is not an individual user, please login as an organization",
         ok: false,
       });
     }
@@ -209,12 +211,16 @@ export const sendOTPforOrgMobileverification = async (req, res) => {
     const validMobileNumberUser = await User.findOne({ 'phone.number': mobileNumber });
     console.log('Valid Mobile Number User:', validMobileNumberUser);
 
-    if (validMobileNumberUser?.profile?.profileType !== "OrganizationalUser" || "OrganizationMember") {
-      return res.status(400).json({
-        msg: "User is an organization, please login as an organization",
+
+    if (validMobileNumberUser?.profile?.profileType == "IndividualUser") {
+      return res.status(404).json({
+        msg: "User is not an organization, please login as an organization",
         ok: false,
       });
     }
+
+
+
 
     if (!validMobileNumberUser) {
       return res.status(404).send({
@@ -337,6 +343,8 @@ export const verifymobileotp = async (req, res) => {
     const { mobileNumber, otp } = req.body;
     console.log('User:', req.body);
 
+    const validUser = await User.findOne({ 'phone.number': mobileNumber });
+
     if (!mobileNumber || !otp) {
       return res.status(400).send({
         ok: false,
@@ -350,16 +358,24 @@ export const verifymobileotp = async (req, res) => {
 
     console.log('Response Data:', response.data);
 
+    const tokenPayload = {
+      id: validUser._id,
+    };
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRETKEY);
+
     if (response.data.Status === 'Success') {
       return res.status(200).send({
         ok: true,
         msg: 'Mobile number verified',
+        token: token,
         data: response.data,
       });
     } else {
       return res.status(401).send({
         ok: false,
         msg: 'Wrong OTP!',
+        token: null,
         data: response.data,
       });
     }
@@ -586,6 +602,13 @@ export const login = async (req, res) => {
       });
     }
 
+    if (user?.profile?.profileType !== "IndividualUser") {
+      return res.status(404).json({
+        msg: "User is not an individual user, please login as an organization",
+        ok: false,
+      });
+    }
+
     if (user.socialLogin.isSocialLogin) {
       return res.status(200).json({
         msg: "Login with social link",
@@ -768,9 +791,16 @@ export const organisationLogin = async (req, res) => {
     }
 
     // Check if the user is an organization
-    if (user?.profile?.profileType !== "OrganizationalUser" || "OrganizationMember") {
-      return res.status(400).json({
-        msg: "User is not an organization, please login as an individual user",
+    // if (user?.profile?.profileType !== "OrganizationalUser" || "OrganizationMember") {
+    //   return res.status(400).json({
+    //     msg: "User is not an organization, please login as an individual user",
+    //     ok: false,
+    //   });
+    // }
+    //check if the user is an organization or organization member
+    if (user?.profile?.profileType == "IndividualUser") {
+      return res.status(404).json({
+        msg: "User is not an organization, please login as an organization",
         ok: false,
       });
     }
