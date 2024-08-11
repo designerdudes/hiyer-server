@@ -1,15 +1,20 @@
 import express from 'express';
-import {  addOrUpdateOrganizationMember,
-  updateAddress, 
+import {
+  addOrUpdateOrganizationMember,
+  updateAddress,
   updateDepartment,
   updateDateOfJoining,
   updateProfilePicture,
   updateSocialLinks,
-  updateLanguages, } from '../../../controllers/organizationUser.controller/organizationMember.js';
- 
- 
+  updateLanguages,
+  getOrganizationalMemberDataFromToken,
+} from '../../../controllers/organizationUser.controller/organizationMember.js';
+
+
 
 const router = express.Router();
+
+router.get('/details/token', getOrganizationalMemberDataFromToken);
 
 
 // Route to add or update organization member data
@@ -18,7 +23,7 @@ router.post('/addOrUpdate', addOrUpdateOrganizationMember);
 // Route to update address
 router.put('/updateAddress', updateAddress);
 
- 
+
 
 // Route to update department
 router.put('/updateDepartment', updateDepartment);

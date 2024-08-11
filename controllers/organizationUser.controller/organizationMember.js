@@ -3,6 +3,40 @@ import OrganizationMember from '../../models/organizationUser.model/organization
 import { getUserIdFromToken } from '../../utils/getUserIdFromToken.js';
 import User from '../../models/user.model.js';
 import e from 'express';
+import OrganizationalUser from '../../models/organizationUser.model/organizationUser.model.js';
+
+
+export const getOrganizationalMemberDataFromToken = async (req, res) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    const organizationMember = await OrganizationMember.findById(userId
+    );
+
+    const user = await User.findById(organizationMember._id)
+      .select('email phone name profilePicture profile')
+      .populate('profilePicture');
+    if (!user) {
+      return res.status(404).json({ message: "Organization member not found" });
+    }
+
+    const organization = await OrganizationalUser.findById(organizationMember.organization);
+
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+
+
+    res.status(200).json({
+      member: organizationMember,
+      organization: organization
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 
 // Add or Update Organization Member Data

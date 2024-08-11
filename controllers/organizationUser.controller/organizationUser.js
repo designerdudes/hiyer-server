@@ -828,33 +828,44 @@ export const getOrganizationalUserDataFromToken = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Find the organizational user by ID and populate posted job ads
-    const organizationalUser = await OrganizationalUser.findById(orgid)
-      .populate({
-        path: 'postedJobAds',
-        select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt'
-      }).populate({
-        path: 'recommendedJobs',
-        select: '_id job recommendedTo recommendedBy recommendationDate',
-        populate: [{
-          path: 'job',
-          model: 'JobAds',
-          select: '_id title company',
-        },
-        {
-          path: 'recommendedTo',
-          model: 'User',
-          select: 'name email  profilePicture',
-          populate: {
-            path: 'profilePicture',
-            model: 'Image'
-          }
-        }]
-      })
-      .exec();
 
-    if (!organizationalUser) {
-      return res.status(404).json({ success: false, message: 'Organizational user not found' });
+    let organizationalUser
+    if (user.profile.profileType === 'OrganizationalUser') {
+      organizationalUser = await OrganizationalUser.findById(orgid)
+        .populate({
+          path: 'postedJobAds',
+          select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt'
+        }).populate({
+          path: 'recommendedJobs',
+          select: '_id job recommendedTo recommendedBy recommendationDate',
+          populate: [{
+            path: 'job',
+            model: 'JobAds',
+            select: '_id title company',
+          },
+          {
+            path: 'recommendedTo',
+            model: 'User',
+            select: 'name email  profilePicture',
+            populate: {
+              path: 'profilePicture',
+              model: 'Image'
+            }
+          }]
+        })
+        .exec();
+
+
+
+
+    }
+    if (user.profile.profileType === 'OrganizationMember') {
+      const organisationMember = await OrganizationMember.findById(orgid)
+      organizationalUser = await OrganizationalUser.findById(organisationMember.organization)
+        .populate({ path: 'postedJobAds', select: '_id title description jobType remoteWork jobAdDeadline media location postedBy applicants.user createdAt' })
+        .exec();
+
+
     }
 
     // Populate media references for job ads
@@ -873,6 +884,10 @@ export const getOrganizationalUserDataFromToken = async (req, res) => {
         });
       }
     }
+
+
+
+
 
     // Return both user and organizational user data
     res.status(200).json({
