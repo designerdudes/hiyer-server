@@ -145,7 +145,7 @@ export const addJobAds = async (req, res) => {
       category,
       tags: JSON.parse(tags),
       media: mediaResult ? Media : null,
-      postedBy: userId // Associate the application with the user who posted it
+      postedBy: organizatioId // Associate the application with the user who posted it
     };
 
     const nonEmptyFields = Object.fromEntries(
