@@ -905,8 +905,21 @@ export const getOrganizationalUserDataFromToken = async (req, res) => {
 export const getSavedCandidates = async (req, res) => {
 
   try {
-    const orgUserId = getUserIdFromToken(req); // Get organizational user ID from token
-    console.log(orgUserId)
+    const userId = getUserIdFromToken(req); // Get organizational user ID from token
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    let orgUserId = userId;
+
+    if (user.profile.profileType === 'OrganizationMember') {
+      const organizationMember = await OrganizationMember.findById(user.profile.profileRef);
+      if (organizationMember) {
+        orgUserId = organizationMember.organization;
+      }
+    }
     const organizationalUser = await OrganizationalUser.findById(orgUserId).populate({
       path: 'savedCandidates',
       select: '_id', // Select only the _id of each saved candidate
@@ -1246,11 +1259,23 @@ export const deleteOrganizationRecommendation = async (req, res) => {
 export const getRecommendedJobs = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req); // Assuming you have a function to get user ID from token
+    const userData = await User.findById(userId);
+    if (!userData) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
+    let effectiveUserId = userId;
+    console.log(effectiveUserId)
+    if (userData.profile.profileType === 'OrganizationMember') {
+      const organizationMember = await OrganizationMember.findById(userId);
+      if (organizationMember) {
+        effectiveUserId = organizationMember.organization;
+      }
+    }
     // Find the organizational user by ID
-    const user = await OrganizationalUser.findById(userId);
+    const user = await OrganizationalUser.findById(effectiveUserId);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'Org not found' });
     }
 
     // Populate recommendedJobs array with JobAds details and recommendedTo user info

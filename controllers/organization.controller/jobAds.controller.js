@@ -60,6 +60,19 @@ export const addJobAds = async (req, res) => {
   try {
     const userId = getUserIdFromToken(req);
 
+    const userData = await User.findById(userId);
+
+
+    let organizatioId = userId;
+
+    if (userData.profile.profileType === 'OrganizationMember') {
+      const organizationMember = await OrganizationMember.findById(userData.profile.profileRef);
+      if (organizationMember) {
+        organizatioId = organizationMember.organization;
+      }
+    }
+
+
     // Destructure the request body
     const {
       title,
@@ -145,8 +158,10 @@ export const addJobAds = async (req, res) => {
     await newJobAds.save();
 
     // Update the organizational user's posted jobAds
+
+
     const organization = await OrganizationalUser.findByIdAndUpdate(
-      userId,
+      organizatioId,
       { $push: { postedJobAds: newJobAds._id } },
       { new: true }
     );
@@ -166,7 +181,7 @@ export const addJobAds = async (req, res) => {
     }));
 
     // Notify users of the new job
-    await notifyUsersOfNewJob(newJobAds._id, userId);
+    await notifyUsersOfNewJob(newJobAds._id, organizatioId);
     console.log(followerEmails)
 
     // Send email notification to candidate followers
@@ -1078,10 +1093,22 @@ export const getOrganizationalCurrentUserPostedJobAds = async (req, res) => {
 
   console.log('userIduserId', userId)
   try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
+    let effectiveUserId = userId;
+
+    if (user.profile.profileType === 'OrganizationMember') {
+      const organizationMember = await OrganizationMember.findById(user.profile.profileRef);
+      if (organizationMember) {
+        effectiveUserId = organizationMember.organization;
+      }
+    }
 
     // Find the organizational user by ID and populate the postedJobAds
-    const organization = await OrganizationalUser.findById(userId)
+    const organization = await OrganizationalUser.findById(effectiveUserId)
       .populate({
         path: 'postedJobAds',
         populate: {
@@ -1105,7 +1132,26 @@ export const getOrganizationalCurrentUserPostedJobAds = async (req, res) => {
 
 const getCurrentUserJobAdssByApplicantStatus = async (req, res, status) => {
   try {
-    const organizatioId = getUserIdFromToken(req);
+    const orgId = getUserIdFromToken(req);
+
+    const userData = await User.findById(orgId);
+
+
+    let organizatioId = orgId;
+
+    if (userData.profile.profileType === 'OrganizationMember') {
+      const organizationMember = await OrganizationMember.findById(userData.profile.profileRef);
+      if (organizationMember) {
+        organizatioId = organizationMember.organization;
+      }
+    }
+
+    const user = await User.findById(organizatioId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+
 
     // Check if organizatioId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(organizatioId)) {
@@ -1113,7 +1159,7 @@ const getCurrentUserJobAdssByApplicantStatus = async (req, res, status) => {
     }
 
     // Find the organizational user by ID and populate the postedJobAds
-    const organization = await OrganizationalUser.findById(organizatioId)
+    const organization = await OrganizationalUser.findById(user.profile.profileType === 'OrganizationMember' ? { "teamMembers": organizatioId } : organizatioId)
       .populate({
         path: 'postedJobAds',
         populate: {
