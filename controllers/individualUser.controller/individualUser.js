@@ -2363,9 +2363,9 @@ export const getFollowingOrganizations = async (req, res) => {
 
 export const addRecommendation = async (req, res) => {
   try {
-    const { jobId, toUserEmail } = req.body;
+    const { jobId, toUserEmail, recommendedBy } = req.body;
 
-    const fromUserId = getUserIdFromToken(req)
+    const fromUserId = recommendedBy || getUserIdFromToken(req)
 
     // Validate inputs
     if (!jobId || !toUserEmail || !fromUserId) {

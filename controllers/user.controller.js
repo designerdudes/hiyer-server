@@ -14,7 +14,9 @@ import IndividualUser from "../models/individualUser.model/individualUser.model.
 import OrganizationalUser from "../models/organizationUser.model/organizationUser.model.js";
 import OrganizationMember from "../models/organizationUser.model/organizationMember.model.js";
 
-import { sendOtpEmail, sendVerificationSuccessEmail, sendWelcomeOrgEmail, sendWelcomeUserEmail } from "../config/zohoMail.js";
+import { sendNewRecommendationFromUserEmail, sendOtpEmail, sendVerificationSuccessEmail, sendWelcomeOrgEmail, sendWelcomeUserEmail } from "../config/zohoMail.js";
+import Recommendation from "../models/individualUser.model/recommendation,model.js";
+import JobAds from "../models/organization.model/jobAds.model.js";
 
 
 
@@ -401,6 +403,8 @@ export const registerUser = async (req, res) => {
       otp,
       profileType,
       companyName,
+      recommendedBy,
+      recommendedJobId
     } = req.body;
 
     // Verify OTP
@@ -517,6 +521,32 @@ export const registerUser = async (req, res) => {
       await sendWelcomeOrgEmail(email, userData.name.first)
     }
 
+    // If recommendedBy and recommendedJobId are provided, create a recommendation
+    if (recommendedBy && recommendedJobId) {
+      const job = await JobAds.findById(recommendedJobId);
+      const recommendingUser = await User.findById(recommendedBy);
+
+      if (job && recommendingUser) {
+        const recommendation = new Recommendation({
+          job: recommendedJobId,
+          recommendedTo: savedUser._id, // Use the new user's ID
+          recommendedBy: recommendedBy,
+        });
+
+        await recommendation.save();
+
+        // Update recommending user's recommendedJobs array
+        recommendingUser.recommendedJobs.push(recommendation._id);
+        await recommendingUser.save();
+
+        // Update new user's receivedRecommendations array
+        newProfile.receivedRecommendations.push(recommendation._id);
+        await newProfile.save();
+
+        // Optionally, send an email to the new user about the recommendation
+        await sendNewRecommendationFromUserEmail(savedUser, job, recommendingUser);
+      }
+    }
 
 
     // Respond with success message, status, and user data
