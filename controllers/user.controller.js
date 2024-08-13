@@ -420,19 +420,23 @@ export const registerUser = async (req, res) => {
     }
 
     // Check if email or mobile number already exists
-    let existingUser;
+    let existingEmail;
+    let existingMobileNo;
     let socialLogin;
-    if (email) {
-      existingUser = await User.findOne({ "email.id": email });
-      socialLogin = existingUser ? existingUser.socialLogin : null;
-    } else {
-      existingUser = await User.findOne({ "phone.number": mobileNo });
-    }
+
+    existingEmail = await User.findOne({ "email.id": email, "phone.number": mobileNo });
+    existingMobileNo = await User.findOne({ "phone.number": mobileNo });
+
+
 
     let token = otpVerifyResponse.token;
 
-    if (existingUser) {
-      return res.status(409).json({ msg: "Email or mobile number already exists", socialLogin, token });
+    if (existingEmail) {
+      return res.status(409).json({ msg: "Email already exists", socialLogin, token });
+    }
+
+    if (existingMobileNo) {
+      return res.status(409).json({ msg: "Mobile number already exists", socialLogin, token });
     }
 
     // Prepare user data
@@ -522,7 +526,7 @@ export const registerUser = async (req, res) => {
     }
 
     // If recommendedBy and recommendedJobId are provided, create a recommendation
-    if (recommendedBy && recommendedJobId) {
+    if (profileType === 'IndividualUser' && recommendedBy && recommendedJobId) {
       const job = await JobAds.findById(recommendedJobId);
       const recommendingUser = await User.findById(recommendedBy);
 
@@ -547,6 +551,23 @@ export const registerUser = async (req, res) => {
         await sendNewRecommendationFromUserEmail(savedUser, job, recommendingUser);
       }
     }
+
+    const savedIndividualUser = await IndividualUser.findById(savedUser._id);
+    // if user is individual user, add 2 credits by default
+    if (profileType === 'IndividualUser') {
+
+
+      if (!savedIndividualUser.videoResumePack) {
+        savedIndividualUser.videoResumePack = {
+          transactionIds: [],
+          numberOfVideoResumesAllowed: 2,
+          currentNumberOfVideoResumes: 0,
+        };
+      }
+
+      await savedIndividualUser.save();
+    }
+
 
 
     // Respond with success message, status, and user data

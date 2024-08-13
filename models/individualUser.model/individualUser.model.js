@@ -177,7 +177,7 @@ const videoResumePackSchema = new mongoose.Schema({
   numberOfVideoResumesAllowed: {
     type: Number,
     required: true,
-    default: 0,
+    default: 2,
 
   },
   currentNumberOfVideoResumes: {
@@ -217,8 +217,8 @@ const individualUserSchema = new mongoose.Schema(
     // },
     subscription: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'SubscriptionTransaction', 
-      default: null  
+      ref: 'SubscriptionTransaction',
+      default: null
     },
     jobposting: {
       applied: {
@@ -268,7 +268,7 @@ const individualUserSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'Recommendation',
       default: [],
-    },jobAlerts: [{
+    }, jobAlerts: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobAlert',
     }],
