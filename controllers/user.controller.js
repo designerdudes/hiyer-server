@@ -53,6 +53,8 @@ export const sendEmailOTPforverification = async (req, res) => {
 
     await otp.save();
 
+    console.log("OTP saved to database:", otp);
+
 
     await sendOtpEmail(email, userName, OTP);
 

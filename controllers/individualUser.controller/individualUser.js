@@ -9,6 +9,8 @@ import { deleteMedia, uploadMedia } from "../mediaControl.controller/mediaUpload
 import OrganizationalUser from "../../models/organizationUser.model/organizationUser.model.js";
 import Recommendation from "../../models/individualUser.model/recommendation,model.js";
 import { sendNewApplicationEmail, sendNewRecommendationFromUserEmail } from "../../config/zohoMail.js";
+import { uploadImage } from '../../config/cloudinary/cloudinary.config.js';
+import Image from '../../models/image.model.js';
 
 
 // Helper function to extract user ID from token
